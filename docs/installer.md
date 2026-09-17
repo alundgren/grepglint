@@ -297,7 +297,15 @@ unavailable. Purge while installed keeps the executable, maintenance copy and
 minimal record so the installation remains manageable. It prints that outcome.
 
 Cache ownership includes the device and inode of a private directory created
-by this installer. A matching path or the older `cache_owned` flag alone is
+by this installer. The installer completes path/capacity preflight and saves
+an initial record before creating a private staging directory beside the
+selected cache. It records that exclusive directory's identity before atomic
+publication without replacement. A concurrently created cache remains unowned.
+Recorded staging/publication can resume after interruption. If interruption
+precedes the staging record, an empty unrecorded `.grepglint-cache-*` directory
+may remain beside the selected cache; it is preserved rather than adopted or
+removed by name. It contains no indexed source contents and does not make the
+selected cache owned. A matching path or the older `cache_owned` flag alone is
 insufficient. Preexisting caches, including Cargo caches, are never adopted.
 Purge refuses those caches and leaves their ownership record and maintenance
 copy for inspection. It also refuses substituted directories, symlinks,

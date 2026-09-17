@@ -190,7 +190,7 @@ PHASES = {"prepared", "retained", "installed", "complete", "upgrade_prepared", "
 
 
 def validate_record(record, state, prior=False):
-    require(isinstance(record, dict) and RECORD_FIELDS <= record.keys() and not record.keys() - RECORD_FIELDS - {"change", "cache_identity"}, "Invalid installation record fields; state preserved")
+    require(isinstance(record, dict) and RECORD_FIELDS <= record.keys() and not record.keys() - RECORD_FIELDS - {"change", "cache_identity", "cache_creation"}, "Invalid installation record fields; state preserved")
     require(type(record["schema_version"]) is int and record["schema_version"] in (1, 2, 3), "Unsupported state version; state preserved")
     require(record["phase"] in PHASES, "Unrecognized installation phase; state preserved")
     require(isinstance(record["release"], str) and re.fullmatch(TAG, record["release"]), "Invalid recorded release")
@@ -212,6 +212,14 @@ def validate_record(record, state, prior=False):
         paths.append(path)
     require(all(not a.is_relative_to(c) and not c.is_relative_to(a) for i, a in enumerate(paths) for c in paths[i+1:]), "Recorded paths must be separate")
     require(len(os.fsencode(paths[2] / "daemon.sock")) < 100, "Cache path too long")
+    creation = record.get("cache_creation")
+    if creation is not None:
+        require(record["phase"] == "prepared" and not record["cache_owned"] and identity is None and isinstance(creation, dict) and set(creation) == {"directory", "identity"}, "Invalid cache creation recovery record")
+        directory = Path(creation["directory"])
+        path_check(directory)
+        require(directory.parent == Path(record["cache"]).parent and directory != Path(record["cache"]) and directory.name.startswith(".grepglint-cache-"), "Invalid staged cache path")
+        staged_identity = creation["identity"]
+        require(isinstance(staged_identity, dict) and set(staged_identity) == {"device", "inode"} and all(type(value) is int and 0 <= value <= 2**64-1 for value in staged_identity.values()), "Invalid staged cache identity")
     change = record.get("change")
     if change is not None:
         require(not prior and record["schema_version"] in (2, 3) and isinstance(change, dict) and set(change) == {"prior", "destination_mode", "maintenance_mode"}, "Invalid upgrade recovery record")

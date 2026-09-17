@@ -224,27 +224,32 @@ pub fn replace(source: &Path, destination: &Path, digest: &str, prior: Option<&s
         );
         fs::rename(&stage, destination)?;
     } else {
-        let from = std::ffi::CString::new(stage.as_os_str().as_encoded_bytes())?;
-        let to = std::ffi::CString::new(destination.as_os_str().as_encoded_bytes())?;
-        #[cfg(target_os = "linux")]
-        let result = unsafe {
-            libc::renameat2(
-                libc::AT_FDCWD,
-                from.as_ptr(),
-                libc::AT_FDCWD,
-                to.as_ptr(),
-                libc::RENAME_NOREPLACE,
-            )
-        };
-        #[cfg(target_os = "macos")]
-        let result = unsafe { libc::renamex_np(from.as_ptr(), to.as_ptr(), libc::RENAME_EXCL) };
-        ensure!(
-            result == 0,
-            "Cannot publish executable without replacing an unexpected file: {}",
-            std::io::Error::last_os_error()
-        );
+        rename_new(&stage, destination)
+            .context("Cannot publish executable without replacing an unexpected file")?;
     }
     sync(parent)
+}
+
+pub fn rename_new(source: &Path, destination: &Path) -> std::io::Result<()> {
+    let from = std::ffi::CString::new(source.as_os_str().as_encoded_bytes())?;
+    let to = std::ffi::CString::new(destination.as_os_str().as_encoded_bytes())?;
+    #[cfg(target_os = "linux")]
+    let result = unsafe {
+        libc::renameat2(
+            libc::AT_FDCWD,
+            from.as_ptr(),
+            libc::AT_FDCWD,
+            to.as_ptr(),
+            libc::RENAME_NOREPLACE,
+        )
+    };
+    #[cfg(target_os = "macos")]
+    let result = unsafe { libc::renamex_np(from.as_ptr(), to.as_ptr(), libc::RENAME_EXCL) };
+    if result == 0 {
+        Ok(())
+    } else {
+        Err(std::io::Error::last_os_error())
+    }
 }
 
 pub fn discard_pending(destination: &Path, sources: &[&Path]) -> Result<()> {

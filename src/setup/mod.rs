@@ -1,4 +1,5 @@
 //! Human maintenance. Records live separately from the disposable search cache.
+mod cache;
 mod change;
 mod files;
 mod process;
@@ -69,7 +70,7 @@ pub struct Record {
     pub cache: PathBuf,
     pub cache_owned: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub cache_identity: Option<remove::Identity>,
+    pub cache_identity: Option<cache::Identity>,
     pub database_bytes: u64,
     pub idle_seconds: u64,
     pub previous_digest: Option<String>,
@@ -77,6 +78,8 @@ pub struct Record {
     pub cargo_digest: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub change: Option<Box<change::Change>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cache_creation: Option<cache::Creation>,
 }
 
 impl Record {
@@ -140,6 +143,7 @@ impl Record {
             self.cache_identity.is_none() || self.cache_owned,
             "Invalid cache ownership record"
         );
+        cache::validate(self)?;
         change::validate(self, state)?;
         files::paths(&self.destination)?;
         files::paths(&self.cache)?;
@@ -464,6 +468,7 @@ fn install(options: &Options, state: &Path, existing: Option<Record>) -> Result<
             previous_mode: None,
             cargo_digest: None,
             change: None,
+            cache_creation: None,
         };
         record.validate(state)?;
         ensure!(
@@ -496,10 +501,6 @@ fn install(options: &Options, state: &Path, existing: Option<Record>) -> Result<
         }
         if !files::absent(&record.cache)? {
             files::directory(&record.cache, false, true)?;
-        } else {
-            files::directory(&record.cache, true, true)?;
-            record.cache_owned = true;
-            record.cache_identity = Some(remove::Identity::read(&record.cache)?);
         }
         let parent = record
             .destination
@@ -519,6 +520,14 @@ fn install(options: &Options, state: &Path, existing: Option<Record>) -> Result<
             .context("Missing destination parent")?,
         4 * files::BINARY_CAP + 64 * 1024 * 1024,
     )?;
+    if record.phase == "prepared"
+        && record.cache_creation.is_none()
+        && files::absent(&record.cache)?
+    {
+        cache::stage(&mut record)?;
+        record.save(state).with_context(|| format!("Cache staging record write failed at {}; no cache was published. Preserve that directory and retry installation after resolving the write failure", record.cache_creation.as_ref().unwrap().directory.display()))?;
+    }
+    cache::publish(&mut record, state)?;
     let maintenance = state.join("maintenance");
     let backup = state.join("previous");
     if files::absent(&maintenance)? {

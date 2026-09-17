@@ -1,34 +1,16 @@
+use super::cache::Identity;
 use super::{Action, Options, Record, files};
 use crate::maintenance::Maintenance;
 use anyhow::{Context, Result, ensure};
 use fs2::FileExt;
-use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::{BufRead, IsTerminal, Read, Write};
-use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct Identity {
-    pub device: u64,
-    pub inode: u64,
-}
-impl Identity {
-    pub fn read(path: &Path) -> Result<Self> {
-        files::directory(path, false, true)?;
-        let meta = fs::symlink_metadata(path)?;
-        Ok(Self {
-            device: meta.dev(),
-            inode: meta.ino(),
-        })
-    }
-}
-
-fn confirm(accepted: bool, message: &str, flag: &str) -> Result<()> {
+fn confirm(accepted: bool, message: &str, flag: &str) -> Result<bool> {
     println!("{message}");
     if accepted {
-        return Ok(());
+        return Ok(true);
     }
     ensure!(
         std::io::stdin().is_terminal(),
@@ -38,11 +20,7 @@ fn confirm(accepted: bool, message: &str, flag: &str) -> Result<()> {
     std::io::stdout().flush()?;
     let mut answer = String::new();
     std::io::stdin().lock().take(16).read_line(&mut answer)?;
-    ensure!(
-        matches!(answer.trim(), "y" | "Y" | "yes"),
-        "Cancelled; nothing removed"
-    );
-    Ok(())
+    Ok(matches!(answer.trim(), "y" | "Y" | "yes"))
 }
 
 fn identity(record: &Record) -> Result<()> {
@@ -143,7 +121,7 @@ pub fn run(options: &Options, state: &Path, record: Option<Record>) -> Result<()
         return Ok(());
     };
     let purge = matches!(options.action, Action::Purge);
-    if purge {
+    let confirmed = if purge {
         confirm(
             options.purge_cache,
             &format!(
@@ -153,7 +131,7 @@ pub fn run(options: &Options, state: &Path, record: Option<Record>) -> Result<()
                 record.destination.display()
             ),
             "--purge-cache",
-        )?;
+        )?
     } else {
         confirm(
             options.yes,
@@ -164,7 +142,11 @@ pub fn run(options: &Options, state: &Path, record: Option<Record>) -> Result<()
                 state.join("maintenance").display()
             ),
             "--yes",
-        )?;
+        )?
+    };
+    if !confirmed {
+        println!("Cancelled; nothing removed");
+        return Ok(());
     }
     if record.change.is_some() {
         super::change::run(options, state, record)?;

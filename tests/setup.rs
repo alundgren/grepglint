@@ -1549,3 +1549,167 @@ fn purge_erases_indexed_source_without_changing_repository() {
     assert_eq!(fs::read(repo.join(".git/index")).unwrap(), index);
     assert_eq!(fs::read(repo.join(".git/HEAD")).unwrap(), head);
 }
+
+#[test]
+fn cache_creation_collision_and_publication_interruption_preserve_ownership() {
+    for point in [
+        "staged",
+        "published",
+        "collision",
+        "substitution",
+        "copy-failure",
+        "publication-record-failure",
+    ] {
+        let f = Fixture::new();
+        success(f.install());
+        let cache = f.root.join("cache");
+        fs::remove_dir_all(&cache).unwrap();
+        let staging = f.root.join(".grepglint-cache-fixture");
+        fs::create_dir(&staging).unwrap();
+        fs::set_permissions(&staging, fs::Permissions::from_mode(0o700)).unwrap();
+        let metadata = fs::metadata(&staging).unwrap();
+        let mut record = f.record();
+        record["phase"] = "prepared".into();
+        record["cache_owned"] = false.into();
+        record.as_object_mut().unwrap().remove("cache_identity");
+        record["cache_creation"] = serde_json::json!({"directory":staging,"identity":{"device":metadata.dev(),"inode":metadata.ino()}});
+        f.write_record(&record);
+        match point {
+            "published" => fs::rename(&staging, &cache).unwrap(),
+            "collision" => {
+                fs::create_dir(&cache).unwrap();
+                fs::set_permissions(&cache, fs::Permissions::from_mode(0o700)).unwrap();
+                fs::write(cache.join("sentinel"), b"preexisting source cache").unwrap();
+            }
+            "substitution" => {
+                fs::rename(&staging, f.root.join("original-staging")).unwrap();
+                fs::create_dir(&staging).unwrap();
+                fs::set_permissions(&staging, fs::Permissions::from_mode(0o700)).unwrap();
+                fs::write(staging.join("sentinel"), b"unrelated").unwrap();
+            }
+            "publication-record-failure" => {
+                fs::set_permissions(f.state(), fs::Permissions::from_mode(0o500)).unwrap();
+            }
+            "copy-failure" => {
+                fs::remove_file(f.destination()).unwrap();
+                fs::set_permissions(f.root.join("bin"), fs::Permissions::from_mode(0o500)).unwrap();
+            }
+            _ => {}
+        }
+        if point == "substitution" {
+            failure(f.install(), "Staged cache directory replaced");
+            assert_eq!(fs::read(staging.join("sentinel")).unwrap(), b"unrelated");
+            assert!(!cache.exists());
+            continue;
+        }
+        if point == "publication-record-failure" {
+            assert!(!f.install().status.success());
+            assert!(cache.exists());
+            assert!(f.record()["cache_creation"].is_object());
+            fs::set_permissions(f.state(), fs::Permissions::from_mode(0o700)).unwrap();
+        }
+        if point == "copy-failure" {
+            assert!(!f.install().status.success());
+            assert!(f.record()["cache_identity"].is_object());
+            fs::set_permissions(f.root.join("bin"), fs::Permissions::from_mode(0o700)).unwrap();
+        }
+        success(f.install());
+        assert!(f.record().get("cache_creation").is_none());
+        assert!(!staging.exists());
+        success(f.removal("uninstall"));
+        if point == "collision" {
+            assert_eq!(f.record()["cache_owned"], false);
+            failure(f.removal("purge"), "ownership identity was not recorded");
+            assert_eq!(
+                fs::read(cache.join("sentinel")).unwrap(),
+                b"preexisting source cache"
+            );
+        } else {
+            assert_eq!(f.record()["cache_owned"], true);
+            success(f.removal("purge"));
+        }
+    }
+}
+
+#[test]
+fn cache_is_not_created_before_preflight_and_first_record_succeed() {
+    use std::os::unix::process::CommandExt;
+    let f = Fixture::new();
+    fs::write(f.root.join("bin"), b"unrelated").unwrap();
+    assert!(!f.install().status.success());
+    assert!(!f.root.join("cache").exists());
+    fs::remove_file(f.root.join("bin")).unwrap();
+    let mut command = f.command("install");
+    command.arg("--destination").arg(f.destination()).args([
+        "--release",
+        "v0.1.0",
+        "--commit",
+        &"a".repeat(40),
+        "--digest",
+        &digest(&f.root.join("source")),
+    ]);
+    unsafe {
+        command.pre_exec(|| {
+            let cap = libc::rlimit {
+                rlim_cur: 32,
+                rlim_max: 32,
+            };
+            if libc::setrlimit(libc::RLIMIT_FSIZE, &cap) == 0 {
+                Ok(())
+            } else {
+                Err(std::io::Error::last_os_error())
+            }
+        });
+    }
+    assert!(!command.output().unwrap().status.success());
+    assert!(!f.root.join("cache").exists());
+    assert!(!fs::read_dir(&f.root).unwrap().any(|entry| {
+        entry
+            .unwrap()
+            .file_name()
+            .to_string_lossy()
+            .starts_with(".grepglint-cache-")
+    }));
+    success(f.install());
+    assert_eq!(f.record()["cache_owned"], true);
+    success(f.removal("uninstall"));
+    success(f.removal("purge"));
+}
+
+#[test]
+fn terminal_removal_cancellation_succeeds_without_mutation() {
+    use std::io::Write;
+    use std::os::fd::FromRawFd;
+    for action in ["uninstall", "purge"] {
+        let f = Fixture::new();
+        success(f.install());
+        let before = fs::read(f.state().join("record.json")).unwrap();
+        let mut master = 0;
+        let mut slave = 0;
+        assert_eq!(
+            unsafe {
+                libc::openpty(
+                    &mut master,
+                    &mut slave,
+                    std::ptr::null_mut(),
+                    std::ptr::null(),
+                    std::ptr::null(),
+                )
+            },
+            0
+        );
+        let mut input = unsafe { fs::File::from_raw_fd(master) };
+        let terminal = unsafe { fs::File::from_raw_fd(slave) };
+        let child = f
+            .command(action)
+            .stdin(terminal)
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+            .unwrap();
+        input.write_all(b"n\n").unwrap();
+        success(child.wait_with_output().unwrap());
+        assert_eq!(fs::read(f.state().join("record.json")).unwrap(), before);
+        assert!(f.destination().exists());
+    }
+}

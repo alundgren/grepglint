@@ -6,7 +6,9 @@ bounded Git output. `files.rs` applies file-selection rules. `chunks.rs` extract
 identifiers. `index.rs` owns freshness, cache maintenance, and ranking; the
 schema is in `schema.sql`. `setup/` owns human installation records, safe file
 replacement, upgrade rollback, recorded removal and isolated verification.
-Installer-created cache directories have recorded device/inode identity.
+Installer-created cache directories have recorded device/inode identity
+before publication from an exclusive private staging directory. Publication
+refuses to replace a concurrently created cache.
 Removal holds daemon maintenance exclusion through file deletion and durable
 finalization. Empty coordination locks remain on stable inodes; the trusted
 bootstrap can finish deleting a final ownership record after the native copy
