@@ -5,13 +5,13 @@
     "additional_callable_tools"
   ],
   "captured_bytes": 99294,
-  "child_peak_rss_kib_linux": 124084,
+  "child_peak_rss_kib_linux": 124580,
   "client": {
     "binary_bytes": 262858016,
     "binary_sha256": "3188814c35471432d4123203e0eb38e5bddc60226e3d7ddf0e59e649ea140022",
     "version": "codex-cli 0.154.0"
   },
-  "elapsed_seconds": 2.037,
+  "elapsed_seconds": 1.943,
   "fixture_checks": {
     "contamination_detected": true,
     "exclusion_observed": true
@@ -32,7 +32,7 @@
     "total_capture_bytes": 16777216
   },
   "next_action": "Use the receipt to refine runner isolation. Do not start a model trial.",
-  "observed_temporary_bytes": 9760802,
+  "observed_temporary_bytes": 9769042,
   "pair_checks": [
     {
       "added_tools": [
@@ -757,7 +757,7 @@
             "fixture:skill"
           ],
           "role": "developer",
-          "sha256": "7cefb4ef2f826b606d253400d766559f9ec261b41d93b32d6bc416e9e71afcdd"
+          "sha256": "bbf3f35d427a0ce7129d57900766815cefc7ef81ff64bff360f2045cf6368adc"
         },
         {
           "bytes": 341,
@@ -1143,7 +1143,7 @@
             "fixture:skill"
           ],
           "role": "developer",
-          "sha256": "d65bcf1e27f277bebad9bdcca49db5d397f96f153b8e6d3981540424e422d889"
+          "sha256": "7101ccc905a1f083cd45c378171d422a7381927b495e70d062dd429857010f40"
         },
         {
           "bytes": 341,

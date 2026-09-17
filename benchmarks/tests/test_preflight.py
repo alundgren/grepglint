@@ -2,11 +2,14 @@ import json
 import os
 from pathlib import Path
 import socket
+import signal
 import stat
+import subprocess
 import sys
 import tempfile
 import time
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from _codex_capture import Budget, Child, FRAME_LIMIT, ProbeError, ResponsesStub, json_value
@@ -259,6 +262,69 @@ class ReceiptTests(unittest.TestCase):
                 with exclusive_probe():
                     pass
 
+    def test_different_tmpdirs_share_the_account_lock(self):
+        with tempfile.TemporaryDirectory() as temporary, exclusive_probe():
+            env = dict(os.environ, TMPDIR=temporary)
+            program = ('import sys;sys.path.insert(0,' + repr(str(Path(__file__).resolve().parents[1]))
+                       + ');from codex_preflight import exclusive_probe\nwith exclusive_probe(): pass\n')
+            result = subprocess.run([sys.executable, '-c', program], env=env, capture_output=True,
+                                    text=True, timeout=3)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('another_preflight_is_running', result.stderr)
+
+    @unittest.skipUnless(sys.platform == 'linux', 'real client probe is Linux only')
+    def test_sigterm_cleans_client_descendants_and_fixtures(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            marker = root / 'started.json'
+            survived = root / 'survived'
+            fake = root / 'codex'
+            fake.write_text('#!' + sys.executable + '\n'
+                'import json,os,subprocess,sys,time\n'
+                'if "--version" in sys.argv: print("codex-cli 0.154.0");sys.exit()\n'
+                'child=subprocess.Popen([sys.executable,"-c",'
+                + repr('import time;time.sleep(2);open(' + repr(str(survived)) + ',"w").write("bad")') + '])\n'
+                'open(' + repr(str(marker)) + ',"w").write(json.dumps({"pid":os.getpid(),'
+                '"descendant":child.pid,"source":os.getcwd()}))\n'
+                'time.sleep(30)\n')
+            fake.chmod(0o700)
+            command = Path(__file__).resolve().parents[1] / 'codex_preflight.py'
+            controller = subprocess.Popen([sys.executable, str(command), '--codex', str(fake),
+                '--receipt', str(root / 'receipt.json')], stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE, start_new_session=True)
+            info = None
+            try:
+                deadline = time.monotonic() + 3
+                while not marker.exists() and time.monotonic() < deadline:
+                    time.sleep(0.01)
+                self.assertTrue(marker.exists(), 'Fixture client did not start')
+                info = json.loads(marker.read_text())
+                controller.send_signal(signal.SIGTERM)
+                stdout, stderr = controller.communicate(timeout=4)
+                self.assertEqual(controller.returncode, 3, stderr.decode())
+                self.assertEqual(json.loads(stdout)['status'], 'incomplete')
+                receipt = json.loads((root / 'receipt.json').read_text())
+                self.assertEqual(receipt['errors'], ['cancelled'])
+                self.assertEqual(receipt['probes'], [])
+                self.assertFalse(Path(info['source']).parents[1].exists())
+                with self.assertRaises(ProcessLookupError):
+                    os.kill(info['pid'], 0)
+                # Orphaned killed descendants can briefly remain as zombies.
+                proc_stat = Path('/proc') / str(info['descendant']) / 'stat'
+                if proc_stat.exists():
+                    self.assertEqual(proc_stat.read_text().split(') ', 1)[1].split()[0], 'Z')
+                time.sleep(2.1)
+                self.assertFalse(survived.exists())
+            finally:
+                if controller.poll() is None:
+                    controller.kill()
+                    controller.communicate(timeout=2)
+                if info is not None:
+                    try:
+                        os.killpg(info['pid'], signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+
     def test_child_environment_excludes_credentials_and_proxies(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -272,6 +338,15 @@ class ReceiptTests(unittest.TestCase):
         self.assertEqual(result['status'], 'incomplete')
         self.assertFalse(result['inference_performed'])
         self.assertEqual(result['probes'], [])
+
+    @unittest.skipUnless(sys.platform == 'linux', 'real client probe is Linux only')
+    def test_client_start_failure_is_sanitized(self):
+        with patch('_codex_capture.subprocess.Popen',
+                   side_effect=subprocess.SubprocessError('PRIVATE_START_FAILURE')):
+            result = run(Path(sys.executable))
+        self.assertEqual(result['status'], 'incomplete')
+        self.assertEqual(result['errors'], ['client_or_fixture_unavailable'])
+        self.assertNotIn('PRIVATE_START_FAILURE', json.dumps(result))
 
 
 if __name__ == '__main__':

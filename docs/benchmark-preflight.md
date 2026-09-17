@@ -53,7 +53,8 @@ descendant cleanup, private receipts and probe serialization.
 
 There are four sequential probes, exclusion and contamination for each of
 control and Grepglint. Only one client and one stub run at a time. An
-account-owned file lock also prevents concurrent command invocations.
+account-owned file lock under `/tmp/grepglint-codex-preflight-<uid>` also prevents
+concurrent invocations, including callers with different TMPDIR settings.
 
 Each child gets a new temporary HOME, CODEX_HOME, XDG directories and working
 directory. Its environment is an allowlist without inherited tokens, API
@@ -93,8 +94,10 @@ to 16 KiB; stderr to 1 MiB per child; total captured bytes across all probes to
 16 MiB. Subprocess output is drained as it arrives. Child core dumps are
 disabled and individual child-created files are capped at 16 MiB. That file
 cap is not a total temporary-disk guarantee. All owned process groups are
-killed on success or failure, even if their leader has already exited, and
-temporary fixtures are removed. The receipt reports captured bytes, elapsed
+killed on success, failure or ordinary SIGINT/SIGTERM cancellation, even if
+their leader has already exited. Cancellation stops subsequent probes, removes
+temporary fixtures and writes an incomplete receipt with `cancelled`. SIGKILL
+cannot be handled. The receipt reports captured bytes, elapsed
 time, observed temporary-file bytes and child peak RSS on Linux.
 
 ## Fixtures and observations
@@ -124,8 +127,8 @@ excluded in both modes. The checker requires both successful exclusion and
 detected contamination before classifying the diagnostic as complete.
 
 In the recorded run, all four requests asked for Luna/high. The entire command
-took 2.037 seconds, captured 99,294 bytes, observed 9,760,802 temporary-file
-bytes, and reported 124,084 KiB peak client RSS. These are observations from
+took 1.943 seconds, captured 99,294 bytes, observed 9,769,042 temporary-file
+bytes, and reported 124,580 KiB peak client RSS. These are observations from
 one local machine, not performance guarantees.
 
 ## Complete tool and instruction accounting

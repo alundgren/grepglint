@@ -56,6 +56,7 @@ class Budget:
 
 
 def child_limits():
+    signal.pthread_sigmask(signal.SIG_UNBLOCK, [signal.SIGINT, signal.SIGTERM])
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
     resource.setrlimit(resource.RLIMIT_FSIZE, (TOTAL_LIMIT, TOTAL_LIMIT))
 
@@ -66,14 +67,27 @@ class Child:
         self.buffer = bytearray()
         self.stderr_hash = hashlib.sha256()
         self.counts = {'stdout': 0, 'stderr': 0}
-        self.proc = subprocess.Popen(args, cwd=cwd, env=env, stdin=subprocess.PIPE,
-                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                     start_new_session=True, preexec_fn=child_limits)
+        self.proc = None
         self.selector = selectors.DefaultSelector()
-        for stream, name in [(self.proc.stdout, 'stdout'), (self.proc.stderr, 'stderr')]:
-            os.set_blocking(stream.fileno(), False)
-            self.selector.register(stream, selectors.EVENT_READ, name)
-        os.set_blocking(self.proc.stdin.fileno(), False)
+        try:
+            # Keep ownership available before a cancellation can unwind startup.
+            previous = signal.pthread_sigmask(signal.SIG_BLOCK, [signal.SIGINT, signal.SIGTERM])
+            try:
+                self.proc = subprocess.Popen(args, cwd=cwd, env=env, stdin=subprocess.PIPE,
+                                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                             start_new_session=True, preexec_fn=child_limits)
+            finally:
+                signal.pthread_sigmask(signal.SIG_SETMASK, previous)
+            for stream, name in [(self.proc.stdout, 'stdout'), (self.proc.stderr, 'stderr')]:
+                os.set_blocking(stream.fileno(), False)
+                self.selector.register(stream, selectors.EVENT_READ, name)
+            os.set_blocking(self.proc.stdin.fileno(), False)
+        except BaseException:
+            if self.proc is not None:
+                self.close()
+            else:
+                self.selector.close()
+            raise
 
     def send(self, value):
         data = json.dumps(value, separators=(',', ':')).encode() + b'\n'

@@ -10,7 +10,9 @@ from pathlib import Path
 import re
 import resource
 import shlex
+import signal
 import stat
+from subprocess import SubprocessError
 import sys
 import tempfile
 import time
@@ -38,6 +40,30 @@ DISABLED_FEATURES = [
 ]
 
 
+class ProbeCancelled(BaseException):
+    pass
+
+
+@contextmanager
+def cancellation_signals():
+    watched = [signal.SIGINT, signal.SIGTERM]
+    previous = {number: signal.getsignal(number) for number in watched}
+
+    def cancel(_number, _frame):
+        # A second ordinary cancellation must not interrupt process cleanup.
+        for number in watched:
+            signal.signal(number, signal.SIG_IGN)
+        raise ProbeCancelled()
+
+    try:
+        for number in watched:
+            signal.signal(number, cancel)
+        yield
+    finally:
+        for number, handler in previous.items():
+            signal.signal(number, handler)
+
+
 def digest(data):
     return hashlib.sha256(data if isinstance(data, bytes) else data.encode()).hexdigest()
 
@@ -51,7 +77,7 @@ def private_directory(path):
 
 @contextmanager
 def exclusive_probe():
-    root = Path(tempfile.gettempdir()) / f'grepglint-codex-preflight-{os.getuid()}'
+    root = Path('/tmp') / f'grepglint-codex-preflight-{os.getuid()}'
     private_directory(root)
     fd = os.open(root / 'lock', os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
     try:
@@ -371,7 +397,7 @@ def run_probe(binary, root, treatment, contaminated, budget):
         result['credentials_present'] = stub.credentials_present
     except ProbeError as error:
         result.update(request_status='incomplete', errors=[stub.error or str(error)])
-    except (OSError, KeyError, TypeError, AttributeError, RecursionError):
+    except (OSError, SubprocessError, KeyError, TypeError, AttributeError, RecursionError):
         result.update(request_status='incomplete', errors=['client_or_protocol_failure'])
     finally:
         if child is not None:
@@ -455,9 +481,11 @@ def run(binary):
         receipt['blockers'] = ['host_file_isolation_unproven', 'chatgpt_provider_equivalence_unproven']
         if any(p.get('additional_tools') for p in receipt['probes'] if p['fixture_mode'] == 'exclusion'):
             receipt['blockers'].append('additional_callable_tools')
+    except ProbeCancelled:
+        receipt['errors'] = ['cancelled']
     except ProbeError as error:
         receipt['errors'] = [str(error)]
-    except OSError:
+    except (OSError, SubprocessError):
         receipt['errors'] = ['client_or_fixture_unavailable']
     receipt['captured_bytes'] = budget.used
     receipt['elapsed_seconds'] = round(time.monotonic() - start, 3)
@@ -472,7 +500,7 @@ def main():
     parser.add_argument('--export', type=Path, help='Optional second copy of the sanitized receipt')
     args = parser.parse_args()
     try:
-        with exclusive_probe():
+        with cancellation_signals(), exclusive_probe():
             if args.receipt.exists() or (args.export and args.export.exists()):
                 raise ProbeError('receipt_already_exists')
             receipt = run(args.codex)
@@ -480,8 +508,12 @@ def main():
             if args.export:
                 write_receipt(args.export, receipt)
         print(json.dumps({'status': receipt['status'], 'inference_performed': False,
+                          'errors': receipt.get('errors', []),
                           'next_action': receipt['next_action']}))
         return {'supported': 0, 'unsupported': 2, 'incomplete': 3}[receipt['status']]
+    except ProbeCancelled:
+        print(json.dumps({'status': 'incomplete', 'errors': ['cancelled'], 'inference_performed': False}))
+        return 3
     except (ProbeError, OSError) as error:
         code = str(error) if isinstance(error, ProbeError) else 'receipt_or_lock_unavailable'
         print(json.dumps({'status': 'incomplete', 'errors': [code], 'inference_performed': False}))
