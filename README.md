@@ -47,6 +47,30 @@ ranges separate and includes a content identity. Higher scores rank first;
 scores are relative to the cache, not probabilities. Errors exit nonzero and
 `--json` errors contain an `error` field.
 
+## Maintenance
+
+```sh
+grepglint status
+grepglint status --json
+grepglint shutdown
+# Refuse if another instance has replaced the daemon you inspected:
+grepglint shutdown --instance <instance-from-status>
+```
+
+Status reports the running build, instance, and settings without starting a
+missing daemon. JSON status returns `null` when none is running. Shutdown is
+also successful when no daemon is running. It identifies the private socket's
+OS-account owner and daemon instance, then requests a normal exit. It never
+kills a recorded PID. The next search can start the daemon again.
+
+Maintenance waits at most 35 seconds for exclusion and shutdown. Each control
+exchange has a three-second deadline, so a busy daemon may refuse status.
+Unknown or legacy protocols and stale or replaced sockets cause a refusal.
+Pause searches and retry after the old daemon's idle exit; use `rg` while
+waiting. These human maintenance commands stay outside `tools --json`.
+See [the lock protocol](docs/architecture.md#daemon-maintenance) before adding
+managed filesystem changes.
+
 ## Searchable files
 
 Grepglint checks file contents rather than requiring a known extension.
