@@ -281,6 +281,8 @@ fn handle(
     health: &crate::protocol::Health,
     socket: &crate::maintenance::SocketIdentity,
 ) -> Result<bool> {
+    // BSD accept inherits the listener flags; deadlines require blocking I/O.
+    stream.set_nonblocking(false)?;
     crate::maintenance::check_peer(stream)?;
     stream.set_write_timeout(Some(Duration::from_secs(2)))?;
     let deadline = Instant::now() + Duration::from_millis(250);
@@ -457,5 +459,40 @@ pub fn record_startup_error(config: &Config, message: &str) {
         .open(config.directory.join("startup-error.txt"))
     {
         let _ = file.write_all(message.chars().take(2000).collect::<String>().as_bytes());
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn accepted_nonblocking_stream_waits_for_request_within_deadline() {
+        let temp = tempfile::tempdir().unwrap();
+        let config = Config {
+            directory: temp.path().to_owned(),
+            max_bytes: 8 * 1024 * 1024,
+            idle: Duration::from_secs(60),
+        };
+        config.prepare().unwrap();
+        let _listener = UnixListener::bind(config.socket()).unwrap();
+        fs::set_permissions(config.socket(), fs::Permissions::from_mode(0o600)).unwrap();
+        let socket = crate::maintenance::SocketIdentity::read(&config.socket()).unwrap();
+        let health = crate::maintenance::build_health(&config).unwrap();
+        let mut index = Index::open(&config.directory, config.max_bytes).unwrap();
+        let (mut server, mut client) = UnixStream::pair().unwrap();
+        // BSD accept inherits the listener's nonblocking flag; reproduce that on every OS.
+        server.set_nonblocking(true).unwrap();
+        let sender = thread::spawn(move || {
+            thread::sleep(Duration::from_millis(40));
+            client
+                .write_all(b"{\"command\":\"health\",\"version\":1}\n")
+                .unwrap();
+            let mut response = String::new();
+            BufReader::new(client).read_line(&mut response).unwrap();
+            assert!(response.contains("healthy"));
+        });
+        assert!(!handle(&mut server, &mut index, &config, &health, &socket).unwrap());
+        sender.join().unwrap();
     }
 }

@@ -575,3 +575,45 @@ fn shutdown_preserves_fifo_symlink_and_oversized_pid_replacements() {
         f.start();
     }
 }
+
+#[test]
+fn accepted_connection_can_send_health_after_a_short_delay() {
+    let f = Fixture::new();
+    f.start();
+    let mut client = UnixStream::connect(f.cache.join("daemon.sock")).unwrap();
+    client
+        .set_read_timeout(Some(Duration::from_secs(2)))
+        .unwrap();
+    thread::sleep(Duration::from_millis(40));
+    client
+        .write_all(b"{\"command\":\"health\",\"version\":1}\n")
+        .unwrap();
+    let mut response = String::new();
+    BufReader::new(client).read_line(&mut response).unwrap();
+    let response: serde_json::Value = serde_json::from_str(&response).unwrap();
+    assert_eq!(response["status"], "healthy", "{response}");
+}
+
+#[test]
+fn health_refusal_detail_is_bounded_and_printable() {
+    let f = Fixture::new();
+    f.config().prepare().unwrap();
+    let socket = f.cache.join("daemon.sock");
+    let listener = UnixListener::bind(&socket).unwrap();
+    fs::set_permissions(&socket, fs::Permissions::from_mode(0o600)).unwrap();
+    let server = thread::spawn(move || {
+        let (mut stream, _) = listener.accept().unwrap();
+        let mut request = String::new();
+        BufReader::new(&mut stream).read_line(&mut request).unwrap();
+        let response = serde_json::json!({"status": "error", "message": "detail\n\0".repeat(3000)});
+        writeln!(stream, "{response}").unwrap();
+    });
+    let error = grepglint::maintenance::status(&f.config())
+        .unwrap_err()
+        .to_string();
+    assert!(error.contains("Daemon refused health"));
+    assert!(error.len() < 2500);
+    assert!(!error.chars().any(char::is_control));
+    server.join().unwrap();
+    fs::remove_file(socket).unwrap();
+}
