@@ -14,6 +14,11 @@ embeddings, network services, Git hooks, or filesystem watchers.
 
 ## Install
 
+The [release contract](docs/releases.md) describes raw binaries for Linux
+x86_64 and macOS Apple Silicon, supported runtime baselines, prerequisites,
+and verification tied to the selected release tag and source commit. The first
+published release and hosted verification remain a human release task.
+
 Requires Linux or macOS, Git, Rust 1.89 or later, and a C compiler for bundled
 SQLite and tree-sitter. Linux is tested locally; CI also covers macOS.
 
