@@ -500,6 +500,8 @@ impl Store {
         let result = (|| {
             let tx = self.db.transaction()?;
             let mut text = Vec::new();
+            text.try_reserve_exact(MAX_OUTPUT as usize)
+                .context("Cannot allocate the bounded output search buffer; use output page")?;
             let retained = read_stream(&tx, handle, |_, bytes| {
                 budget.check()?;
                 text.extend_from_slice(bytes);
