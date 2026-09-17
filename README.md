@@ -322,7 +322,7 @@ Expiry is checked before returning results and access does not extend it.
 | Expansion | At most 64 KiB per chunk and 32 MiB total expanded text; lexical expansion works on one bounded chunk at a time |
 | Temporary SQLite | At most 32 MiB logical database; in-memory only, including sort work; shares the daemon's existing 64 MiB total SQLite heap limit |
 | Process/concurrency | One daemon request at a time, including repository and output searches; existing 512 MiB Linux address-space limit and lower scheduling priority |
-| Work | 30-second work deadline, checked per retained chunk, ranking chunk, result and SQLite progress; request receipt and response delivery retain their separate deadlines |
+| Work | 30-second work deadline covers store opening/lock waits/cleanup, retained chunks, ranking chunks, results and SQLite progress; request receipt and response delivery retain their separate deadlines |
 | Results | At most 20, each excerpt at most 1,000 original bytes and eight lines; complete encoded response at most 64 KiB, including metadata and escaping |
 
 The ranker searches every generated chunk or fails explicitly on a limit,

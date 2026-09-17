@@ -670,8 +670,20 @@ fn legacy_search_refusal_keeps_exact_paging_and_socket() {
 #[test]
 fn disconnect_cancels_daemon_ranking_and_preserves_original() {
     let f = Fixture::new();
+    let expired = f.handle(&vec![b'e'; 8 * 1024 * 1024]);
     let handle = f.handle(&vec![b'z'; 8 * 1024 * 1024]);
+    f.search_json(&handle, "absent");
     let before = f.page(&handle, None).stdout;
+    let setup =
+        rusqlite::Connection::open(f.root.path().join("cache/output-v1/output.sqlite")).unwrap();
+    setup
+        .pragma_update(None, "journal_mode", "PERSIST")
+        .unwrap();
+    setup.pragma_update(None, "journal_size_limit", 0).unwrap();
+    setup
+        .execute("UPDATE outputs SET created=0 WHERE handle=?1", [&expired])
+        .unwrap();
+    drop(setup);
     let mut child = f
         .command()
         .env("GREPGLINT_IDLE_SECONDS", "1")

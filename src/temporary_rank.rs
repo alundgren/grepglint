@@ -24,6 +24,10 @@ impl Budget {
             consumer,
         }
     }
+    #[cfg(test)]
+    pub(crate) fn until(deadline: Instant, consumer: std::os::fd::RawFd) -> Self {
+        Self { deadline, consumer }
+    }
     pub(crate) fn check(self) -> Result<()> {
         ensure!(
             Instant::now() < self.deadline,

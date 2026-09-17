@@ -71,8 +71,12 @@ fn private(path: &Path, create: bool) -> Result<File> {
     Ok(file)
 }
 fn lock(file: &File) -> Result<()> {
+    lock_checked(file, || Ok(()))
+}
+fn lock_checked(file: &File, check: impl Fn() -> Result<()>) -> Result<()> {
     let start = Instant::now();
     loop {
+        check()?;
         match file.try_lock_exclusive() {
             Ok(()) => return Ok(()),
             Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
@@ -181,11 +185,32 @@ fn initialize(cache: &Path, gate: &mut File) -> Result<PathBuf> {
 
 impl Store {
     pub fn open(config: &Config) -> Result<Self> {
+        Self::open_inner(config, None)
+    }
+
+    pub(crate) fn open_for_search(
+        config: &Config,
+        budget: crate::temporary_rank::Budget,
+    ) -> Result<Self> {
+        let result = Self::open_inner(config, Some(budget));
+        if result.is_err() {
+            budget.check()?;
+        }
+        result
+    }
+
+    fn open_inner(config: &Config, budget: Option<crate::temporary_rank::Budget>) -> Result<Self> {
+        let check = || match budget {
+            Some(budget) => budget.check(),
+            None => Ok(()),
+        };
+        check()?;
         directory(&config.directory)?;
         let maintenance = crate::maintenance::shared(config)?;
         let mut gate = private(&config.directory.join("output-gate"), true)?;
-        lock(&gate)?;
+        lock_checked(&gate, check)?;
         let directory_path = initialize(&config.directory, &mut gate)?;
+        check()?;
         let owner_path = directory_path.join("ownership.json");
         let names = [
             "output.sqlite",
@@ -210,6 +235,7 @@ impl Store {
             "Unsupported output ownership record."
         );
         for (identity, name) in record.files.iter().zip(names) {
+            check()?;
             ensure!(identity.name == name, "Invalid output ownership record.");
             let f = private(&directory_path.join(name), false)?;
             let m = f.metadata()?;
@@ -236,6 +262,10 @@ impl Store {
                 | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX
                 | rusqlite::OpenFlags::SQLITE_OPEN_NOFOLLOW,
         )?;
+        if let Some(budget) = budget {
+            db.progress_handler(1000, Some(move || budget.check().is_err()))?;
+        }
+        check()?;
         db.busy_timeout(LOCK_WAIT)?;
         db.pragma_update(None, "journal_mode", "PERSIST")?;
         db.pragma_update(None, "journal_size_limit", 0)?;
@@ -250,6 +280,7 @@ impl Store {
         db.pragma_update(None, "max_page_count", (DB_LIMIT / 4096) as i64)?;
         db.pragma_update(None, "secure_delete", "ON")?;
         db.pragma_update(None, "foreign_keys", "ON")?;
+        check()?;
         db.execute_batch("CREATE TABLE IF NOT EXISTS outputs (
           handle TEXT PRIMARY KEY, created INTEGER NOT NULL, bytes INTEGER NOT NULL DEFAULT 0,
           lines INTEGER NOT NULL DEFAULT 0, digest TEXT, slot INTEGER, committed INTEGER NOT NULL DEFAULT 0);
@@ -267,7 +298,9 @@ impl Store {
             reserve: config.max_bytes * 2 + 64 * 1024 * 1024,
             _maintenance: maintenance,
         };
-        store.cleanup()?;
+        check()?;
+        store.cleanup_checked(check)?;
+        check()?;
         Ok(store)
     }
 
@@ -290,12 +323,17 @@ impl Store {
     }
 
     fn cleanup(&self) -> Result<()> {
+        self.cleanup_checked(|| Ok(()))
+    }
+    fn cleanup_checked(&self, check: impl Fn() -> Result<()>) -> Result<()> {
+        check()?;
         self.deletion_space()?;
         self.db.execute(
             "DELETE FROM outputs WHERE committed=1 AND created <= ?1",
             [now()?.saturating_sub(TTL) as i64],
         )?;
         for slot in 0..2 {
+            check()?;
             let f = private(&self.directory.join(format!("capture-{slot}.lock")), false)?;
             match f.try_lock_exclusive() {
                 Ok(()) => {
@@ -457,7 +495,6 @@ impl Store {
         crate::temporary_rank::validate(query, limit)?;
         validate_handle(handle)?;
         budget.check()?;
-        self.cleanup()?;
         self.db
             .progress_handler(1000, Some(move || budget.check().is_err()))?;
         let result = (|| {
@@ -1069,6 +1106,76 @@ mod tests {
         store.abort(&capture.handle).unwrap();
         assert!(store.page(&capture.handle, None).is_err());
     }
+    #[test]
+    fn cancelled_search_open_does_not_start_pending_expiry_cleanup() {
+        use std::os::fd::AsRawFd;
+        let (_dir, config) = fixture();
+        let mut store = Store::open(&config).unwrap();
+        let expired = retain(&mut store, 10000);
+        let valid = retain(&mut store, 10000);
+        store
+            .db
+            .execute(
+                "UPDATE outputs SET created=?1 WHERE handle=?2",
+                params![(now().unwrap() - TTL) as i64, expired],
+            )
+            .unwrap();
+        let elapsed = crate::temporary_rank::Budget::until(Instant::now(), 1);
+        assert!(
+            Store::open_for_search(&config, elapsed)
+                .err()
+                .unwrap()
+                .to_string()
+                .contains("deadline")
+        );
+        let gate = private(&config.directory.join("output-gate"), false).unwrap();
+        gate.try_lock_exclusive().unwrap();
+        let started = Instant::now();
+        let waiting = crate::temporary_rank::Budget::until(started + Duration::from_millis(20), 1);
+        assert!(
+            Store::open_for_search(&config, waiting)
+                .err()
+                .unwrap()
+                .to_string()
+                .contains("deadline")
+        );
+        assert!(started.elapsed() < Duration::from_secs(1));
+        drop(gate);
+        let (consumer, server) = std::os::unix::net::UnixStream::pair().unwrap();
+        drop(consumer);
+        let cancelled = crate::temporary_rank::Budget::new(server.as_raw_fd());
+        assert!(
+            Store::open_for_search(&config, cancelled)
+                .err()
+                .unwrap()
+                .to_string()
+                .contains("cancelled")
+        );
+        assert_eq!(
+            store
+                .db
+                .query_row("SELECT count(*) FROM outputs", [], |r| r.get::<_, u32>(0))
+                .unwrap(),
+            2
+        );
+        // SQLite interruption rolls back pending cleanup, preserving the valid handle.
+        store
+            .db
+            .progress_handler(1, Some(move || cancelled.check().is_err()))
+            .unwrap();
+        assert!(store.cleanup().is_err());
+        store.db.progress_handler(0, None::<fn() -> bool>).unwrap();
+        assert_eq!(
+            store
+                .db
+                .query_row("SELECT count(*) FROM outputs", [], |r| r.get::<_, u32>(0))
+                .unwrap(),
+            2
+        );
+        assert_eq!(store.page(&valid, None).unwrap().content, "x".repeat(PAGE));
+        assert!(store.page(&expired, None).is_err());
+    }
+
     #[test]
     fn cancellation_preserves_pages() {
         use std::os::fd::AsRawFd;

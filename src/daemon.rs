@@ -327,7 +327,7 @@ fn handle(
         );
         crate::temporary_rank::validate(&query, limit)?;
         let budget = crate::temporary_rank::Budget::new(stream.as_raw_fd());
-        let mut store = crate::output::Store::open(config)?;
+        let mut store = crate::output::Store::open_for_search(config, budget)?;
         let data = store.search_with_budget(&handle, &query, limit, budget)?;
         send(stream, &crate::protocol::OutputResponse::Ok { data })?;
         return Ok(false);

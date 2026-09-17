@@ -212,8 +212,10 @@ transaction until ranking finishes. The Rust source allocation is bounded to
 disk. Its connection and buffers drop on success or failure. No output FTS rows
 or source content enter the repository database.
 
-The socket's lifetime and a 30-second deadline bound traversal, chunk generation,
-indexing and ranking. The CLI detects downstream closure during response waits
+The socket's lifetime and a 30-second deadline bound store opening, gate-lock
+waits, cleanup, traversal, chunk generation, indexing and ranking. Search installs
+the SQLite progress callback before store database work. Interrupted cleanup
+statements roll back; capture and paging keep their existing opening path. The CLI detects downstream closure during response waits
 and closes that socket. Capture, page and purge remain direct operations;
 producer waits never occupy a daemon request. A concurrent output writer may
 reach its existing two-second busy timeout while a search holds the consistent
