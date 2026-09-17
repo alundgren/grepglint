@@ -1,0 +1,32 @@
+[package]
+name = "grepglint"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89"
+description = "Local, Git-aware BM25 code discovery for coding agents"
+license = "MIT"
+repository = "https://github.com/alundgren/grepglint"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+fs2 = "0.4"
+libc = "0.2"
+rusqlite = { version = "0.40", default-features = false, features = ["bundled", "hooks", "limits"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha1 = "0.10"
+sha2 = "0.10"
+tree-sitter = "0.25.10"
+tree-sitter-typescript = "0.23.2"
+wait-timeout = "0.2"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+lto = "thin"
+strip = true
+
+[lints.clippy]
+all = "warn"

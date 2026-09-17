@@ -1,0 +1,312 @@
+{
+  "environment": {
+    "platform": "Linux",
+    "architecture": "x86_64"
+  },
+  "workflows": [
+    {
+      "case": "first search",
+      "stats": {
+        "head_changed": true,
+        "paths_updated": 46,
+        "blobs_parsed": 46,
+        "overlay_files_parsed": 0,
+        "cached_contents_reused": 0,
+        "skipped_files": 0,
+        "active_files": 46,
+        "overlay_entries": 0,
+        "cached_contents": 46,
+        "cached_chunks": 53,
+        "evicted_worktrees": 0,
+        "elapsed_ms": 44
+      },
+      "wall_ms": 200.73,
+      "results": [
+        "src/auth/refresh-token.ts",
+        "src/auth/refresh-token.ts",
+        "src/auth/token-service.ts"
+      ]
+    },
+    {
+      "case": "unchanged search",
+      "stats": {
+        "head_changed": false,
+        "paths_updated": 0,
+        "blobs_parsed": 0,
+        "overlay_files_parsed": 0,
+        "cached_contents_reused": 0,
+        "skipped_files": 0,
+        "active_files": 46,
+        "overlay_entries": 0,
+        "cached_contents": 46,
+        "cached_chunks": 53,
+        "evicted_worktrees": 0,
+        "elapsed_ms": 9
+      },
+      "wall_ms": 11.99,
+      "results": [
+        "src/auth/refresh-token.ts",
+        "src/auth/refresh-token.ts",
+        "src/auth/token-service.ts"
+      ]
+    },
+    {
+      "case": "second worktree",
+      "stats": {
+        "head_changed": true,
+        "paths_updated": 46,
+        "blobs_parsed": 0,
+        "overlay_files_parsed": 0,
+        "cached_contents_reused": 46,
+        "skipped_files": 0,
+        "active_files": 46,
+        "overlay_entries": 0,
+        "cached_contents": 46,
+        "cached_chunks": 53,
+        "evicted_worktrees": 0,
+        "elapsed_ms": 26
+      },
+      "wall_ms": 29.33,
+      "results": [
+        "src/auth/refresh-token.ts",
+        "src/auth/refresh-token.ts",
+        "src/auth/token-service.ts"
+      ]
+    },
+    {
+      "case": "committed branch change",
+      "stats": {
+        "head_changed": true,
+        "paths_updated": 1,
+        "blobs_parsed": 1,
+        "overlay_files_parsed": 0,
+        "cached_contents_reused": 0,
+        "skipped_files": 0,
+        "active_files": 47,
+        "overlay_entries": 0,
+        "cached_contents": 47,
+        "cached_chunks": 54,
+        "evicted_worktrees": 0,
+        "elapsed_ms": 34
+      },
+      "wall_ms": 39.44,
+      "results": [
+        "src/branch.ts"
+      ]
+    },
+    {
+      "case": "uncommitted edit",
+      "stats": {
+        "head_changed": false,
+        "paths_updated": 0,
+        "blobs_parsed": 0,
+        "overlay_files_parsed": 1,
+        "cached_contents_reused": 0,
+        "skipped_files": 0,
+        "active_files": 47,
+        "overlay_entries": 1,
+        "cached_contents": 48,
+        "cached_chunks": 55,
+        "evicted_worktrees": 0,
+        "elapsed_ms": 32
+      },
+      "wall_ms": 36.0,
+      "results": [
+        "src/auth/refresh-token.ts"
+      ]
+    },
+    {
+      "case": "reverted edit",
+      "stats": {
+        "head_changed": false,
+        "paths_updated": 0,
+        "blobs_parsed": 0,
+        "overlay_files_parsed": 0,
+        "cached_contents_reused": 0,
+        "skipped_files": 0,
+        "active_files": 47,
+        "overlay_entries": 0,
+        "cached_contents": 47,
+        "cached_chunks": 54,
+        "evicted_worktrees": 0,
+        "elapsed_ms": 33
+      },
+      "wall_ms": 35.99,
+      "results": []
+    },
+    {
+      "case": "untracked file",
+      "stats": {
+        "head_changed": false,
+        "paths_updated": 0,
+        "blobs_parsed": 0,
+        "overlay_files_parsed": 1,
+        "cached_contents_reused": 0,
+        "skipped_files": 0,
+        "active_files": 48,
+        "overlay_entries": 1,
+        "cached_contents": 48,
+        "cached_chunks": 55,
+        "evicted_worktrees": 0,
+        "elapsed_ms": 31
+      },
+      "wall_ms": 34.98,
+      "results": [
+        "src/new.ts"
+      ]
+    },
+    {
+      "case": "concurrent client 1",
+      "stats": {
+        "head_changed": false,
+        "paths_updated": 0,
+        "blobs_parsed": 0,
+        "overlay_files_parsed": 0,
+        "cached_contents_reused": 0,
+        "skipped_files": 0,
+        "active_files": 46,
+        "overlay_entries": 0,
+        "cached_contents": 48,
+        "cached_chunks": 55,
+        "evicted_worktrees": 0,
+        "elapsed_ms": 9
+      },
+      "wall_ms": 23.26,
+      "results": [
+        "src/auth/refresh-token.ts",
+        "src/auth/refresh-token.ts",
+        "src/ui/dashboard.ts"
+      ]
+    },
+    {
+      "case": "concurrent client 2",
+      "stats": {
+        "head_changed": false,
+        "paths_updated": 0,
+        "blobs_parsed": 0,
+        "overlay_files_parsed": 0,
+        "cached_contents_reused": 0,
+        "skipped_files": 0,
+        "active_files": 48,
+        "overlay_entries": 1,
+        "cached_contents": 48,
+        "cached_chunks": 55,
+        "evicted_worktrees": 0,
+        "elapsed_ms": 9
+      },
+      "wall_ms": 13.22,
+      "results": [
+        "src/payments/webhook.ts",
+        "src/payments/webhook.ts"
+      ]
+    },
+    {
+      "case": "wake after idle shutdown",
+      "stats": {
+        "head_changed": false,
+        "paths_updated": 0,
+        "blobs_parsed": 0,
+        "overlay_files_parsed": 0,
+        "cached_contents_reused": 0,
+        "skipped_files": 0,
+        "active_files": 46,
+        "overlay_entries": 0,
+        "cached_contents": 48,
+        "cached_chunks": 55,
+        "evicted_worktrees": 0,
+        "elapsed_ms": 12
+      },
+      "wall_ms": 43.46,
+      "results": [
+        "src/auth/refresh-token.ts",
+        "src/auth/refresh-token.ts",
+        "src/auth/token-service.ts"
+      ]
+    }
+  ],
+  "comparisons": [
+    {
+      "query": "refresh token validation",
+      "top_symbol": "validateRefreshToken",
+      "top_path": "src/auth/refresh-token.ts",
+      "ranked_regions": 3,
+      "grepglint_json_bytes": 1675,
+      "grepglint_wall_ms": 10.96,
+      "rg_literal_lines": 0,
+      "rg_literal_bytes": 0,
+      "rg_literal_wall_ms": 7.7,
+      "rg_any_term_lines": 181,
+      "rg_any_term_bytes": 12314,
+      "rg_any_term_wall_ms": 5.93
+    },
+    {
+      "query": "refresh revocation",
+      "top_symbol": "validateRefreshToken",
+      "top_path": "src/auth/refresh-token.ts",
+      "ranked_regions": 3,
+      "grepglint_json_bytes": 1736,
+      "grepglint_wall_ms": 10.55,
+      "rg_literal_lines": 0,
+      "rg_literal_bytes": 0,
+      "rg_literal_wall_ms": 6.27,
+      "rg_any_term_lines": 134,
+      "rg_any_term_bytes": 10024,
+      "rg_any_term_wall_ms": 6.11
+    },
+    {
+      "query": "webhook signature verification",
+      "top_symbol": "verify_webhook_signature",
+      "top_path": "src/payments/webhook.ts",
+      "ranked_regions": 2,
+      "grepglint_json_bytes": 1326,
+      "grepglint_wall_ms": 11.01,
+      "rg_literal_lines": 0,
+      "rg_literal_bytes": 0,
+      "rg_literal_wall_ms": 6.19,
+      "rg_any_term_lines": 4,
+      "rg_any_term_bytes": 301,
+      "rg_any_term_wall_ms": 5.72
+    },
+    {
+      "query": "validateRefreshToken",
+      "top_symbol": "validateRefreshToken",
+      "top_path": "src/auth/refresh-token.ts",
+      "ranked_regions": 3,
+      "grepglint_json_bytes": 1672,
+      "grepglint_wall_ms": 9.02,
+      "rg_literal_lines": 3,
+      "rg_literal_bytes": 259,
+      "rg_literal_wall_ms": 5.3,
+      "rg_any_term_lines": 3,
+      "rg_any_term_bytes": 259,
+      "rg_any_term_wall_ms": 5.1
+    }
+  ],
+  "warm_search": {
+    "queries": 250,
+    "median_wall_ms": 12.21,
+    "p95_wall_ms": 17.82
+  },
+  "daemon_memory_kib_after_queries": {
+    "50": {
+      "VmRSS": 8404,
+      "VmSize": 213828,
+      "VmPeak": 213952
+    },
+    "250": {
+      "VmRSS": 8408,
+      "VmSize": 213832,
+      "VmPeak": 213968
+    }
+  },
+  "database_bytes": 221184,
+  "cache_files": {
+    "daemon.lock": 0,
+    "daemon.pid": 7,
+    "daemon.sock": 0,
+    "index.sqlite": 221184
+  },
+  "binary_bytes": 6511056,
+  "address_space_limit": "Max address space         536870912            536870912            bytes     ",
+  "idle_shutdown_observed": true
+}
