@@ -248,6 +248,17 @@ fn replacement_refs_cannot_change_the_content_associated_with_a_blob_sha() {
 }
 
 #[test]
+fn startup_preserves_an_unexpected_file_at_the_socket_path() {
+    let fixture = Fixture::new();
+    fs::create_dir(&fixture.cache).unwrap();
+    let socket = fixture.cache.join("daemon.sock");
+    fs::write(&socket, "preserve this file").unwrap();
+    let output = fixture.raw(&fixture.root, "refresh");
+    assert!(!output.status.success());
+    assert_eq!(fs::read_to_string(socket).unwrap(), "preserve this file");
+}
+
+#[test]
 fn worktrees_share_blobs_and_only_current_regions_are_searchable() {
     let fixture = Fixture::new();
     let first = fixture.search(&fixture.root.join("src/auth"), "refresh token validation");

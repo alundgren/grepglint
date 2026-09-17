@@ -146,9 +146,6 @@ pub fn serve(config: &Config) -> Result<()> {
         Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => return Ok(()),
         Err(e) => return Err(e.into()),
     }
-    let _cleanup = Cleanup {
-        directory: config.directory.clone(),
-    };
     if let Ok(metadata) = fs::symlink_metadata(config.socket()) {
         ensure!(
             metadata.file_type().is_socket(),
@@ -158,6 +155,9 @@ pub fn serve(config: &Config) -> Result<()> {
     }
     let mut index = Index::open(&config.directory, config.max_bytes)?;
     let listener = UnixListener::bind(config.socket())?;
+    let _cleanup = Cleanup {
+        directory: config.directory.clone(),
+    };
     listener.set_nonblocking(true)?;
     fs::set_permissions(config.socket(), fs::Permissions::from_mode(0o600))?;
     fs::write(
