@@ -100,33 +100,12 @@ class HttpsRedirect(urllib.request.HTTPRedirectHandler):
 
 def download(url, path, cap):
     require(url.startswith("https://"), "Only HTTPS downloads are allowed")
-    # A worker bounds DNS, TLS, redirects, headers and buffered body reads alike.
-    pid = os.fork()
-    if pid == 0:
-        try:
-            download_worker(url, path, cap)
-        except BaseException:
-            os._exit(1)
-        os._exit(0)
-    reaped = False
-    deadline = time.monotonic() + DOWNLOAD_SECONDS
+    # A fresh interpreter keeps macOS system proxy discovery safe and preserves proxies.
     try:
-        while True:
-            result, status = os.waitpid(pid, os.WNOHANG)
-            if result:
-                reaped = True
-                require(os.waitstatus_to_exitcode(status) == 0,
-                        "Download failed its HTTPS, size, or network checks; no files replaced")
-                return
-            require(time.monotonic() < deadline, "Download exceeded absolute elapsed-time limit")
-            time.sleep(0.01)
-    finally:
-        if not reaped:
-            try:
-                os.kill(pid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
-            os.waitpid(pid, 0)
+        run([sys.executable, str(Path(__file__).resolve()), "__download", url,
+             str(path.resolve()), str(cap)], timeout=DOWNLOAD_SECONDS, cap=4096)
+    except ValueError as error:
+        raise ValueError("Download failed or exceeded its absolute elapsed-time limit; check HTTPS, size and network access") from error
 
 
 def download_worker(url, path, cap):
@@ -268,7 +247,18 @@ def main(argv=None):
 
 if __name__ == "__main__":
     try:
-        sys.exit(main())
+        if sys.argv[1:2] == ["__download"]:
+            require(len(sys.argv) == 5, "Invalid download worker arguments")
+            os.umask(0o077)
+            resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+            url, destination, cap = sys.argv[2], Path(sys.argv[3]), int(sys.argv[4])
+            require(url.startswith("https://") and 0 < cap <= CAP, "Invalid download worker limits")
+            path_check(destination)
+            info = destination.parent.stat()
+            require(info.st_uid == os.getuid() and stat.S_IMODE(info.st_mode) == 0o700, "Download directory must be private and account-owned")
+            download_worker(url, destination, cap)
+        else:
+            sys.exit(main())
     except (ValueError, OSError, KeyError, UnicodeError, subprocess.SubprocessError) as error:
         print(f"install: {error}", file=sys.stderr)
         sys.exit(1)

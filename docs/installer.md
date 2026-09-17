@@ -171,7 +171,7 @@ without replacing files or restarting the real daemon.
 | Checksum manifest / state record | 4 KiB / 64 KiB |
 | Bootstrap subprocess output | 1 MiB combined; version output 4 KiB |
 | Bootstrap subprocess time | 30 seconds each; attestation 60 seconds; downloaded version 10 seconds |
-| Download | 120-second absolute worker deadline, including DNS/headers/body; 10-second socket timeout; no retries; HTTPS-only redirects |
+| Download | 120-second absolute fresh-interpreter worker deadline, including DNS/headers/body; 10-second socket timeout; no retries; HTTPS-only redirects |
 | Native subprocess | 20 seconds, 64 KiB combined output; process group killed on failure |
 | Verification fixture | Four searches; 8 MiB database, at most 8 MiB rollback journal; two-second idle fallback |
 | Disk preflight | 576 MiB free on staging, destination and state filesystems; fixture needs 80 MiB |
