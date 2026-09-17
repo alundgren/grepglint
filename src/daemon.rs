@@ -9,7 +9,7 @@ use std::{
     io::{BufRead, BufReader, Read, Write},
     os::fd::AsRawFd,
     os::unix::{
-        fs::{DirBuilderExt, FileTypeExt, OpenOptionsExt, PermissionsExt},
+        fs::{DirBuilderExt, FileTypeExt, MetadataExt, OpenOptionsExt, PermissionsExt},
         net::{UnixListener, UnixStream},
         process::CommandExt,
     },
@@ -85,10 +85,11 @@ impl Config {
             metadata.is_dir() && !metadata.file_type().is_symlink(),
             "Cache directory must be a real directory."
         );
+        crate::maintenance::check_owner(&metadata)?;
         fs::set_permissions(&self.directory, fs::Permissions::from_mode(0o700))?;
         Ok(())
     }
-    fn socket(&self) -> PathBuf {
+    pub(crate) fn socket(&self) -> PathBuf {
         self.directory.join("daemon.sock")
     }
 }
@@ -123,26 +124,88 @@ fn restrict_process() -> Result<()> {
 
 struct Cleanup {
     directory: PathBuf,
+    socket: crate::maintenance::SocketIdentity,
+    pid: Option<PidFile>,
 }
 impl Drop for Cleanup {
     fn drop(&mut self) {
-        let _ = fs::remove_file(self.directory.join("daemon.sock"));
-        let _ = fs::remove_file(self.directory.join("daemon.pid"));
+        if self.socket.matches(&self.directory.join("daemon.sock")) {
+            let _ = fs::remove_file(self.directory.join("daemon.sock"));
+        }
+        if let Some(pid) = &self.pid {
+            let _ = pid.remove_if_unchanged(&self.directory.join("daemon.pid"));
+        }
+    }
+}
+
+struct PidFile {
+    device: u64,
+    inode: u64,
+    text: String,
+}
+
+impl PidFile {
+    fn write(path: &std::path::Path) -> Result<Self> {
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .mode(0o600)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+            .open(path)?;
+        let metadata = file.metadata()?;
+        crate::maintenance::check_owner(&metadata)?;
+        ensure!(
+            metadata.is_file() && metadata.nlink() == 1 && metadata.mode() & 0o077 == 0,
+            "Refusing an unexpected PID file; preserve it and inspect the cache."
+        );
+        let text = std::process::id().to_string();
+        file.set_len(0)?;
+        file.write_all(text.as_bytes())?;
+        Ok(Self {
+            device: metadata.dev(),
+            inode: metadata.ino(),
+            text,
+        })
+    }
+
+    fn remove_if_unchanged(&self, path: &std::path::Path) -> Result<()> {
+        let file = OpenOptions::new()
+            .read(true)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+            .open(path)?;
+        let metadata = file.metadata()?;
+        crate::maintenance::check_owner(&metadata)?;
+        if !metadata.is_file()
+            || metadata.nlink() != 1
+            || metadata.dev() != self.device
+            || metadata.ino() != self.inode
+            || metadata.len() > 32
+        {
+            return Ok(());
+        }
+        let mut bytes = Vec::with_capacity(33);
+        file.take(33).read_to_end(&mut bytes)?;
+        let current = fs::symlink_metadata(path)?;
+        if bytes == self.text.as_bytes()
+            && current.is_file()
+            && current.dev() == self.device
+            && current.ino() == self.inode
+        {
+            fs::remove_file(path)?;
+        }
+        Ok(())
     }
 }
 
 pub fn serve(config: &Config) -> Result<()> {
     config.prepare()?;
     restrict_process()?;
+    let startup = crate::maintenance::shared(config)?;
     // Output cleanup is independent: damaged output must not prevent repository search.
     let _ = crate::output::startup_cleanup(config);
-    let lock = OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .truncate(false)
-        .mode(0o600)
-        .open(config.directory.join("daemon.lock"))?;
+    let lock = crate::maintenance::lock_file(config, "daemon.lock")?;
     match FileExt::try_lock_exclusive(&lock) {
         Ok(()) => (),
         Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => return Ok(()),
@@ -153,20 +216,22 @@ pub fn serve(config: &Config) -> Result<()> {
             metadata.file_type().is_socket(),
             "daemon.sock already exists and is not a socket"
         );
+        crate::maintenance::SocketIdentity::read(&config.socket())?;
         fs::remove_file(config.socket())?;
     }
+    let health = crate::maintenance::build_health(config)?;
     let mut index = Index::open(&config.directory, config.max_bytes)?;
     let listener = UnixListener::bind(config.socket())?;
-    let _cleanup = Cleanup {
+    let mut _cleanup = Cleanup {
         directory: config.directory.clone(),
+        socket: crate::maintenance::SocketIdentity::read(&config.socket())?,
+        pid: None,
     };
     listener.set_nonblocking(true)?;
     fs::set_permissions(config.socket(), fs::Permissions::from_mode(0o600))?;
-    fs::write(
-        config.directory.join("daemon.pid"),
-        std::process::id().to_string(),
-    )?;
+    _cleanup.pid = Some(PidFile::write(&config.directory.join("daemon.pid"))?);
     let _ = fs::remove_file(config.directory.join("startup-error.txt"));
+    drop(startup);
     let mut last_request = Instant::now();
     while last_request.elapsed() < config.idle {
         let mut ready = libc::pollfd {
@@ -193,7 +258,10 @@ pub fn serve(config: &Config) -> Result<()> {
         }
         match listener.accept() {
             Ok((mut stream, _)) => {
-                let result = handle(&mut stream, &mut index);
+                let result = handle(&mut stream, &mut index, config, &health, &_cleanup.socket);
+                if matches!(result, Ok(true)) {
+                    break;
+                }
                 if let Err(error) = result {
                     let message: String = format!("{error:#}").chars().take(2000).collect();
                     let _ = send(&mut stream, &WireResponse::Error { message });
@@ -208,7 +276,16 @@ pub fn serve(config: &Config) -> Result<()> {
     Ok(())
 }
 
-fn handle(stream: &mut UnixStream, index: &mut Index) -> Result<()> {
+fn handle(
+    stream: &mut UnixStream,
+    index: &mut Index,
+    config: &Config,
+    health: &crate::protocol::Health,
+    socket: &crate::maintenance::SocketIdentity,
+) -> Result<bool> {
+    // BSD accept inherits the listener flags; deadlines require blocking I/O.
+    stream.set_nonblocking(false)?;
+    crate::maintenance::check_peer(stream)?;
     stream.set_write_timeout(Some(Duration::from_secs(2)))?;
     let deadline = Instant::now() + Duration::from_millis(250);
     let mut bytes = Vec::new();
@@ -235,17 +312,65 @@ fn handle(stream: &mut UnixStream, index: &mut Index) -> Result<()> {
         bytes.len() <= MAX_REQUEST && bytes.last() == Some(&b'\n'),
         "Request must be a JSON line of at most 16 KiB."
     );
-    let request: Request = serde_json::from_slice(&bytes).context("Invalid search request")?;
+    let value: serde_json::Value =
+        serde_json::from_slice(&bytes).context("Invalid request; use rg")?;
+    if value.get("command").is_some() {
+        use crate::protocol::ControlRequest;
+        let request: ControlRequest =
+            serde_json::from_value(value).context("Unknown control request; use rg")?;
+        let version = match &request {
+            ControlRequest::Health { version } | ControlRequest::Shutdown { version, .. } => {
+                *version
+            }
+        };
+        ensure!(
+            version == crate::protocol::VERSION,
+            "Unsupported protocol; pause searches and retry after idle exit. Use rg meanwhile."
+        );
+        ensure!(
+            socket.matches(&config.socket()),
+            "Daemon socket was replaced; refusing maintenance. Use rg."
+        );
+        match request {
+            ControlRequest::Health { .. } => {
+                send(
+                    stream,
+                    &serde_json::json!({"status": "healthy", "data": health}),
+                )?;
+                return Ok(false);
+            }
+            ControlRequest::Shutdown { instance, .. } => {
+                ensure!(
+                    instance == health.instance,
+                    "Daemon instance changed; run status again. No daemon was stopped."
+                );
+                ensure!(
+                    crate::maintenance::exclusion_held(config)?,
+                    "Shutdown requires maintenance exclusion; run grepglint shutdown."
+                );
+                // Exit even if the authenticated caller disconnects before receiving the acknowledgement.
+                let _ = send(
+                    stream,
+                    &serde_json::json!({"status": "stopped", "instance": health.instance}),
+                );
+                return Ok(true);
+            }
+        }
+    }
+    let request: Request =
+        serde_json::from_value(value).context("Invalid search request; use rg")?;
+    let _work = crate::maintenance::shared(config)?;
     let data = index.search(&request)?;
     send(
         stream,
         &WireResponse::Ok {
             data: Box::new(data),
         },
-    )
+    )?;
+    Ok(false)
 }
 
-fn send(stream: &mut UnixStream, response: &WireResponse) -> Result<()> {
+fn send(stream: &mut UnixStream, response: &impl serde::Serialize) -> Result<()> {
     let mut bytes = serde_json::to_vec(response)?;
     ensure!(
         bytes.len() < MAX_RESPONSE as usize,
@@ -261,6 +386,7 @@ pub fn search(config: &Config, request: &Request) -> Result<Response> {
     bytes.push(b'\n');
     ensure!(bytes.len() <= MAX_REQUEST, "Request exceeds 16 KiB.");
     config.prepare()?;
+    let startup = crate::maintenance::shared(config)?;
     let started = Instant::now();
     let mut child = None;
     let mut stream = loop {
@@ -307,6 +433,7 @@ pub fn search(config: &Config, request: &Request) -> Result<Response> {
             Err(e) => return Err(e.into()),
         }
     };
+    drop(startup);
     stream.set_write_timeout(Some(Duration::from_secs(2)))?;
     stream.set_read_timeout(Some(Duration::from_secs(120)))?;
     stream.write_all(&bytes)?;
@@ -334,5 +461,40 @@ pub fn record_startup_error(config: &Config, message: &str) {
         .open(config.directory.join("startup-error.txt"))
     {
         let _ = file.write_all(message.chars().take(2000).collect::<String>().as_bytes());
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn accepted_nonblocking_stream_waits_for_request_within_deadline() {
+        let temp = tempfile::tempdir().unwrap();
+        let config = Config {
+            directory: temp.path().to_owned(),
+            max_bytes: 8 * 1024 * 1024,
+            idle: Duration::from_secs(60),
+        };
+        config.prepare().unwrap();
+        let _listener = UnixListener::bind(config.socket()).unwrap();
+        fs::set_permissions(config.socket(), fs::Permissions::from_mode(0o600)).unwrap();
+        let socket = crate::maintenance::SocketIdentity::read(&config.socket()).unwrap();
+        let health = crate::maintenance::build_health(&config).unwrap();
+        let mut index = Index::open(&config.directory, config.max_bytes).unwrap();
+        let (mut server, mut client) = UnixStream::pair().unwrap();
+        // BSD accept inherits the listener's nonblocking flag; reproduce that on every OS.
+        server.set_nonblocking(true).unwrap();
+        let sender = thread::spawn(move || {
+            thread::sleep(Duration::from_millis(40));
+            client
+                .write_all(b"{\"command\":\"health\",\"version\":1}\n")
+                .unwrap();
+            let mut response = String::new();
+            BufReader::new(client).read_line(&mut response).unwrap();
+            assert!(response.contains("healthy"));
+        });
+        assert!(!handle(&mut server, &mut index, &config, &health, &socket).unwrap());
+        sender.join().unwrap();
     }
 }

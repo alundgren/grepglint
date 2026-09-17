@@ -47,6 +47,30 @@ ranges separate and includes a content identity. Higher scores rank first;
 scores are relative to the cache, not probabilities. Errors exit nonzero and
 `--json` errors contain an `error` field.
 
+## Maintenance
+
+```sh
+grepglint status
+grepglint status --json
+grepglint shutdown
+# Refuse if another instance has replaced the daemon you inspected:
+grepglint shutdown --instance <instance-from-status>
+```
+
+Status reports the running build, instance, and settings without starting a
+missing daemon. JSON status returns `null` when none is running. Shutdown is
+also successful when no daemon is running. It identifies the private socket's
+OS-account owner and daemon instance, then requests a normal exit. It never
+kills a recorded PID. The next search can start the daemon again.
+
+Maintenance waits at most 35 seconds for exclusion and shutdown. Each control
+exchange has a three-second deadline, so a busy daemon may refuse status.
+Unknown or legacy protocols and stale or replaced sockets cause a refusal.
+Pause searches and retry after the old daemon's idle exit; use `rg` while
+waiting. These human maintenance commands stay outside `tools --json`.
+See [the lock protocol](docs/architecture.md#daemon-maintenance) before adding
+managed filesystem changes.
+
 ## Searchable files
 
 Grepglint checks file contents rather than requiring a known extension.
@@ -152,8 +176,14 @@ the daemon. Future services can add subcommands and catalog entries. No routing 
 needed for this prototype. Copy [the example instructions](examples/agent-instructions.md)
 into an agent's repository instructions.
 
+The repository pins Rust 1.89.0, Clippy, and rustfmt in `rust-toolchain.toml`.
+With rustup, Cargo selects and installs that toolchain automatically so local
+checks and CI use the same versions. Update the pin together with the release
+toolchain when upgrading Rust.
+
 ```sh
-cargo test --locked
+cargo fmt --all -- --check
+cargo test --locked --all-targets
 cargo clippy --locked --all-targets -- -D warnings
 cargo build --release --locked
 python3 scripts/demo.py                  # requires Python 3 and rg

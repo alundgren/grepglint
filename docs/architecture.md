@@ -133,3 +133,58 @@ payload, indexes, deleted-page reuse, and rollback work. No second payload copy
 or vacuum file is created. Private ownership metadata remains after purge for
 later installer integration. Store initialization refuses unrecorded or replaced
 files. The existing repository reserve and daemon limits remain unchanged.
+
+## Daemon maintenance
+
+`maintenance.rs` owns account and socket checks, bounded control requests, and
+`Maintenance`, an OS file-lock guard for callers that need to stop the daemon
+and keep it stopped during filesystem changes. `status` connects without
+starting a daemon or creating a cache. `shutdown` acquires the guard, identifies
+the instance, sends its random instance ID, and waits for the daemon lock to
+become available. It never sends process signals or treats a PID file as proof
+of identity. The daemon removes its socket only if its device and inode still
+match, and preserves a changed PID file.
+
+Control messages add `command: health` and `command: shutdown` to protocol
+version 1. Existing search messages remain valid. Health returns package
+version, a SHA-256 of the executable read once at startup, random instance ID,
+protocol version, cache directory, and effective resource limits. It contains
+no indexed contents or queries. Both endpoints verify the Unix socket peer's
+OS account. Controls also require a private, account-owned cache and socket.
+An unknown protocol, stale socket, or changed instance produces a refusal.
+A legacy daemon must exit on its normal idle timeout. Pause searches and retry
+after that exit; use `rg` in the meantime.
+
+Lock acquisition order is explicit:
+
+- Startup takes `maintenance.lock` shared, then tries `daemon.lock` exclusive
+  without waiting. The daemon releases the shared lock after initialization.
+- A running daemon keeps `daemon.lock` and tries `maintenance.lock` shared
+  before each search. Failure immediately rejects that work. It never waits
+  for the maintenance lock while holding the daemon lock.
+- Maintenance takes `maintenance.lock` exclusive before inspecting or stopping
+  the daemon, then waits for `daemon.lock` after shutdown acknowledgement.
+  Health and shutdown handling do not take a shared maintenance lock.
+
+This avoids a cycle of waiting locks. Acquisition and shutdown share a
+35-second deadline. Existing work keeps its 30-second budget and two-second
+response timeout. Each control exchange has a three-second absolute deadline;
+a busy or slow daemon can cause a bounded refusal. Lock retries sleep for
+10 ms only during an explicit maintenance request. No service polls in the
+background. Competing searches can delay acquisition until the deadline;
+retry after pausing searches if this happens.
+
+Holding `Maintenance` prevents new startup and expensive work until the guard
+is dropped or its process exits. CLI shutdown releases it before returning,
+so a later search can restart automatically. Future managed changes must keep
+the guard alive across those changes. Keep both lock files in place, including
+when purging cached source: unlinking an open lock could let two callers lock
+different files. Legacy clients and daemons do not participate in this lock
+protocol, so maintenance refuses legacy controls rather than claiming exclusion
+over them.
+
+The added steady-state data is one health record and an empty maintenance lock
+file. Startup reads at most 128 MiB of executable bytes using a fixed-size
+streaming buffer to compute build identity. Controls keep the existing 16 KiB
+request and 64 KiB response caps. No dependency, worker thread, source cache,
+or diagnostic log is added.

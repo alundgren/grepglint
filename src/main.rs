@@ -42,6 +42,17 @@ enum Tool {
         #[arg(long)]
         json: bool,
     },
+    /// Identify the running daemon without starting it
+    Status {
+        #[arg(long)]
+        json: bool,
+    },
+    /// Stop the identified daemon safely; searches can restart it afterward
+    Shutdown {
+        /// Refuse to stop a different instance than the one reported by status
+        #[arg(long)]
+        instance: Option<String>,
+    },
     #[command(name = "__daemon", hide = true)]
     Daemon,
 }
@@ -187,6 +198,32 @@ fn run(cli: &Cli) -> Result<()> {
                 );
             }
         }
+        Tool::Status { json } => {
+            let health = grepglint::maintenance::status(&Config::from_env()?)?;
+            if *json {
+                println!("{}", serde_json::to_string(&health)?);
+            } else if let Some(health) = health {
+                println!(
+                    "Running Grepglint {}\nBuild SHA-256: {}\nProtocol: {}\nInstance: {}\nCache: {}\nDatabase limit: {} bytes\nIdle timeout: {} seconds",
+                    health.build_version,
+                    health.executable_sha256,
+                    health.protocol_version,
+                    health.instance,
+                    printable(&health.cache_directory),
+                    health.database_bytes,
+                    health.idle_seconds
+                );
+            } else {
+                println!("No daemon is running.");
+            }
+        }
+        Tool::Shutdown { instance } => {
+            if grepglint::maintenance::shutdown(&Config::from_env()?, instance.as_deref())? {
+                println!("Daemon stopped. The next search can start it again.");
+            } else {
+                println!("No daemon is running.");
+            }
+        }
         Tool::Daemon => {
             let config = Config::from_env()?;
             if let Err(error) = daemon::serve(&config) {
@@ -215,10 +252,8 @@ fn main() {
     if let Err(error) = run(&cli) {
         if matches!(
             cli.command,
-            Tool::Search { json: true, .. }
-                | Tool::Output {
-                    command: OutputTool::Page { json: true, .. }
-                }
+            Tool::Search { json: true, .. } | Tool::Status { json: true }
+                | Tool::Output { command: OutputTool::Page { json: true, .. } }
         ) {
             println!("{}", json!({"error":format!("{error:#}")}));
         } else {
