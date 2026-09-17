@@ -215,6 +215,14 @@ fn inspect(config: &Config, deadline: Instant) -> Result<Option<(Health, SocketI
             );
             Ok(Some((data, socket)))
         }
+        ControlResponse::Error { message } => {
+            let message: String = message
+                .chars()
+                .take(500)
+                .map(|c| if c.is_control() { ' ' } else { c })
+                .collect();
+            bail!("{REFUSAL} Daemon refused health: {message}")
+        }
         _ => bail!("{REFUSAL}"),
     }
 }
