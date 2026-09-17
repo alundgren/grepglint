@@ -249,7 +249,7 @@ def repair_local(record, native_args, source, requested_release):
         return subprocess.call([str(source)] + resume_args)
     destination = Path(record["destination"])
     maintenance = Path(native_args[native_args.index("--state-dir") + 1]) / "maintenance"
-    if destination.exists() and maintenance.exists():
+    if record["phase"] == "complete" and destination.exists() and maintenance.exists():
         for path in (destination, maintenance):
             require(hashlib.sha256(regular(path, CAP)).hexdigest() == record["digest"], "Modified executable preserved")
         verify_args = list(native_args)

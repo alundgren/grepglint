@@ -212,7 +212,7 @@ class BootstrapTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "record fields"): b.main([action, "--state-dir", str(state)])
 
     def test_preceding_installer_repair_compatibility(self):
-        for missing in ("destination", "maintenance", "none", "interrupted", "repairing"):
+        for missing in ("destination", "maintenance", "none", "interrupted", "repairing", "repairing-both"):
             with self.subTest(missing=missing), tempfile.TemporaryDirectory() as temp:
                 root = Path(temp).resolve()
                 state = root / "state"
@@ -229,7 +229,7 @@ class BootstrapTests(unittest.TestCase):
                 if missing == "destination": destination.unlink()
                 if missing == "maintenance": maintenance.unlink(); source = destination
                 if missing == "repairing": destination.unlink()
-                record = dict(phase="retained" if missing == "interrupted" else "repairing" if missing == "repairing" else "complete",
+                record = dict(phase="retained" if missing == "interrupted" else "repairing" if missing in ("repairing", "repairing-both") else "complete",
                               destination=str(destination), release="v0.1.0", digest=hashlib.sha256(old).hexdigest())
                 args = ["setup", "repair", "--state-dir", str(state)]
                 with patch.object(b, "repair_with_helper", return_value=0) as helper:

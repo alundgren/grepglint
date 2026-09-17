@@ -1064,7 +1064,7 @@ fn interrupted_repair_and_record_write_resume() {
 
 #[test]
 fn newer_repair_helper_restores_only_recorded_source_bytes() {
-    for missing in ["destination", "maintenance"] {
+    for missing in ["destination", "maintenance", "restored"] {
         let f = Fixture::new();
         success(f.install());
         let old = digest(&f.destination());
@@ -1072,12 +1072,18 @@ fn newer_repair_helper_restores_only_recorded_source_bytes() {
         fs::copy(f.destination(), &source).unwrap();
         fs::set_permissions(&source, fs::Permissions::from_mode(0o700)).unwrap();
         f.candidate();
-        fs::remove_file(if missing == "destination" {
-            f.destination()
+        if missing == "restored" {
+            let mut record = f.record();
+            record["phase"] = "repairing".into();
+            f.write_record(&record);
         } else {
-            f.state().join("maintenance")
-        })
-        .unwrap();
+            fs::remove_file(if missing == "destination" {
+                f.destination()
+            } else {
+                f.state().join("maintenance")
+            })
+            .unwrap();
+        }
         failure(
             f.command("repair")
                 .arg("--repair-source")
@@ -1096,5 +1102,6 @@ fn newer_repair_helper_restores_only_recorded_source_bytes() {
         assert_eq!(digest(&f.destination()), old);
         assert_eq!(digest(&f.state().join("maintenance")), old);
         assert_eq!(f.record()["digest"], old);
+        assert_eq!(f.record()["phase"], "complete");
     }
 }
