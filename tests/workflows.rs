@@ -265,7 +265,7 @@ fn startup_preserves_an_unexpected_file_at_the_socket_path() {
 fn worktrees_share_blobs_and_only_current_regions_are_searchable() {
     let fixture = Fixture::new();
     let first = fixture.search(&fixture.root.join("src/auth"), "refresh token validation");
-    assert_eq!(first.stats.blobs_parsed, 6);
+    assert_eq!(first.stats.blobs_parsed, 7); // Includes the extensionless .gitignore.
     assert_eq!(
         first.results[0].symbol.as_deref(),
         Some("validateRefreshToken")
@@ -455,7 +455,7 @@ fn simultaneous_cold_clients_share_a_daemon_and_survive_restart() {
     assert!(b.status.success(), "{}", String::from_utf8_lossy(&b.stdout));
     let a: Response = serde_json::from_str(&output).unwrap();
     let b: Response = serde_json::from_slice(&b.stdout).unwrap();
-    assert_eq!(a.stats.blobs_parsed + b.stats.blobs_parsed, 6);
+    assert_eq!(a.stats.blobs_parsed + b.stats.blobs_parsed, 7);
     assert_eq!(
         b.results[0].symbol.as_deref(),
         Some("verify_webhook_signature")
@@ -481,6 +481,223 @@ fn simultaneous_cold_clients_share_a_daemon_and_survive_restart() {
 }
 
 #[test]
+fn unfamiliar_extensions_and_extensionless_utf8_are_searchable() {
+    let fixture = Fixture::new();
+    for (path, text) in [
+        ("src/Page.razor", "<p>razoramber</p>"),
+        ("src/View.cshtml", "<h1>viewberyl</h1>"),
+        ("src/custom.unfamiliar", "customquartz"),
+        ("src/run", "#!/bin/sh\necho scriptmica"),
+        ("src/bom.data", "\u{feff}bomgarnet"),
+    ] {
+        fs::write(fixture.root.join(path), text).unwrap();
+    }
+    fs::write(fixture.root.join("src/binary.asset"), b"binaryonyx\0").unwrap();
+    fs::write(fixture.root.join("src/invalid.asset"), b"invalidopal\xff").unwrap();
+    git(&fixture.root, &["add", "."]);
+    git(&fixture.root, &["commit", "-m", "Add varied text inputs"]);
+    let first = fixture.search(&fixture.root, "razoramber");
+    assert_eq!(first.results[0].path, "src/Page.razor");
+    assert!(first.results[0].symbol.is_none());
+    assert_eq!(
+        first.stats.skip_reasons[&grepglint::chunks::SkipReason::Binary],
+        1
+    );
+    assert_eq!(
+        first.stats.skip_reasons[&grepglint::chunks::SkipReason::InvalidUtf8],
+        1
+    );
+    for query in ["viewberyl", "customquartz", "scriptmica", "bomgarnet"] {
+        assert_eq!(fixture.search(&fixture.root, query).results.len(), 1);
+    }
+    assert!(
+        fixture
+            .search(&fixture.root, "binaryonyx invalidopal")
+            .results
+            .is_empty()
+    );
+    fs::write(fixture.root.join("src/Page.razor"), "<p>dirtytopaz</p>").unwrap();
+    assert_eq!(fixture.search(&fixture.root, "dirtytopaz").results.len(), 1);
+    assert!(
+        fixture
+            .search(&fixture.root, "razoramber")
+            .results
+            .is_empty()
+    );
+    fs::write(fixture.root.join("src/new.weird"), "untrackedjade").unwrap();
+    assert_eq!(
+        fixture.search(&fixture.root, "untrackedjade").results.len(),
+        1
+    );
+    git(&fixture.root, &["restore", "src/Page.razor"]);
+    assert_eq!(fixture.search(&fixture.root, "razoramber").results.len(), 1);
+    assert!(
+        fixture
+            .search(&fixture.root, "dirtytopaz")
+            .results
+            .is_empty()
+    );
+}
+
+#[test]
+fn file_policy_changes_refresh_cached_paths_and_stay_worktree_local() {
+    let fixture = Fixture::new();
+    fs::create_dir_all(fixture.root.join("vendor/pkg")).unwrap();
+    fs::write(
+        fixture.root.join("vendor/pkg/source.custom"),
+        "vendorcitrine",
+    )
+    .unwrap();
+    fs::write(fixture.root.join("src/Page.razor"), "pageamethyst").unwrap();
+    // Configuration must refresh even when Git status does not report it.
+    fs::write(
+        fixture.root.join(".gitignore"),
+        ".grepglintignore\nscratch/\n",
+    )
+    .unwrap();
+    git(&fixture.root, &["add", "."]);
+    git(&fixture.root, &["commit", "-m", "Add policy inputs"]);
+    let worktree = fixture.worktree();
+    assert!(
+        fixture
+            .search(&fixture.root, "vendorcitrine")
+            .results
+            .is_empty()
+    );
+    assert_eq!(
+        fixture.search(&fixture.root, "pageamethyst").results.len(),
+        1
+    );
+    fs::write(fixture.root.join("src/local.odd"), "localtourmaline").unwrap();
+    assert_eq!(
+        fixture
+            .search(&fixture.root, "localtourmaline")
+            .results
+            .len(),
+        1
+    );
+    fs::create_dir(fixture.root.join("scratch")).unwrap();
+    fs::write(fixture.root.join("scratch/file.odd"), "ignoredemerald").unwrap();
+    fs::write(
+        fixture.root.join(".grepglintignore"),
+        "!vendor/pkg/source.custom\n/src/Page.razor\n/src/local.odd\n!scratch/**\n",
+    )
+    .unwrap();
+    let included = fixture.search(&fixture.root, "vendorcitrine");
+    assert_eq!(included.results.len(), 1);
+    assert!(!included.stats.head_changed);
+    assert!(
+        included
+            .stats
+            .skip_reasons
+            .contains_key(&grepglint::chunks::SkipReason::ExcludedPath)
+    );
+    assert!(
+        fixture
+            .search(&fixture.root, "pageamethyst localtourmaline ignoredemerald")
+            .results
+            .is_empty()
+    );
+    assert!(
+        fixture
+            .search(&worktree, "vendorcitrine")
+            .results
+            .is_empty()
+    );
+    assert_eq!(fixture.search(&worktree, "pageamethyst").results.len(), 1);
+    fs::remove_file(fixture.root.join(".grepglintignore")).unwrap();
+    assert!(
+        fixture
+            .search(&fixture.root, "vendorcitrine")
+            .results
+            .is_empty()
+    );
+    assert_eq!(
+        fixture.search(&fixture.root, "pageamethyst").results.len(),
+        1
+    );
+    assert_eq!(
+        fixture
+            .search(&fixture.root, "localtourmaline")
+            .results
+            .len(),
+        1
+    );
+    let warm = fixture.search(&fixture.root, "localtourmaline");
+    assert_eq!(warm.stats.blobs_parsed, 0);
+    assert_eq!(warm.stats.paths_updated, 0);
+    assert!(warm.stats.skip_reasons.is_empty());
+}
+
+#[test]
+fn invalid_file_policy_does_not_publish_partial_results() {
+    let fixture = Fixture::new();
+    fixture.search(&fixture.root, "refresh");
+    let db = Connection::open(fixture.cache.join("index.sqlite")).unwrap();
+    let before: String = db
+        .query_row("SELECT signature FROM worktrees", [], |r| r.get(0))
+        .unwrap();
+    let config = fixture.root.join(".grepglintignore");
+    for invalid in [
+        b"[z-a]\n".to_vec(),
+        vec![0xff],
+        vec![b'#'; 16 * 1024 + 1],
+        "# comment\n".repeat(257).into_bytes(),
+    ] {
+        fs::write(&config, invalid).unwrap();
+        let response = fixture.raw(&fixture.root, "refresh");
+        assert!(
+            !response.status.success(),
+            "{}",
+            String::from_utf8_lossy(&response.stdout)
+        );
+        assert!(String::from_utf8_lossy(&response.stdout).contains(".grepglintignore"));
+        let after: String = db
+            .query_row("SELECT signature FROM worktrees", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(before, after);
+    }
+    fs::remove_file(&config).unwrap();
+    symlink(fixture.root.join(".gitignore"), &config).unwrap();
+    assert!(!fixture.raw(&fixture.root, "refresh").status.success());
+    fs::remove_file(&config).unwrap();
+    assert!(!fixture.search(&fixture.root, "refresh").results.is_empty());
+}
+
+#[test]
+fn legacy_cache_refreshes_newly_supported_paths_without_head_changes() {
+    let fixture = Fixture::new();
+    fs::write(fixture.root.join("src/Page.razor"), "legacyzircon").unwrap();
+    git(&fixture.root, &["add", "."]);
+    git(&fixture.root, &["commit", "-m", "Add Razor source"]);
+    assert_eq!(
+        fixture.search(&fixture.root, "legacyzircon").results.len(),
+        1
+    );
+    fixture.stop();
+    let db = Connection::open(fixture.cache.join("index.sqlite")).unwrap();
+    // Recreate an old cache's signature and omitted path at the same HEAD.
+    db.execute(
+        "UPDATE worktrees SET signature=substr(signature,instr(signature,':')+1)",
+        [],
+    )
+    .unwrap();
+    db.execute("DELETE FROM base_files WHERE path_id IN (SELECT id FROM paths WHERE path='src/Page.razor')", []).unwrap();
+    drop(db);
+    let refreshed = fixture.search(&fixture.root, "legacyzircon");
+    assert_eq!(refreshed.results.len(), 1);
+    assert!(!refreshed.stats.head_changed);
+    assert!(refreshed.stats.paths_updated > 0);
+    assert_eq!(
+        fixture
+            .search(&fixture.root, "legacyzircon")
+            .stats
+            .paths_updated,
+        0
+    );
+}
+
+#[test]
 fn ignored_binary_symlink_and_large_files_do_not_enter_results() {
     let fixture = Fixture::new();
     fs::create_dir_all(fixture.root.join("node_modules/pkg")).unwrap();
@@ -497,12 +714,15 @@ fn ignored_binary_symlink_and_large_files_do_not_enter_results() {
         fixture.root.join("src/link.ts"),
     )
     .unwrap();
-    assert!(
-        fixture
-            .search(&fixture.root, "ignoredmica binaryonyx externalgarnet")
-            .results
-            .is_empty()
-    );
+    let response = fixture.search(&fixture.root, "ignoredmica binaryonyx externalgarnet");
+    assert!(response.results.is_empty());
+    for reason in [
+        grepglint::chunks::SkipReason::Binary,
+        grepglint::chunks::SkipReason::FileTooLarge,
+        grepglint::chunks::SkipReason::NotRegularFile,
+    ] {
+        assert_eq!(response.stats.skip_reasons[&reason], 1);
+    }
     let permission = fs::metadata(&fixture.cache).unwrap().permissions().mode() & 0o777;
     assert_eq!(permission, 0o700);
     assert_eq!(
@@ -533,7 +753,7 @@ fn fresh_repository_without_commits_and_separate_clones_work() {
         ],
     );
     let separate = fixture.search(&clone, "refresh");
-    assert_eq!(separate.stats.blobs_parsed, 6);
+    assert_eq!(separate.stats.blobs_parsed, 7);
     let empty = fixture.temp.path().join("empty");
     fs::create_dir(&empty).unwrap();
     git(&empty, &["init", "-b", "main"]);

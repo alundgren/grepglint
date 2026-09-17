@@ -1,4 +1,4 @@
-use crate::chunks::MAX_FILE_BYTES;
+use crate::chunks::{MAX_FILE_BYTES, SkipReason};
 use anyhow::{Context, Result, bail, ensure};
 use sha1::Sha1;
 use sha2::{Digest, Sha256};
@@ -345,7 +345,13 @@ pub fn dirty_files(repo: &Repository, deadline: Instant) -> Result<BTreeMap<Stri
     Ok(dirty)
 }
 
-pub fn read_worktree_file(repo: &Repository, path: &str) -> Result<Option<Vec<u8>>> {
+pub enum WorktreeFile {
+    Missing,
+    Skipped(SkipReason),
+    Contents(Vec<u8>),
+}
+
+pub fn read_worktree_file(repo: &Repository, path: &str) -> Result<WorktreeFile> {
     let absolute = repo.root.join(path);
     let metadata = match fs::symlink_metadata(&absolute) {
         Ok(m) => m,
@@ -353,21 +359,28 @@ pub fn read_worktree_file(repo: &Repository, path: &str) -> Result<Option<Vec<u8
             if e.kind() == std::io::ErrorKind::NotFound
                 || e.raw_os_error() == Some(libc::ENOTDIR) =>
         {
-            return Ok(None);
+            return Ok(WorktreeFile::Missing);
         }
         Err(e) => return Err(e.into()),
     };
-    if !metadata.is_file() || metadata.len() > MAX_FILE_BYTES as u64 {
-        return Ok(None);
+    if !metadata.is_file() {
+        return Ok(WorktreeFile::Skipped(SkipReason::NotRegularFile));
+    }
+    if metadata.len() > MAX_FILE_BYTES as u64 {
+        return Ok(WorktreeFile::Skipped(SkipReason::FileTooLarge));
     }
     if !fs::canonicalize(&absolute)?.starts_with(&repo.root) {
-        return Ok(None);
+        return Ok(WorktreeFile::Skipped(SkipReason::OutsideWorktree));
     }
     let mut bytes = Vec::new();
     fs::File::open(absolute)?
         .take(MAX_FILE_BYTES as u64 + 1)
         .read_to_end(&mut bytes)?;
-    Ok((bytes.len() <= MAX_FILE_BYTES).then_some(bytes))
+    Ok(if bytes.len() <= MAX_FILE_BYTES {
+        WorktreeFile::Contents(bytes)
+    } else {
+        WorktreeFile::Skipped(SkipReason::FileTooLarge)
+    })
 }
 
 pub fn blob_identity(bytes: &[u8], length: usize) -> String {

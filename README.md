@@ -47,6 +47,47 @@ ranges separate and includes a content identity. Higher scores rank first;
 scores are relative to the cache, not probabilities. Errors exit nonzero and
 `--json` errors contain an `error` field.
 
+## Searchable files
+
+Grepglint checks file contents rather than requiring a known extension.
+UTF-8 text, including Razor, unfamiliar extensions, and extensionless files,
+is searchable within the resource limits below. JavaScript and TypeScript use
+syntax-aware chunks; other text uses overlapping line chunks. Binary content
+containing NUL bytes and invalid UTF-8 are skipped. UTF-16 decoding is
+[under consideration](https://github.com/alundgren/grepglint/issues/1).
+
+Default exclusions cover `node_modules`, `vendor`, `dist`, `build`, `coverage`,
+`target`, `.next`, and `.cache` directories, plus `pnpm-lock.yaml`,
+`package-lock.json`, `yarn.lock`, `bun.lock`, and `Cargo.lock`.
+To exclude additional paths or override those defaults, add `.grepglintignore`
+at the checkout root. It uses Git ignore pattern syntax, including comments,
+globs, root-anchored paths, and `!` inclusion rules:
+
+```gitignore
+# Exclude generated output from search.
+/generated/
+# Search this tracked dependency despite the default vendor exclusion.
+!vendor/local-library/**
+```
+
+Rules apply to tracked and discovered untracked files in this worktree.
+Inclusion rules do not discover Git-ignored untracked files or bypass binary,
+encoding, size, or regular-file checks. `.git` and `.grepglintignore` itself
+remain excluded. Changes to this file take effect on the next search, including
+when the file is Git-ignored. Invalid rules fail the search instead of silently
+using an incomplete rule set. Symlinked configuration files also fail the
+search. The configuration is limited to 16 KiB and 256 lines to bound rule
+compilation work.
+
+JSON stats and `--stats` include `skip_reasons` counts such as `excluded_path`,
+`binary`, `invalid_utf8`, `file_too_large`, and `line_too_long`. These describe
+decisions made during that refresh, not all omitted files: cached content is
+not checked again, and Git-ignored untracked files are never inspected.
+Shared committed blobs are checked once per parser, so these counts are not a
+count of unique repository paths. Unchanged searches report no new skips.
+Dependency/generated-file classification and ranking are
+[a separate investigation](https://github.com/alundgren/grepglint/issues/2).
+
 ## How it works
 
 ```mermaid

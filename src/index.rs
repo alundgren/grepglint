@@ -1,5 +1,6 @@
 use crate::{
     chunks,
+    files::FilePolicy,
     git::{self, Repository, TreeEntry},
     protocol::{Request, Response, SearchResult, Stats},
     tokens,
@@ -77,7 +78,8 @@ impl Index {
         let deadline = started + Duration::from_secs(30);
         let repo = git::discover(Path::new(&request.cwd), deadline)?;
         let dirty = git::dirty_files(&repo, deadline)?;
-        let signature = git::identity(serde_json::to_string(&dirty)?.as_bytes());
+        let policy = FilePolicy::load(&repo)?;
+        let signature = policy.signature(&dirty)?;
         let mut stats = Stats::default();
         let can_write =
             fs2::available_space(&self.directory)? >= self.max_bytes * 2 + 64 * 1024 * 1024;
@@ -103,6 +105,9 @@ impl Index {
             let changed = previous
                 .as_ref()
                 .is_none_or(|(head, sig)| head != &repo.head || sig != &signature);
+            let policy_changed = previous.as_ref().is_none_or(|(_, sig)| {
+                sig.split_once(':').map(|(policy, _)| policy) != Some(policy.fingerprint.as_str())
+            });
             if changed {
                 ensure!(
                     can_write,
@@ -110,10 +115,15 @@ impl Index {
                 );
                 stats.head_changed = previous.as_ref().is_none_or(|(head, _)| head != &repo.head);
                 let transaction = self.db.unchecked_transaction()?;
-                let update = self.refresh(&repo, &dirty, &signature, previous.as_ref().and_then(|(head, _)| head.as_deref()), &mut stats, deadline).and_then(|()| {
+                let previous_head = if policy_changed {
+                    None
+                } else {
+                    previous.as_ref().and_then(|(head, _)| head.as_deref())
+                };
+                let update = self.refresh(&repo, &dirty, &policy, previous_head, &mut stats, deadline).and_then(|()| {
                     let observed = git::discover(&repo.root, deadline)?;
                     let current_dirty = git::dirty_files(&repo, deadline)?;
-                    ensure!(observed.head == repo.head && current_dirty == dirty,
+                    ensure!(observed.head == repo.head && current_dirty == dirty && FilePolicy::load(&repo)?.fingerprint == policy.fingerprint,
                         "Worktree changed during indexing; retry the query to read its current state.");
                     Ok(())
                 });
@@ -162,11 +172,12 @@ impl Index {
         &self,
         repo: &Repository,
         dirty: &BTreeMap<String, String>,
-        signature: &str,
+        policy: &FilePolicy,
         previous_head: Option<&str>,
         stats: &mut Stats,
         deadline: Instant,
     ) -> Result<()> {
+        let signature = policy.signature(dirty)?;
         self.db.execute(
             "INSERT OR IGNORE INTO repositories(id,common_dir) VALUES(?,?)",
             params![repo.repo_id, repo.common_dir.to_string_lossy()],
@@ -174,7 +185,13 @@ impl Index {
         self.db.execute("INSERT INTO worktrees(id,repo_id,root,head,signature,last_seen) VALUES(?,?,?,?,?,?)
             ON CONFLICT(id) DO UPDATE SET head=excluded.head,signature=excluded.signature,last_seen=excluded.last_seen",
             params![repo.worktree_id, repo.repo_id, repo.root.to_string_lossy(), repo.head, signature, now()])?;
-        if stats.head_changed {
+        if previous_head.is_none() {
+            self.db.execute(
+                "DELETE FROM overlays WHERE worktree_id=?",
+                [&repo.worktree_id],
+            )?;
+        }
+        if stats.head_changed || previous_head.is_none() {
             let entries = if let (Some(before), Some(_)) = (previous_head, &repo.head) {
                 match git::changed_entries(repo, before, deadline) {
                     Ok(entries) => entries,
@@ -193,9 +210,10 @@ impl Index {
                 )?;
                 git::tree_entries(repo, deadline)?
             };
-            self.prepare_blobs(repo, &entries, stats, deadline)?;
+            self.prepare_blobs(repo, &entries, policy, stats, deadline)?;
             for entry in entries {
-                if chunks::parser_for(&entry.path).is_none() {
+                if policy.excludes(&entry.path) {
+                    stats.record_skip(chunks::SkipReason::ExcludedPath);
                     continue;
                 }
                 let path_id = self.path_id(repo, &entry.path)?;
@@ -208,11 +226,7 @@ impl Index {
                     .filter(|_| entry.mode == "100644" || entry.mode == "100755")
                 {
                     let content_id = self
-                        .content_id(
-                            repo,
-                            &format!("git:{oid}"),
-                            chunks::parser_for(&entry.path).unwrap(),
-                        )?
+                        .content_id(repo, &format!("git:{oid}"), chunks::parser_for(&entry.path))?
                         .context("Missing prepared blob")?;
                     self.db.execute(
                         "INSERT INTO base_files(worktree_id,path_id,content_id) VALUES(?,?,?)",
@@ -251,9 +265,11 @@ impl Index {
                 Instant::now() < deadline,
                 "Indexing exceeded the query work budget; use rg."
             );
-            let Some(format) = chunks::parser_for(path) else {
+            if policy.excludes(path) {
+                stats.record_skip(chunks::SkipReason::ExcludedPath);
                 continue;
-            };
+            }
+            let format = chunks::parser_for(path);
             let path_id = self.path_id(repo, path)?;
             let old: Option<String> = self
                 .db
@@ -266,7 +282,14 @@ impl Index {
             if !stats.head_changed && old.as_deref() == Some(fingerprint) {
                 continue;
             }
-            let bytes = git::read_worktree_file(repo, path)?;
+            let bytes = match git::read_worktree_file(repo, path)? {
+                git::WorktreeFile::Contents(bytes) => Some(bytes),
+                git::WorktreeFile::Missing => None,
+                git::WorktreeFile::Skipped(reason) => {
+                    stats.record_skip(reason);
+                    None
+                }
+            };
             let base_identity: Option<String> = self.db.query_row("SELECT c.identity FROM base_files b JOIN contents c ON c.id=b.content_id WHERE b.worktree_id=? AND b.path_id=?", params![repo.worktree_id,path_id], |r| r.get(0)).optional()?;
             if let (Some(bytes), Some(base)) = (&bytes, &base_identity) {
                 let oid = base.strip_prefix("git:").unwrap();
@@ -287,12 +310,12 @@ impl Index {
                     }
                     None => {
                         let parsed = chunks::extract(&bytes, format);
-                        if parsed.is_some() {
-                            stats.overlay_files_parsed += 1;
+                        if let Err(reason) = &parsed {
+                            stats.record_skip(*reason);
                         } else {
-                            stats.skipped_files += 1;
+                            stats.overlay_files_parsed += 1;
                         }
-                        Some(self.insert_content(repo, &identity, format, parsed)?)
+                        Some(self.insert_content(repo, &identity, format, parsed.ok())?)
                     }
                 }
             } else {
@@ -380,15 +403,21 @@ impl Index {
         &self,
         repo: &Repository,
         entries: &[TreeEntry],
+        policy: &FilePolicy,
         stats: &mut Stats,
         deadline: Instant,
     ) -> Result<()> {
         let mut missing: BTreeMap<String, BTreeSet<&str>> = BTreeMap::new();
         for entry in entries {
-            let (Some(oid), Some(format)) = (&entry.oid, chunks::parser_for(&entry.path)) else {
+            let Some(oid) = &entry.oid else {
                 continue;
             };
+            if policy.excludes(&entry.path) {
+                continue;
+            }
+            let format = chunks::parser_for(&entry.path);
             if entry.mode != "100644" && entry.mode != "100755" {
+                stats.record_skip(chunks::SkipReason::NotRegularFile);
                 continue;
             }
             if self
@@ -411,7 +440,7 @@ impl Index {
             if size > chunks::MAX_FILE_BYTES {
                 for format in formats {
                     self.insert_content(repo, &format!("git:{oid}"), format, None)?;
-                    stats.skipped_files += 1;
+                    stats.record_skip(chunks::SkipReason::FileTooLarge);
                 }
                 continue;
             }
@@ -444,12 +473,12 @@ impl Index {
             );
             for format in &missing[&oid] {
                 let parsed = chunks::extract(&bytes, format);
-                if parsed.is_some() {
-                    stats.blobs_parsed += 1;
+                if let Err(reason) = &parsed {
+                    stats.record_skip(*reason);
                 } else {
-                    stats.skipped_files += 1;
+                    stats.blobs_parsed += 1;
                 }
-                self.insert_content(repo, &format!("git:{oid}"), format, parsed)?;
+                self.insert_content(repo, &format!("git:{oid}"), format, parsed.ok())?;
             }
         }
         Ok(())
