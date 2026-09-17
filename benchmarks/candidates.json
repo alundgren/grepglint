@@ -1,0 +1,228 @@
+{
+  "suite_entries": 275,
+  "scope": "Forty task directories were inspected for this allocation; other suite entries are not claimed as audited. Stress inventories are separate source-limit checks.",
+  "tasks": [
+    {
+      "task_id": "ccx-crossorg-217",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "ccx-crossorg-218",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "ccx-migration-203",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "ccx-migration-204",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "ccx-onboard-search-210",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "ccx-onboard-search-211",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "ccx-onboard-search-212",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "ccx-onboard-search-213",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "ccx-onboard-search-214",
+      "status": "not_selected",
+      "reason": "Not selected: additional Grafana source was not needed for the allocation. Mirror/upstream tree mismatch was observed but not audited."
+    },
+    {
+      "task_id": "django-audit-trail-implement-001",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "django-composite-field-recover-001",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "django-cross-team-boundary-001",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "django-legacy-dep-vuln-001",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "django-modelchoice-fk-fix-001",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "django-orm-query-arch-001",
+      "status": "not_selected",
+      "reason": "Rejected pin candidate: suffix 6b995cff resolves in neither django/django nor its named mirror. Mirror HEAD is a different commit; no source identity was assumed."
+    },
+    {
+      "task_id": "django-pre-validate-signal-design-001",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "django-rate-limit-design-001",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "django-rate-limit-middleware-feat-001",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "django-repo-scoped-access-001",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "django-request-factory-refac-001",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "django-role-based-access-001",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "django-select-for-update-fix-001",
+      "status": "not_selected",
+      "reason": "Not selected: an additional Django revision was not needed for the allocation; full pin and oracle were not audited."
+    },
+    {
+      "task_id": "django-sensitive-file-exclusion-001",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "django-template-inherit-recall-001",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "element-web-roomheaderbuttons-can-crash-fix-001",
+      "status": "not_selected",
+      "reason": "Not selected: the 30-task allocation was filled before adapting this additional environment and oracle. No tool-performance result was used."
+    },
+    {
+      "task_id": "element-web-unread-indicators-diverge-fix-001",
+      "status": "not_selected",
+      "reason": "Not selected: the 30-task allocation was filled before adapting this additional environment and oracle. No tool-performance result was used."
+    },
+    {
+      "task_id": "flipt-auth-cookie-regression-prove-001",
+      "status": "not_selected",
+      "reason": "Not selected: the 30-task allocation was filled before adapting this additional environment and oracle. No tool-performance result was used."
+    },
+    {
+      "task_id": "flipt-degraded-context-fix-001",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "flipt-dep-refactor-001",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "flipt-flagexists-refactor-001",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "flipt-protobuf-metadata-design-001",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "flipt-repo-scoped-access-001",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "nodebb-notif-dropdown-fix-001",
+      "status": "not_selected",
+      "reason": "Not selected: the 30-task allocation was filled before adapting this additional environment and oracle. No tool-performance result was used."
+    },
+    {
+      "task_id": "nodebb-plugin-validate-fix-001",
+      "status": "not_selected",
+      "reason": "Not selected: the 30-task allocation was filled before adapting this additional environment and oracle. No tool-performance result was used."
+    },
+    {
+      "task_id": "numpy-array-dispatch-refac-001",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "numpy-dtype-localize-001",
+      "status": "not_selected",
+      "reason": "Rejected scope: original environment requires both NumPy and pandas, so it is not a single-repository task."
+    },
+    {
+      "task_id": "numpy-rolling-median-feat-001",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "vscode-code-review-001",
+      "status": "not_selected",
+      "reason": "Not selected: the 30-task allocation was filled before adapting this additional environment and oracle. No tool-performance result was used."
+    },
+    {
+      "task_id": "vscode-custom-fold-region-feat-001",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    },
+    {
+      "task_id": "vscode-stale-diagnostics-feat-001",
+      "status": "selected_pending_review",
+      "reason": "Source verified; independent factual review pending."
+    }
+  ],
+  "stress_sources": [
+    {
+      "repository": "sg-evals/kubernetes--v1.32.0",
+      "commit": "d17b464c6fcd3273e4b1f695890bf0af7d5b272d",
+      "tree": "22eae50a4edd5e7d6661f5a7566773d8eeed91b0",
+      "entries": 26242,
+      "bytes": 231024365,
+      "truncated": false,
+      "reason": "Exceeds 20,000 tracked paths; retained as stress candidate, no snapshot prepared.",
+      "counts_are_lower_bounds": false
+    },
+    {
+      "repository": "sg-evals/TypeScript--v5.7.2",
+      "commit": "b962c094988bec036174da8372b1be9159bfbb12",
+      "tree": "f6054a3c45007b459f8d7aab536284b1b1e6ed70",
+      "entries": 53464,
+      "bytes": 337095693,
+      "truncated": true,
+      "reason": "Exceeds 20,000 tracked paths; retained as stress candidate, no snapshot prepared.",
+      "counts_are_lower_bounds": true
+    }
+  ]
+}
