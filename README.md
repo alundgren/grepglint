@@ -176,8 +176,14 @@ services can add subcommands and catalog entries. No routing framework is
 needed for this prototype. Copy [the example instructions](examples/agent-instructions.md)
 into an agent's repository instructions.
 
+The repository pins Rust 1.89.0, Clippy, and rustfmt in `rust-toolchain.toml`.
+With rustup, Cargo selects and installs that toolchain automatically so local
+checks and CI use the same versions. Update the pin together with the release
+toolchain when upgrading Rust.
+
 ```sh
-cargo test --locked
+cargo fmt --all -- --check
+cargo test --locked --all-targets
 cargo clippy --locked --all-targets -- -D warnings
 cargo build --release --locked
 python3 scripts/demo.py                  # requires Python 3 and rg
