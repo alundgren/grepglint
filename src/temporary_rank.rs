@@ -41,8 +41,8 @@ impl Budget {
 pub(crate) fn consumer_connected(consumer: std::os::fd::RawFd) -> Result<()> {
     let mut poll = libc::pollfd {
         fd: consumer,
-        events: 0,
-        revents: 0,
+        events: libc::POLLIN | libc::POLLOUT,
+        revents: libc::POLLIN | libc::POLLOUT,
     };
     let result = unsafe { libc::poll(&mut poll, 1, 0) };
     ensure!(
@@ -53,6 +53,32 @@ pub(crate) fn consumer_connected(consumer: std::os::fd::RawFd) -> Result<()> {
         poll.revents & (libc::POLLERR | libc::POLLHUP | libc::POLLNVAL) == 0,
         "Output consumer closed the pipe; search cancelled."
     );
+    // BSD sockets can signal EOF as readable without reporting POLLHUP.
+    if poll.revents & libc::POLLIN != 0 {
+        let mut byte = 0u8;
+        let count = unsafe {
+            libc::recv(
+                consumer,
+                (&mut byte as *mut u8).cast(),
+                1,
+                libc::MSG_PEEK | libc::MSG_DONTWAIT,
+            )
+        };
+        ensure!(
+            count != 0,
+            "Output consumer closed the connection; search cancelled."
+        );
+        if count < 0 {
+            let error = std::io::Error::last_os_error();
+            ensure!(
+                matches!(
+                    error.raw_os_error(),
+                    Some(libc::ENOTSOCK) | Some(libc::EAGAIN) | Some(libc::EINTR)
+                ),
+                "Cannot check output connection: {error}"
+            );
+        }
+    }
     Ok(())
 }
 
@@ -382,6 +408,27 @@ mod tests {
                 .contains("cancelled")
         );
     }
+    #[test]
+    fn socket_eof_cancels_and_connection_checks_do_not_consume_bytes() {
+        use std::{
+            io::{Read, Write},
+            os::fd::AsRawFd,
+        };
+        let (mut peer, mut request) = std::os::unix::net::UnixStream::pair().unwrap();
+        peer.write_all(b"pending").unwrap();
+        consumer_connected(request.as_raw_fd()).unwrap();
+        let mut bytes = [0; 7];
+        request.read_exact(&mut bytes).unwrap();
+        assert_eq!(&bytes, b"pending");
+        peer.shutdown(std::net::Shutdown::Write).unwrap();
+        assert!(
+            consumer_connected(request.as_raw_fd())
+                .unwrap_err()
+                .to_string()
+                .contains("cancelled")
+        );
+    }
+
     #[test]
     fn ranking_resource_failure_releases_the_temporary_database() {
         let text = "word ".repeat(CHUNK_BYTES / 5);

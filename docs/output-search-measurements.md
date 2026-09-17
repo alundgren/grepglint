@@ -21,16 +21,16 @@ every original byte in all three scenarios. The integration suite also uses a
 poor query that returns plausible test lines while omitting the real failure,
 then reconstructs the original successfully.
 
-The first output search, including daemon startup, took 169.18 ms. Twenty
-alternating output/repository cycles gave output-search latency of 17.25 to
-33.54 ms, median 21.10 ms. Repository queries took 11.23 to 34.99 ms, median
-16.13 ms, including their first registration. The temporary output index is
+The first output search, including daemon startup, took 320.46 ms. Twenty
+alternating output/repository cycles gave output-search latency of 15.07 to
+26.66 ms, median 21.71 ms. Repository queries took 11.23 to 29.53 ms, median
+15.61 ms, including their first registration. The temporary output index is
 rebuilt each time; no retained ranking cache improves repeated queries.
 
 Before the large-limit fixtures, the sampled daemon high-water mark was
-9,068 KiB and peak allocated cache disk was 671,744 bytes. Including an accepted
+8,996 KiB and peak allocated cache disk was 667,648 bytes. Including an accepted
 8 MiB single-line output and a 600,000-newline chunk-limit fixture, high-water
-memory reached 25,616 KiB and peak allocated disk reached 21,901,312 bytes.
+memory reached 25,532 KiB and peak allocated disk reached 21,897,216 bytes.
 The maximum-size output's middle `constructEvent` diagnostic was found.
 The newline fixture returned the explicit 8,192-chunk error and its exact page
 was unchanged afterward. Cache file inspection found only existing daemon,

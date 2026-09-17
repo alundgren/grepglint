@@ -216,7 +216,9 @@ The socket's lifetime and a 30-second deadline bound store opening, gate-lock
 waits, cleanup, traversal, chunk generation, indexing and ranking. Search installs
 the SQLite progress callback before store database work. Interrupted cleanup
 statements roll back; capture and paging keep their existing opening path. The CLI detects downstream closure during response waits
-and closes that socket. Capture, page and purge remain direct operations;
+and closes that socket. Output-search clients keep both directions open until
+the response; a client EOF cancels the request. Socket checks use a non-consuming
+peek for platforms that report EOF without a hangup flag. Capture, page and purge remain direct operations;
 producer waits never occupy a daemon request. A concurrent output writer may
 reach its existing two-second busy timeout while a search holds the consistent
 read transaction. A later page remains byte-exact if the handle is still retained.
