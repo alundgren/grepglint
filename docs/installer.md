@@ -183,6 +183,7 @@ conservative when paths share a filesystem. External disk consumption can
 still exhaust space after preflight; filesystem errors preserve the durable
 recovery state. Executable copying and hashing use 64 KiB buffers. The Python
 bootstrap holds at most one 128 MiB asset plus bounded metadata while hashing.
+Core dumps are disabled for bootstrap and native maintenance processes.
 No downloads or maintenance commands enter the agent tool catalog. Development
 installation with `cargo install --path . --locked` remains supported.
 

@@ -182,6 +182,14 @@ fn load(state: &Path) -> Result<Option<Record>> {
 }
 
 pub fn run(options: &Options) -> Result<()> {
+    let core_limit = libc::rlimit {
+        rlim_cur: 0,
+        rlim_max: 0,
+    };
+    ensure!(
+        unsafe { libc::setrlimit(libc::RLIMIT_CORE, &core_limit) } == 0,
+        "Cannot disable maintenance core dumps"
+    );
     ensure!(
         unsafe { libc::geteuid() } != 0,
         "Run as your normal account, without sudo"

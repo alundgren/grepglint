@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import platform
 import re
+import resource
 import selectors
 import shutil
 import signal
@@ -180,6 +181,7 @@ def main(argv=None):
     parser.add_argument("--migrate-cargo", action="store_true")
     args = parser.parse_args(argv)
     os.umask(0o077)
+    resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
     require(os.getuid() != 0, "Run as your normal account, without sudo")
     state = Path(args.state_dir)
     path_check(state)
