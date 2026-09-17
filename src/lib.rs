@@ -8,3 +8,5 @@ pub mod index;
 pub mod maintenance;
 pub mod protocol;
 pub mod tokens;
+
+pub mod setup;

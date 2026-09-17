@@ -19,7 +19,14 @@ x86_64 and macOS Apple Silicon, supported runtime baselines, prerequisites,
 and verification tied to the selected release tag and source commit. The first
 published release and hosted verification remain a human release task.
 
-Requires Linux or macOS, Git, Rust 1.89 or later, and a C compiler for bundled
+From a trusted checkout, `./install install --release v0.1.0` downloads and
+verifies a selected published release before execution. `./install verify`
+checks a managed installation offline using its retained maintenance copy.
+Python 3, Git and authenticated gh 2.80.0 or newer are needed for initial
+release installation. See [managed installation](docs/installer.md#managed-installation)
+for consent, recovery, paths and limits. Upgrade and removal are not available yet.
+
+For source development, use Linux or macOS, Git, Rust 1.89 or later, and a C compiler for bundled
 SQLite and tree-sitter. Linux is tested locally; CI also covers macOS.
 
 ```sh
@@ -28,8 +35,7 @@ cd grepglint
 cargo install --path . --locked
 ```
 
-A proposed guided install/upgrade/verify/repair/uninstall flow is described in
-[the installer investigation](docs/installer.md).
+The [installer investigation](docs/installer.md) records the rationale and deferred lifecycle work.
 
 Run the binary from any directory inside a Git checkout, including regular
 clones and linked worktrees. The first search starts the daemon and registers
