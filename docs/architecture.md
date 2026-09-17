@@ -2,7 +2,7 @@
 
 `main.rs` owns the CLI and tool catalog. `daemon.rs` owns the socket, automatic
 startup, OS lock, and process limits. `git.rs` discovers repositories and reads
-bounded Git output. `chunks.rs` extracts code regions. `tokens.rs` expands
+bounded Git output. `files.rs` applies file-selection rules. `chunks.rs` extracts code regions. `tokens.rs` expands
 identifiers. `index.rs` owns freshness, cache maintenance, and ranking; the
 schema is in `schema.sql`.
 
@@ -33,13 +33,23 @@ the original object bytes. Differences in working files still enter the overlay.
 
 Tree-sitter extracts JavaScript/TypeScript functions, class members, and named
 top-level declarations. Class headers are separate from methods. Other
-recognized text files use 60-line chunks with six-line overlap; long structural
+UTF-8 text files use 60-line chunks with six-line overlap; long structural
 regions use the same limit. Parser work has a 100 ms deadline per file and
-falls back to line chunks if it times out. See `parser_for` for supported
-extensions and excluded generated directories. Ignored untracked files,
+falls back to line chunks if it times out. Extensions select a parser but do
+not determine whether a file can be searched. `files.rs` keeps default path
+exclusions separate from parsing and applies root `.grepglintignore` overrides
+using the `ignore` crate's Git ignore matcher. Ignored untracked files,
 symlinks, invalid UTF-8, binary data, oversized files, minified lines, and lock
 files are excluded. Conflicted regular files are searchable as currently stored,
 including conflict markers. Submodule contents belong to their own repository.
+
+The worktree signature combines a versioned file-policy fingerprint with the
+dirty-file signature. A policy change rebuilds committed path mappings and
+dirty overlays, reusing cached content where possible. This also refreshes
+older caches that omitted unfamiliar extensions even if HEAD has not changed.
+The configuration is read with the same bounded, regular-file checks as source
+files and rechecked before committing a refresh. Skip reasons are reported as
+refresh-time counters, not persisted as a complete inventory of excluded paths.
 
 Identifier expansion retains the original spelling as a lowercase search token
 and adds components of camelCase, snake_case, kebab-case, and paths. Queries

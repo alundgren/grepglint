@@ -70,7 +70,7 @@ def main():
                                         "results": [result["path"] for result in response["results"]]})
 
         first, elapsed, _ = search(root / "src/auth", "refresh token validation")
-        assert first["stats"]["blobs_parsed"] == 46
+        assert first["stats"]["blobs_parsed"] == 47  # Includes .gitignore as text.
         assert first["results"][0]["symbol"] == "validateRefreshToken"
         record("first search", first, elapsed)
         second, elapsed, _ = search(root, "refresh token validation")

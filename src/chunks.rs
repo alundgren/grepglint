@@ -8,48 +8,31 @@ pub const MAX_FILE_BYTES: usize = 512 * 1024;
 const MAX_LINES: usize = 60;
 const OVERLAP: usize = 6;
 
-pub fn parser_for(path: &str) -> Option<&'static str> {
-    if path.split('/').any(|p| {
-        [
-            ".git",
-            "node_modules",
-            "vendor",
-            "dist",
-            "build",
-            "coverage",
-            "target",
-            ".next",
-            ".cache",
-        ]
-        .contains(&p)
-    }) {
-        return None;
-    }
-    let file = Path::new(path).file_name()?.to_str()?;
-    if [
-        "pnpm-lock.yaml",
-        "package-lock.json",
-        "yarn.lock",
-        "bun.lock",
-        "Cargo.lock",
-    ]
-    .contains(&file)
-    {
-        return None;
-    }
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Deserialize, serde::Serialize,
+)]
+#[serde(rename_all = "snake_case")]
+pub enum SkipReason {
+    ExcludedPath,
+    Binary,
+    InvalidUtf8,
+    FileTooLarge,
+    TooManyLines,
+    LineTooLong,
+    TooManyChunks,
+    NotRegularFile,
+    OutsideWorktree,
+}
+
+pub fn parser_for(path: &str) -> &'static str {
     let ext = Path::new(path)
         .extension()
         .and_then(|e| e.to_str())
         .unwrap_or("");
     match ext {
-        "ts" | "mts" | "cts" | "js" | "mjs" | "cjs" => Some("typescript-v1"),
-        "tsx" | "jsx" => Some("tsx-v1"),
-        "py" | "go" | "rs" | "c" | "h" | "cpp" | "cc" | "hpp" | "java" | "cs" | "rb" | "php"
-        | "swift" | "kt" | "sh" | "bash" | "sql" | "lua" | "vue" | "svelte" | "html" | "css"
-        | "scss" | "json" | "jsonc" | "md" | "mdx" | "yaml" | "yml" | "toml" | "ini" | "xml"
-        | "graphql" | "proto" | "tf" | "txt" => Some("lines-v1"),
-        _ if ["Dockerfile", "Makefile", "CMakeLists.txt"].contains(&file) => Some("lines-v1"),
-        _ => None,
+        "ts" | "mts" | "cts" | "js" | "mjs" | "cjs" => "typescript-v1",
+        "tsx" | "jsx" => "tsx-v1",
+        _ => "lines-v1",
     }
 }
 
@@ -93,14 +76,20 @@ fn symbol(node: Node<'_>, bytes: &[u8]) -> Option<String> {
         .map(str::to_owned)
 }
 
-pub fn extract(bytes: &[u8], format: &str) -> Option<Vec<Chunk>> {
-    if bytes.len() > MAX_FILE_BYTES || bytes.contains(&0) {
-        return None;
+pub fn extract(bytes: &[u8], format: &str) -> Result<Vec<Chunk>, SkipReason> {
+    if bytes.len() > MAX_FILE_BYTES {
+        return Err(SkipReason::FileTooLarge);
     }
-    let text = std::str::from_utf8(bytes).ok()?;
+    if bytes.contains(&0) {
+        return Err(SkipReason::Binary);
+    }
+    let text = std::str::from_utf8(bytes).map_err(|_| SkipReason::InvalidUtf8)?;
     let lines: Vec<_> = text.lines().collect();
-    if lines.len() > 12_000 || lines.iter().any(|line| line.len() > 4000) {
-        return None;
+    if lines.len() > 12_000 {
+        return Err(SkipReason::TooManyLines);
+    }
+    if lines.iter().any(|line| line.len() > 4000) {
+        return Err(SkipReason::LineTooLong);
     }
     let mut regions = Vec::new();
     if format != "lines-v1" {
@@ -110,12 +99,14 @@ pub fn extract(bytes: &[u8], format: &str) -> Option<Vec<Chunk>> {
         } else {
             tree_sitter_typescript::LANGUAGE_TYPESCRIPT
         };
-        parser.set_language(&language.into()).ok()?;
         let deadline = Instant::now() + Duration::from_millis(100);
         let mut callback = |_: &tree_sitter::ParseState| Instant::now() >= deadline;
         let options = ParseOptions::new().progress_callback(&mut callback);
-        let tree =
-            parser.parse_with_options(&mut |offset, _| &bytes[offset..], None, Some(options));
+        let tree = if parser.set_language(&language.into()).is_ok() {
+            parser.parse_with_options(&mut |offset, _| &bytes[offset..], None, Some(options))
+        } else {
+            None
+        };
         if let Some(tree) = tree {
             let mut cursor = tree.root_node().walk();
             for mut node in tree.root_node().named_children(&mut cursor) {
@@ -171,10 +162,10 @@ pub fn extract(bytes: &[u8], format: &str) -> Option<Vec<Chunk>> {
         first = last + 1;
     }
     if chunks.len() >= 256 {
-        return None;
+        return Err(SkipReason::TooManyChunks);
     }
     chunks.sort_by_key(|c| c.start);
-    Some(chunks)
+    Ok(chunks)
 }
 
 #[cfg(test)]
@@ -197,9 +188,18 @@ mod tests {
     }
     #[test]
     fn large_binary_and_minified_files_are_bounded() {
-        assert!(extract(b"abc\0def", "lines-v1").is_none());
-        assert!(extract(&vec![b'a'; MAX_FILE_BYTES + 1], "lines-v1").is_none());
-        assert!(extract(&vec![b'a'; 4001], "lines-v1").is_none());
+        assert!(matches!(
+            extract(b"abc\0def", "lines-v1"),
+            Err(SkipReason::Binary)
+        ));
+        assert!(matches!(
+            extract(&vec![b'a'; MAX_FILE_BYTES + 1], "lines-v1"),
+            Err(SkipReason::FileTooLarge)
+        ));
+        assert!(matches!(
+            extract(&vec![b'a'; 4001], "lines-v1"),
+            Err(SkipReason::LineTooLong)
+        ));
         let source = "x\n".repeat(130);
         let chunks = extract(source.as_bytes(), "lines-v1").unwrap();
         assert_eq!((chunks[1].start, chunks[0].end), (55, 60));

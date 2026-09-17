@@ -235,7 +235,12 @@ fn handle(stream: &mut UnixStream, index: &mut Index) -> Result<()> {
     );
     let request: Request = serde_json::from_slice(&bytes).context("Invalid search request")?;
     let data = index.search(&request)?;
-    send(stream, &WireResponse::Ok { data })
+    send(
+        stream,
+        &WireResponse::Ok {
+            data: Box::new(data),
+        },
+    )
 }
 
 fn send(stream: &mut UnixStream, response: &WireResponse) -> Result<()> {
@@ -313,7 +318,7 @@ pub fn search(config: &Config, request: &Request) -> Result<Response> {
         let _ = child.try_wait();
     }
     match serde_json::from_slice(&response).context("Invalid daemon response")? {
-        WireResponse::Ok { data } => Ok(data),
+        WireResponse::Ok { data } => Ok(*data),
         WireResponse::Error { message } => bail!("{message}"),
     }
 }

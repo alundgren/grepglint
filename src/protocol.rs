@@ -35,12 +35,22 @@ pub struct Stats {
     pub overlay_files_parsed: usize,
     pub cached_contents_reused: usize,
     pub skipped_files: usize,
+    /// Skip decisions made during this refresh, not an inventory of cached files.
+    #[serde(default)]
+    pub skip_reasons: std::collections::BTreeMap<crate::chunks::SkipReason, usize>,
     pub active_files: usize,
     pub overlay_entries: usize,
     pub cached_contents: usize,
     pub cached_chunks: usize,
     pub evicted_worktrees: usize,
     pub elapsed_ms: u64,
+}
+
+impl Stats {
+    pub fn record_skip(&mut self, reason: crate::chunks::SkipReason) {
+        self.skipped_files += 1;
+        *self.skip_reasons.entry(reason).or_default() += 1;
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -56,6 +66,6 @@ pub struct Response {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "status", rename_all = "snake_case")]
 pub enum WireResponse {
-    Ok { data: Response },
+    Ok { data: Box<Response> },
     Error { message: String },
 }

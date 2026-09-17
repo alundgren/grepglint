@@ -10,6 +10,11 @@ payment, UI, and cache code plus 40 queue handlers containing distracting
 uses of refresh and token. It deletes the fixture after its daemon exits.
 [The raw report](demo-results.json) contains all counts and timings.
 
+The measurements below predate content-based file selection. Current runs also
+index the fixture's `.gitignore`, for 47 initial contents instead of 46, and
+include skip-reason counters. The stored timings and report are historical;
+rerun the commands above to measure the current implementation.
+
 ## Worktree behavior
 
 | Case | New committed parses | Local parses | Observed behavior |
