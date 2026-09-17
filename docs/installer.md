@@ -301,7 +301,14 @@ by this installer. The installer completes path/capacity preflight and saves
 an initial record before creating a private staging directory beside the
 selected cache. It records that exclusive directory's identity before atomic
 publication without replacement. A concurrently created cache remains unowned.
-Recorded staging/publication can resume after interruption. If interruption
+Recorded staging/publication can resume after interruption. Complete pending
+ownership proposals resume only after matching their directory identity.
+Canonical partial proposals are checked before any new directory allocation;
+the incomplete record can be discarded, but its unrecorded directory stays
+unowned and untouched. Other pending bytes fail before allocating another
+directory. Ordinary record-write errors clean only the current attempt's
+identity-checked empty stage, so repeated errors do not accumulate directories.
+If interruption
 precedes the staging record, an empty unrecorded `.grepglint-cache-*` directory
 may remain beside the selected cache; it is preserved rather than adopted or
 removed by name. It contains no indexed source contents and does not make the

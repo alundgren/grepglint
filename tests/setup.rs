@@ -1713,3 +1713,137 @@ fn terminal_removal_cancellation_succeeds_without_mutation() {
         assert!(f.destination().exists());
     }
 }
+
+#[test]
+fn pending_cache_creation_records_recover_before_allocating_more_directories() {
+    for point in [
+        "complete",
+        "partial-name",
+        "partial-identity",
+        "changed",
+        "substituted",
+    ] {
+        let f = Fixture::new();
+        success(f.install());
+        fs::remove_dir_all(f.root.join("cache")).unwrap();
+        let staging = f.root.join(".grepglint-cache-ABC123");
+        fs::create_dir(&staging).unwrap();
+        fs::set_permissions(&staging, fs::Permissions::from_mode(0o700)).unwrap();
+        let identity = fs::metadata(&staging).unwrap();
+        let mut record = f.record();
+        record["phase"] = "prepared".into();
+        record["cache_owned"] = false.into();
+        record.as_object_mut().unwrap().remove("cache_identity");
+        f.write_record(&record);
+        let mut proposal = record.clone();
+        proposal["cache_creation"] = serde_json::json!({"directory":staging,"identity":{"device":identity.dev(),"inode":identity.ino()}});
+        let typed: grepglint::setup::Record = serde_json::from_value(proposal).unwrap();
+        let mut bytes = serde_json::to_vec_pretty(&typed).unwrap();
+        let text = String::from_utf8(bytes.clone()).unwrap();
+        if point == "partial-name" {
+            bytes.truncate(text.find("ABC123").unwrap() + 3);
+        }
+        if point == "partial-identity" {
+            bytes.truncate(text.rfind("\"inode\": ").unwrap() + "\"inode\": ".len() + 1);
+        }
+        if point == "changed" {
+            bytes[0] = b'x';
+        }
+        if point == "substituted" {
+            fs::rename(&staging, f.root.join("original-stage")).unwrap();
+            fs::create_dir(&staging).unwrap();
+            fs::set_permissions(&staging, fs::Permissions::from_mode(0o700)).unwrap();
+            fs::write(staging.join("sentinel"), b"keep").unwrap();
+        }
+        let pending = f.state().join("record.json.grepglint-pending");
+        fs::write(&pending, &bytes).unwrap();
+        fs::set_permissions(&pending, fs::Permissions::from_mode(0o600)).unwrap();
+        let stages = || {
+            fs::read_dir(&f.root)
+                .unwrap()
+                .filter(|entry| {
+                    entry
+                        .as_ref()
+                        .unwrap()
+                        .file_name()
+                        .to_string_lossy()
+                        .starts_with(".grepglint-cache-")
+                })
+                .count()
+        };
+        assert_eq!(stages(), 1);
+        if ["changed", "substituted"].contains(&point) {
+            for _ in 0..2 {
+                assert!(!f.install().status.success());
+                assert_eq!(stages(), 1);
+                assert_eq!(fs::read(&pending).unwrap(), bytes);
+            }
+            if point == "substituted" {
+                assert_eq!(fs::read(staging.join("sentinel")).unwrap(), b"keep");
+            }
+            continue;
+        }
+        success(f.install());
+        assert!(!pending.exists());
+        assert_eq!(stages(), usize::from(point != "complete"));
+        success(f.install());
+        assert_eq!(stages(), usize::from(point != "complete"));
+        assert_eq!(f.record()["cache_owned"], true);
+        success(f.removal("uninstall"));
+        success(f.removal("purge"));
+        assert_eq!(stages(), usize::from(point != "complete"));
+    }
+}
+
+#[test]
+fn repeated_cache_record_write_failures_do_not_accumulate_staging_directories() {
+    use std::os::unix::process::CommandExt;
+    for failure in ["permissions", "partial-write"] {
+        let f = Fixture::new();
+        success(f.install());
+        fs::remove_dir_all(f.root.join("cache")).unwrap();
+        let mut record = f.record();
+        record["phase"] = "prepared".into();
+        record["cache_owned"] = false.into();
+        record.as_object_mut().unwrap().remove("cache_identity");
+        f.write_record(&record);
+        let typed: grepglint::setup::Record = serde_json::from_value(record).unwrap();
+        let limit = serde_json::to_vec_pretty(&typed).unwrap().len() as u64 + 50;
+        if failure == "permissions" {
+            fs::set_permissions(f.state(), fs::Permissions::from_mode(0o500)).unwrap();
+        }
+        for _ in 0..3 {
+            let mut command = f.command("install");
+            if failure == "partial-write" {
+                unsafe {
+                    command.pre_exec(move || {
+                        libc::signal(libc::SIGXFSZ, libc::SIG_IGN);
+                        let cap = libc::rlimit {
+                            rlim_cur: limit,
+                            rlim_max: limit,
+                        };
+                        if libc::setrlimit(libc::RLIMIT_FSIZE, &cap) == 0 {
+                            Ok(())
+                        } else {
+                            Err(std::io::Error::last_os_error())
+                        }
+                    });
+                }
+            }
+            assert!(!command.output().unwrap().status.success());
+            assert!(!f.root.join("cache").exists());
+            assert!(!f.state().join("record.json.grepglint-pending").exists());
+            assert!(!fs::read_dir(&f.root).unwrap().any(|entry| {
+                entry
+                    .unwrap()
+                    .file_name()
+                    .to_string_lossy()
+                    .starts_with(".grepglint-cache-")
+            }));
+        }
+        fs::set_permissions(f.state(), fs::Permissions::from_mode(0o700)).unwrap();
+        success(f.install());
+        success(f.removal("uninstall"));
+        success(f.removal("purge"));
+    }
+}

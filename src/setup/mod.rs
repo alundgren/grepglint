@@ -520,12 +520,14 @@ fn install(options: &Options, state: &Path, existing: Option<Record>) -> Result<
             .context("Missing destination parent")?,
         4 * files::BINARY_CAP + 64 * 1024 * 1024,
     )?;
+    cache::recover_pending(&mut record, state)?;
     if record.phase == "prepared"
         && record.cache_creation.is_none()
         && files::absent(&record.cache)?
     {
+        let previous = record.clone();
         cache::stage(&mut record)?;
-        record.save(state).with_context(|| format!("Cache staging record write failed at {}; no cache was published. Preserve that directory and retry installation after resolving the write failure", record.cache_creation.as_ref().unwrap().directory.display()))?;
+        cache::save_creation(&record, &previous, state)?;
     }
     cache::publish(&mut record, state)?;
     let maintenance = state.join("maintenance");
