@@ -94,11 +94,10 @@ pub struct Maintenance<'a> {
 impl<'a> Maintenance<'a> {
     pub fn acquire(config: &'a Config) -> Result<Self> {
         config.prepare()?;
-        Self::acquire_existing(config)
+        Self::acquire_existing(config, Instant::now() + MAINTENANCE_TIMEOUT)
     }
 
-    fn acquire_existing(config: &'a Config) -> Result<Self> {
-        let deadline = Instant::now() + MAINTENANCE_TIMEOUT;
+    fn acquire_existing(config: &'a Config, deadline: Instant) -> Result<Self> {
         let lock = lock_file(config, "maintenance.lock")?;
         wait_for_lock(&lock, deadline)?;
         Ok(Self {
@@ -179,10 +178,14 @@ pub fn status(config: &Config) -> Result<Option<Health>> {
 }
 
 pub fn shutdown(config: &Config, expected: Option<&str>) -> Result<bool> {
+    shutdown_until(config, expected, Instant::now() + MAINTENANCE_TIMEOUT)
+}
+
+fn shutdown_until(config: &Config, expected: Option<&str>, deadline: Instant) -> Result<bool> {
     if !private_directory(config)? {
         return Ok(false);
     }
-    let mut guard = Maintenance::acquire_existing(config)?;
+    let mut guard = Maintenance::acquire_existing(config, deadline)?;
     let Some(health) = guard.status()? else {
         return Ok(false);
     };
@@ -439,4 +442,60 @@ pub(crate) fn build_health(config: &Config) -> Result<Health> {
             None
         },
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::os::unix::{fs::PermissionsExt, net::UnixListener};
+
+    #[test]
+    fn shutdown_deadline_leaves_contended_lock_and_socket_untouched() {
+        let temp = tempfile::tempdir().unwrap();
+        let config = Config {
+            directory: temp.path().to_owned(),
+            max_bytes: 8 * 1024 * 1024,
+            idle: Duration::from_secs(60),
+        };
+        config.prepare().unwrap();
+        let listener = UnixListener::bind(config.socket()).unwrap();
+        fs::set_permissions(config.socket(), fs::Permissions::from_mode(0o600)).unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let socket = SocketIdentity::read(&config.socket()).unwrap();
+        let lock = lock_file(&config, "maintenance.lock").unwrap();
+        FileExt::lock_shared(&lock).unwrap();
+
+        let deadline = Instant::now() + Duration::from_millis(50);
+        let error = shutdown_until(&config, None, deadline).unwrap_err();
+        assert!(error.to_string().contains("Maintenance deadline expired"));
+        assert!(Instant::now() >= deadline);
+        assert!(socket.matches(&config.socket()));
+        assert_eq!(
+            listener.accept().unwrap_err().kind(),
+            std::io::ErrorKind::WouldBlock
+        );
+        assert!(shared(&config).is_ok());
+
+        drop(lock);
+        let deadline = Instant::now() + Duration::from_secs(1);
+        let guard = Maintenance::acquire_existing(&config, deadline).unwrap();
+        assert_eq!(guard.deadline, deadline);
+        assert!(shared(&config).is_err());
+        drop(guard);
+        assert!(shared(&config).is_ok());
+    }
+
+    #[test]
+    fn unresponsive_control_peer_obeys_short_deadline() {
+        let (mut client, _peer) = UnixStream::pair().unwrap();
+        let deadline = Instant::now() + Duration::from_millis(50);
+        let error = exchange(
+            &mut client,
+            &ControlRequest::Health { version: VERSION },
+            deadline,
+        )
+        .unwrap_err();
+        assert!(format!("{error:#}").contains("rg"));
+        assert!(Instant::now() >= deadline);
+    }
 }
