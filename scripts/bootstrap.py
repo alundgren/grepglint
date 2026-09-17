@@ -279,7 +279,12 @@ def local_lock(path):
 
 
 def finish_purge(state, expected, consent):
-    require(consent, "Purge finalization requires --purge-cache; nothing removed")
+    print(f"Finish purge at {state}; remove the final ownership record for cache {expected['cache']}")
+    if not consent:
+        require(sys.stdin.isatty(), "Purge finalization requires --purge-cache; nothing removed")
+        if input("Continue? [y/N] ").strip() not in ("y", "Y", "yes"):
+            print("Cancelled; nothing removed")
+            return 0
     locks = []
     try:
         locks.append(local_lock(state / "operation.lock"))

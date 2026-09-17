@@ -272,6 +272,16 @@ class BootstrapTests(unittest.TestCase):
                     b.main(["purge", "--purge-cache", "--state-dir", str(state), "--removal-helper", str(helper)])
                 self.assertFalse(marker.exists())
 
+    def test_finalization_cancel_precedes_lock_or_mutation(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp).resolve()
+            with patch.object(b.sys.stdin, "isatty", return_value=True), patch("builtins.input", return_value="n"), patch.object(b, "local_lock", side_effect=AssertionError("lock attempted")):
+                self.assertEqual(b.finish_purge(root, {"cache": str(root/"cache")}, False), 0)
+            with patch.object(b.sys.stdin, "isatty", return_value=False):
+                with self.assertRaisesRegex(ValueError, "--purge-cache"):
+                    b.finish_purge(root, {"cache": str(root/"cache")}, False)
+            self.assertEqual(list(root.iterdir()), [])
+
     def test_cancel_changes_nothing(self):
         with tempfile.TemporaryDirectory() as temp, patch.object(b.sys.stdin, "isatty", return_value=True), patch("builtins.input", return_value="0"):
             self.assertEqual(b.main(["--state-dir", str(Path(temp).resolve()/"state")]), 0)
