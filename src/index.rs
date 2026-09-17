@@ -67,7 +67,7 @@ impl Index {
     pub fn search(&mut self, request: &Request) -> Result<Response> {
         ensure!(
             request.version == crate::protocol::VERSION,
-            "Client and daemon protocol versions differ; let the old daemon exit before upgrading."
+            "Client and daemon protocol versions differ; pause searches and retry after idle exit. Use rg meanwhile."
         );
         ensure!(
             (1..=20).contains(&request.limit),

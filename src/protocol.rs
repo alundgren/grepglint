@@ -69,3 +69,35 @@ pub enum WireResponse {
     Ok { data: Box<Response> },
     Error { message: String },
 }
+
+/// Controls are additive; existing version-one search requests remain valid.
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(tag = "command", rename_all = "snake_case", deny_unknown_fields)]
+pub enum ControlRequest {
+    Health { version: u32 },
+    Shutdown { version: u32, instance: String },
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Health {
+    pub build_version: String,
+    pub executable_sha256: String,
+    pub protocol_version: u32,
+    pub instance: String,
+    pub cache_directory: String,
+    pub database_bytes: u64,
+    pub idle_seconds: u64,
+    pub request_bytes: usize,
+    pub response_bytes: u64,
+    pub work_seconds: u64,
+    pub sqlite_heap_bytes: u64,
+    pub address_space_bytes: Option<u64>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(tag = "status", rename_all = "snake_case")]
+pub enum ControlResponse {
+    Healthy { data: Health },
+    Stopped { instance: String },
+    Error { message: String },
+}
