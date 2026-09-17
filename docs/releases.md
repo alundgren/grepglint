@@ -13,7 +13,8 @@ part of this initial contract.
 
 For version 0.1.0, `vVERSION` is `v0.1.0`. The Linux build uses
 `ubuntu-22.04`; the macOS build uses `macos-14` and sets
-`MACOSX_DEPLOYMENT_TARGET=14.0`. Both use Rust 1.89.0. The workflow checks
+`MACOSX_DEPLOYMENT_TARGET=14.0`. Both use the repository toolchain from `rust-toolchain.toml`, currently Rust
+1.89.0. Build caches have separate keys for each native target. The workflow checks
 runner architecture and executable headers, runs the test suite, and runs a
 disposable Git fixture through each release executable. These are tested
 baselines, not a claim that every distribution or later OS is compatible.
@@ -73,7 +74,7 @@ the installation fixture.
 Attestations establish provenance. They do not establish that the selected
 source, dependencies or build tools are free from malicious code or bugs.
 This initial process trusts GitHub, the repository's maintainers, pinned actions,
-Rust distribution and GitHub-hosted runner images. Independently isolated
+Rust distribution, the pinned Rust cache action and GitHub-hosted runner images. Independently isolated
 builders, reproducible-build comparisons, custom signing keys and package
 manager distribution remain future hardening.
 
@@ -81,13 +82,14 @@ manager distribution remain future hardening.
 
 1. Review and merge the intended source and `Cargo.lock`. Set the intended
    version in `Cargo.toml`. Run ordinary CI and the nonpublishing `Release`
-   workflow on that exact commit. Branch pushes, pull requests and manual
+   workflow on that exact commit. Main-branch pushes, pull requests and manual
    dispatch build and test both targets and assemble/check the complete
    checksum manifest. They never attest or publish.
 2. Require both native builds, fixture checks, negative contract tests and the
    `checksums` job to pass. Confirm the source commit and action pins in review.
    The initial pins use checkout v4.2.2, upload-artifact v4.6.2,
-   download-artifact v4.3.0 and attest-build-provenance v2.4.0. Their resolved
+   download-artifact v4.3.0, attest-build-provenance v2.4.0 and the same
+   pinned Swatinem/rust-cache v2 commit as ordinary CI. Their resolved
    commit IDs and action metadata were checked, including the attestation
    action's pinned internal actions. This is not an audit of all bundled code.
 3. Only a maintainer creates and pushes `v<Cargo version>` at that checked

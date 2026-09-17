@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    branches: ['**']
+    branches: [main]
     tags: ['v*']
   pull_request:
   workflow_dispatch:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 concurrency:
   group: release-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
 jobs:
   build:
     strategy:
@@ -40,10 +40,13 @@ jobs:
         run: |
           test "$(uname -s)" = "$EXPECTED_SYSTEM"
           test "$(uname -m)" = "$EXPECTED_ARCH"
-          rustup toolchain install 1.89.0 --profile minimal --component clippy,rustfmt --target "$TARGET"
-          rustup default 1.89.0
+          rustup toolchain install --no-self-update --target "$TARGET"
           python3 --version
           uname -a
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          key: release-${{ matrix.target }}
+          cache-bin: false
       - name: Validate version and contract
         id: contract
         env:

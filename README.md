@@ -183,8 +183,8 @@ into an agent's repository instructions.
 
 The repository pins Rust 1.89.0, Clippy, and rustfmt in `rust-toolchain.toml`.
 With rustup, Cargo selects and installs that toolchain automatically so local
-checks and CI use the same versions. Update the pin together with the release
-toolchain when upgrading Rust.
+checks and both CI workflows use the same versions. Update this pin when
+upgrading Rust.
 
 ```sh
 cargo fmt --all -- --check
