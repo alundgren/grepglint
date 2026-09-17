@@ -131,7 +131,7 @@ pub fn discover(cwd: &Path, deadline: Instant) -> Result<Repository> {
         deadline,
         false,
     )?)
-    .context("Not inside an accessible Git worktree")?;
+    .context("Not inside an accessible Git checkout")?;
     let common_dir = fs::canonicalize(root.join(line(
         &root,
         &["rev-parse", "--git-common-dir"],

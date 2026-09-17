@@ -26,8 +26,9 @@ cargo install --path . --locked
 A proposed guided install/upgrade/verify/repair/uninstall flow is described in
 [the installer investigation](docs/installer.md).
 
-Run the binary from any directory inside a Git worktree. The first search
-starts the daemon and registers that worktree. It exits after ten idle minutes.
+Run the binary from any directory inside a Git checkout, including regular
+clones and linked worktrees. The first search starts the daemon and registers
+that checkout. It exits after ten idle minutes.
 The next search starts it again and reuses the on-disk cache. Agent sessions
 need no lifecycle commands.
 

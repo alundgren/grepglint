@@ -100,7 +100,7 @@ fn run(cli: &Cli) -> Result<()> {
                         "tools":[{
                             "name":"search",
                             "command":"grepglint search --json <query>",
-                            "use_when":"You know the concept but not the exact identifier or location in the current Git worktree.",
+                        "use_when":"You know the concept but not the exact identifier or location in the current Git checkout. Regular clones and linked worktrees both work.",
                             "inputs":{"query":"Words or identifiers; no regex or FTS operators.","limit":"Optional --limit, 1 to 20, default 5."},
                             "returns":"Ranked file paths, line ranges, symbols, short excerpts, content identities, and freshness counts.",
                             "follow_up":"Use rg for exact strings or identifiers, then read the relevant code.",

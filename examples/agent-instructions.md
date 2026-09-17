@@ -4,7 +4,8 @@ Run `grepglint tools --json` to discover the available tools and when each is
 useful. The catalog is local and does not start a daemon.
 
 Use `grepglint search --json "concept words"` when you know the concept but
-not its exact identifier or location. Run it from the worktree you are editing.
+not its exact identifier or location. Run it from the checkout you are editing.
+Regular clones and linked worktrees both work.
 Start with `--limit 3` when a few candidates should be enough.
 
 Use `rg` directly for exact strings, identifiers, and confirmation. After
