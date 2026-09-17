@@ -21,6 +21,7 @@ import urllib.request
 REPO = "alundgren/grepglint"
 CAP = 128 * 1024 * 1024
 META_CAP = 1024 * 1024
+DOWNLOAD_SECONDS = 120
 TAG = r"v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
 
 
@@ -58,6 +59,7 @@ def run(args, timeout=30, cap=META_CAP):
                                    stderr=subprocess.PIPE, start_new_session=True)
     except FileNotFoundError as error:
         raise ValueError(f"Required tool {args[0]} is missing; install it and retry") from error
+    completed = False
     output = bytearray()
     errors = bytearray()
     deadline = time.monotonic() + timeout
@@ -77,10 +79,14 @@ def run(args, timeout=30, cap=META_CAP):
             process.wait(timeout=max(0.01, deadline - time.monotonic()))
         require(process.returncode == 0,
                 f"{args[0]} failed. Check authentication (gh auth login), rate limits, network, and attestation policy; no files replaced")
+        completed = True
         return bytes(output)
     finally:
-        if process.poll() is None:
-            os.killpg(process.pid, signal.SIGKILL)
+        if not completed:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
         process.wait()
         process.stdout.close()
         process.stderr.close()
@@ -94,12 +100,40 @@ class HttpsRedirect(urllib.request.HTTPRedirectHandler):
 
 def download(url, path, cap):
     require(url.startswith("https://"), "Only HTTPS downloads are allowed")
-    deadline = time.monotonic() + 120
+    # A worker bounds DNS, TLS, redirects, headers and buffered body reads alike.
+    pid = os.fork()
+    if pid == 0:
+        try:
+            download_worker(url, path, cap)
+        except BaseException:
+            os._exit(1)
+        os._exit(0)
+    reaped = False
+    deadline = time.monotonic() + DOWNLOAD_SECONDS
+    try:
+        while True:
+            result, status = os.waitpid(pid, os.WNOHANG)
+            if result:
+                reaped = True
+                require(os.waitstatus_to_exitcode(status) == 0,
+                        "Download failed its HTTPS, size, or network checks; no files replaced")
+                return
+            require(time.monotonic() < deadline, "Download exceeded absolute elapsed-time limit")
+            time.sleep(0.01)
+    finally:
+        if not reaped:
+            try:
+                os.kill(pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            os.waitpid(pid, 0)
+
+
+def download_worker(url, path, cap):
     opener = urllib.request.build_opener(HttpsRedirect())
     with opener.open(url, timeout=10) as response, path.open("xb") as output:
         size = 0
         while True:
-            require(time.monotonic() < deadline, "Download exceeded 120 seconds")
             block = response.read(65536)
             if not block:
                 break

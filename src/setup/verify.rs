@@ -4,7 +4,7 @@ use crate::{
     maintenance,
     protocol::{Health, Response},
 };
-use anyhow::{Result, ensure};
+use anyhow::{Context, Result, ensure};
 use std::os::unix::fs::PermissionsExt;
 use std::{fs, path::Path, process::Command, time::Duration};
 
@@ -64,7 +64,8 @@ pub fn installation(record: &Record, state: &Path) -> Result<()> {
     // Opening with read/write checks access without changing cache contents.
     let cache_file = record.cache.join("index.sqlite");
     if !files::absent(&cache_file)? {
-        let _ = files::open(&cache_file, record.database_bytes)?;
+        let _ = files::open_writable(&cache_file, record.database_bytes)
+            .context("Cache database is not readable and writable")?;
     }
     match maintenance::status(&record.config())? {
         Some(value) => {

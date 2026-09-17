@@ -587,3 +587,21 @@ fn separate_cargo_path_migration_stops_only_identified_prior_daemon() {
     assert_eq!(f.record()["cargo_digest"], old_hash);
     assert!(!f.root.join("cache/daemon.sock").exists());
 }
+
+#[test]
+fn readonly_database_fails_verification_without_changes() {
+    let f = Fixture::new();
+    success(f.install());
+    let database = f.root.join("cache/index.sqlite");
+    fs::write(&database, b"preserved database bytes").unwrap();
+    fs::set_permissions(&database, fs::Permissions::from_mode(0o400)).unwrap();
+    failure(
+        f.command("verify").output().unwrap(),
+        "Cache database is not readable and writable",
+    );
+    assert_eq!(fs::read(&database).unwrap(), b"preserved database bytes");
+    assert_eq!(
+        fs::metadata(&database).unwrap().permissions().mode() & 0o777,
+        0o400
+    );
+}

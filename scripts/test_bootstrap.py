@@ -2,6 +2,12 @@
 import hashlib
 import json
 import os
+import http.client
+import socket
+import threading
+import time
+import sys
+import warnings
 from pathlib import Path
 import tempfile
 import unittest
@@ -26,6 +32,54 @@ class BootstrapTests(unittest.TestCase):
             b.run(["python3", "-c", "import time;time.sleep(5)"], timeout=0.05)
         with self.assertRaisesRegex(ValueError, "failed"):
             b.run(["python3", "-c", "raise SystemExit(1)"])
+
+    def test_exited_parent_descendant_is_stopped_on_timeout(self):
+        with tempfile.TemporaryDirectory() as temp:
+            marker = Path(temp) / "survived"
+            child = "import time; from pathlib import Path; time.sleep(0.5); Path(" + repr(str(marker)) + ").touch()"
+            parent = "import subprocess,sys; subprocess.Popen([sys.executable,'-c'," + repr(child) + "])"
+            with self.assertRaisesRegex(ValueError, "timed out"):
+                b.run([sys.executable, "-c", parent], timeout=0.1)
+            time.sleep(0.6)
+            self.assertFalse(marker.exists(), "Descendant survived timeout cleanup")
+
+    def test_trickle_body_has_an_absolute_deadline(self):
+        with tempfile.TemporaryDirectory() as temp:
+            client, server = socket.socketpair()
+            body = b"#!/bin/sh\nexit 0\n" + b"#" * 60
+
+            def writer():
+                try:
+                    server.sendall(b"HTTP/1.1 200 OK\r\nContent-Length: " + str(len(body)).encode() + b"\r\n\r\n")
+                    for byte in body:
+                        server.sendall(bytes([byte]))
+                        time.sleep(0.02)
+                except OSError:
+                    pass
+                finally:
+                    server.close()
+
+            thread = threading.Thread(target=writer, daemon=True)
+            thread.start()
+            response = http.client.HTTPResponse(client)
+            response.begin()
+
+            class Opener:
+                def open(self, *args, **kwargs):
+                    return response
+
+            started = time.monotonic()
+            try:
+                with patch.object(b.urllib.request, "build_opener", return_value=Opener()), patch.object(b, "DOWNLOAD_SECONDS", 0.15), warnings.catch_warnings():
+                    warnings.simplefilter("ignore", DeprecationWarning)
+                    with self.assertRaisesRegex(ValueError, "absolute elapsed-time"):
+                        b.download("https://example.invalid/asset", Path(temp) / "asset", 1000)
+                self.assertLess(time.monotonic() - started, 0.6)
+                self.assertEqual((Path(temp) / "asset").stat().st_size, 0)
+            finally:
+                response.close()
+                client.close()
+                thread.join(timeout=2)
 
     def test_release_rejections_before_execution(self):
         for failure in ["checksum", "duplicate", "missing", "wrong-target", "attestation", "changed-tag", "oversize", "old-gh", "metadata"]:

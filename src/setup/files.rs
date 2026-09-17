@@ -75,9 +75,20 @@ pub fn directory(path: &Path, create: bool, private: bool) -> Result<()> {
 }
 
 pub fn open(path: &Path, cap: u64) -> Result<File> {
+    let mut options = OpenOptions::new();
+    options.read(true);
+    checked_file(path, cap, options)
+}
+
+pub fn open_writable(path: &Path, cap: u64) -> Result<File> {
+    let mut options = OpenOptions::new();
+    options.read(true).write(true);
+    checked_file(path, cap, options)
+}
+
+fn checked_file(path: &Path, cap: u64, mut options: OpenOptions) -> Result<File> {
     paths(path)?;
-    let file = OpenOptions::new()
-        .read(true)
+    let file = options
         .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
         .open(path)?;
     let meta = file.metadata()?;
