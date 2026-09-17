@@ -4,43 +4,43 @@
   "tasks": [
     {
       "task_id": "ccx-crossorg-217",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "ccx-crossorg-218",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "ccx-migration-203",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "ccx-migration-204",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "ccx-onboard-search-210",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "ccx-onboard-search-211",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "ccx-onboard-search-212",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "ccx-onboard-search-213",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "ccx-onboard-search-214",
@@ -49,8 +49,8 @@
     },
     {
       "task_id": "django-audit-trail-implement-001",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "django-composite-field-recover-001",
@@ -59,13 +59,13 @@
     },
     {
       "task_id": "django-cross-team-boundary-001",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "django-legacy-dep-vuln-001",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "django-modelchoice-fk-fix-001",
@@ -79,33 +79,33 @@
     },
     {
       "task_id": "django-pre-validate-signal-design-001",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "django-rate-limit-design-001",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "django-rate-limit-middleware-feat-001",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "django-repo-scoped-access-001",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "django-request-factory-refac-001",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "django-role-based-access-001",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "django-select-for-update-fix-001",
@@ -114,13 +114,13 @@
     },
     {
       "task_id": "django-sensitive-file-exclusion-001",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "django-template-inherit-recall-001",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "element-web-roomheaderbuttons-can-crash-fix-001",
@@ -139,28 +139,28 @@
     },
     {
       "task_id": "flipt-degraded-context-fix-001",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "flipt-dep-refactor-001",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "flipt-flagexists-refactor-001",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "flipt-protobuf-metadata-design-001",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "flipt-repo-scoped-access-001",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "nodebb-notif-dropdown-fix-001",
@@ -174,8 +174,8 @@
     },
     {
       "task_id": "numpy-array-dispatch-refac-001",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "numpy-dtype-localize-001",
@@ -194,13 +194,13 @@
     },
     {
       "task_id": "vscode-custom-fold-region-feat-001",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     },
     {
       "task_id": "vscode-stale-diagnostics-feat-001",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited in review round 1."
     }
   ],
   "stress_sources": [

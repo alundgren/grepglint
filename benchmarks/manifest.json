@@ -78,7 +78,7 @@
       ],
       "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -141,7 +141,7 @@
       ],
       "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -224,7 +224,7 @@
       ],
       "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -271,7 +271,7 @@
         },
         {
           "id": "c2",
-          "text": "to_python looks up the queryset using to_field_name or pk and raises invalid_choice for invalid or missing values.",
+          "text": "to_python returns None for empty values. Otherwise it looks up the queryset using to_field_name or pk; the listed conversion and validation errors within that lookup block, including a nonexistent matching object, become invalid_choice.",
           "evidence_groups": [
             "g2"
           ]
@@ -335,7 +335,7 @@
         ]
       },
       "language": "Python",
-      "reference_answer": "prepare_value serializes to_field_name when configured, otherwise uses the model primary key. to_python looks up the queryset using to_field_name or pk and raises invalid_choice for invalid or missing values.",
+      "reference_answer": "prepare_value serializes to_field_name when configured, otherwise uses the model primary key. to_python returns None for empty values. Otherwise it looks up the queryset using to_field_name or pk; the listed conversion and validation errors within that lookup block, including a nonexistent matching object, become invalid_choice.",
       "split": "held_out"
     },
     {
@@ -390,7 +390,7 @@
       ],
       "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -493,7 +493,7 @@
       ],
       "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -576,7 +576,7 @@
       ],
       "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -659,7 +659,7 @@
       ],
       "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -742,7 +742,7 @@
       ],
       "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -825,7 +825,7 @@
       ],
       "adaptation": "The original asks for an escaping fix in a modified environment. Ask instead for the existing merge/render route in the unchanged source. Do not assert that the published bug exists or that build_attrs itself escapes HTML.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -908,7 +908,7 @@
       ],
       "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -948,7 +948,7 @@
       "claims": [
         {
           "id": "c1",
-          "text": "For a bound nonempty form, full_clean calls field cleaning, form cleaning and post-cleaning in that order.",
+          "text": "full_clean returns early for unbound forms, or when empty_permitted is true and has_changed() is false. Otherwise it runs field cleaning, form cleaning and post-cleaning in that order.",
           "evidence_groups": [
             "g1"
           ]
@@ -1019,7 +1019,7 @@
         ]
       },
       "language": "Python",
-      "reference_answer": "For a bound nonempty form, full_clean calls field cleaning, form cleaning and post-cleaning in that order. _clean_form invokes clean and routes ValidationError to add_error(None, error); clean documents form-wide errors under __all__.",
+      "reference_answer": "full_clean returns early for unbound forms, or when empty_permitted is true and has_changed() is false. Otherwise it runs field cleaning, form cleaning and post-cleaning in that order. _clean_form invokes clean and routes ValidationError to add_error(None, error); clean documents form-wide errors under __all__.",
       "split": "held_out"
     },
     {
@@ -1074,7 +1074,7 @@
       ],
       "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -1177,7 +1177,7 @@
       ],
       "adaptation": "Narrow the published all-files question to chain construction and synchronous legacy hooks. Resolve the conflicting task_spec middleware file list and ground_truth core-handler list against BaseHandler and MiddlewareMixin. Unrelated concrete middleware implementations are not mandatory evidence.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -1268,7 +1268,7 @@
       ],
       "adaptation": "Remove the obsolete pre-1.10 patterns() requirement and ask a separately scoped discovery question about APIs present in the pinned tree. The oracle is rebuilt from include and _path, not copied from upstream file lists.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -1379,7 +1379,7 @@
       ],
       "adaptation": "Narrow the published request to model, form and widget validation. Do not treat backend database constraints or unspecified custom overrides as mandatory evidence.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -1470,7 +1470,7 @@
       ],
       "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -1573,7 +1573,7 @@
       ],
       "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -1656,7 +1656,7 @@
       ],
       "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -1739,7 +1739,7 @@
       ],
       "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -1822,7 +1822,7 @@
       ],
       "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -1905,7 +1905,7 @@
       ],
       "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -1952,7 +1952,7 @@
         },
         {
           "id": "c2",
-          "text": "With overwrite_input it partitions the input or its flattened view in place; otherwise it obtains a partitioned result, then averages the middle selection.",
+          "text": "With overwrite_input it partitions a directly when an axis is supplied, or partitions the result of a.ravel() when axis is None; otherwise it obtains a partitioned result. It averages the middle selection, except a scalar partition result is returned with item().",
           "evidence_groups": [
             "g2"
           ]
@@ -2016,7 +2016,7 @@
         ]
       },
       "language": "Python",
-      "reference_answer": "The median implementation chooses the two middle partition indexes for even lengths and one middle index for odd lengths. With overwrite_input it partitions the input or its flattened view in place; otherwise it obtains a partitioned result, then averages the middle selection.",
+      "reference_answer": "The median implementation chooses the two middle partition indexes for even lengths and one middle index for odd lengths. With overwrite_input it partitions a directly when an axis is supplied, or partitions the result of a.ravel() when axis is None; otherwise it obtains a partitioned result. It averages the middle selection, except a scalar partition result is returned with item().",
       "split": "held_out"
     },
     {
@@ -2071,7 +2071,7 @@
       ],
       "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -2154,7 +2154,7 @@
       ],
       "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -2237,7 +2237,7 @@
       ],
       "adaptation": "Keep the behavioral discovery task and replace the answer-file protocol with the corpus contract. The published oracle chunk 1-50 does not contain computeMergeResult; correct it to the verified ranges. The relevant routine is in keybindingsMerge.ts, not the adjacent settingsMerge.ts.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -2324,7 +2324,7 @@
       ],
       "adaptation": "Keep behavioral discovery, correct placeholder oracle lines 1-50, and correct the published claim that compute_sources=False always returns None: the unit-variance branch computes and returns S.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -2411,7 +2411,7 @@
       ],
       "adaptation": "Narrow the broad logging/warning inventory to two existing contracts. Correct the prompt description of check_is_fitted as a warning: the source raises NotFittedError. Rebuild mandatory evidence instead of adopting inconsistent upstream file lists.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -2502,7 +2502,7 @@
       ],
       "adaptation": "Keep behavioral discovery and change output to the corpus contract. Replace upstream placeholder oracle lines 1-50 with the actual helper ranges.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -2589,7 +2589,7 @@
       ],
       "adaptation": "Keep behavioral discovery and change output to the corpus contract. Replace upstream placeholder oracle lines 1-50 with the actual onPoolReady ranges.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -2676,7 +2676,7 @@
       ],
       "adaptation": "Authored for the exact eShop source revision. The stated reference claims describe the checked-in behavior, including failure cases; no application or dependency code was executed.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "authored",
@@ -2738,7 +2738,7 @@
       ],
       "adaptation": "Authored for the exact eShop source revision. The stated reference claims describe the checked-in behavior, including failure cases; no application or dependency code was executed.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "authored",
@@ -2800,7 +2800,7 @@
       ],
       "adaptation": "Authored for the exact eShop source revision. The stated reference claims describe the checked-in behavior, including failure cases; no application or dependency code was executed.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "authored",
@@ -2882,7 +2882,7 @@
       ],
       "adaptation": "Authored for the exact eShop source revision. The stated reference claims describe the checked-in behavior, including failure cases; no application or dependency code was executed.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "authored",
@@ -2924,7 +2924,7 @@
       ],
       "adaptation": "Authored for the exact eShop source revision. The stated reference claims describe the checked-in behavior, including failure cases; no application or dependency code was executed.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "authored",
@@ -2986,7 +2986,7 @@
       ],
       "adaptation": "Authored for the exact eShop source revision. The stated reference claims describe the checked-in behavior, including failure cases; no application or dependency code was executed.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "authored",
@@ -3048,7 +3048,7 @@
       ],
       "adaptation": "Authored for the exact eShop source revision. The stated reference claims describe the checked-in behavior, including failure cases; no application or dependency code was executed.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "authored",
@@ -3110,7 +3110,7 @@
       ],
       "adaptation": "Authored for the exact eShop source revision. The stated reference claims describe the checked-in behavior, including failure cases; no application or dependency code was executed.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "authored",
@@ -3152,7 +3152,7 @@
       ],
       "adaptation": "Authored for the exact eShop source revision. The stated reference claims describe the checked-in behavior, including failure cases; no application or dependency code was executed.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "authored",
@@ -3234,7 +3234,7 @@
       ],
       "adaptation": "Authored for the exact eShop source revision. The stated reference claims describe the checked-in behavior, including failure cases; no application or dependency code was executed.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "authored",

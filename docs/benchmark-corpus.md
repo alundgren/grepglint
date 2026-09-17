@@ -60,9 +60,11 @@ were unsuitable for several sources because their output differed from the
 tracked objects; the retained preparation report records those failures.
 
 Each prepared source, including its local Git storage, must fit within 1 GiB.
-The shared directory has an 8 GiB budget, and checks preserve 1 GiB free beyond
-Grepglint's 320 MiB disk reserve. Fetching and Git-object export each have a
-300-second deadline. Child output, archive entries and paths are bounded.
+The shared directory has an 8 GiB budget. Space checks require 1 GiB free
+beyond Grepglint's 320 MiB disk reserve before preparation, during fetch,
+before export and after local Git initialization. These checks sample disk use; another process
+can consume disk between checks.
+Fetching and Git-object export each have a 300-second deadline. Child output, archive entries and paths are bounded.
 Temporary fetch data is removed on success or failure. After using the corpus,
 remove only the disposable directory you created; no global Grepglint cache
 or unrelated checkout needs cleanup.
