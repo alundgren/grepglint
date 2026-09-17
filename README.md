@@ -208,6 +208,8 @@ The [discovery corpus](docs/benchmark-corpus.md) provides 40 pinned-repository
 questions, offline validation, source audits and a language-independent
 [scoring contract](docs/benchmark-scoring.md). Its
 [coverage report](docs/benchmark-coverage.md) includes cold-index failures.
+The [Codex preflight](docs/benchmark-preflight.md) checks tool and instruction
+isolation using the pinned client and a local stub without model inference.
 
 Grepglint code is MIT licensed. Retained benchmark evidence keeps its upstream
 licenses and notices. The name combines grep with noticing something useful. Exact-name
