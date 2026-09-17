@@ -132,7 +132,13 @@ The 40 MiB database cap and 41 MiB journal allowance include retained/staged
 payload, indexes, deleted-page reuse, and rollback work. No second payload copy
 or vacuum file is created. Private ownership metadata remains after purge for
 later installer integration. Store initialization refuses unrecorded or replaced
-files. The existing repository reserve and daemon limits remain unchanged.
+files. A locked initialization intent names one unpredictable staging directory.
+Recovery completes only its empty files and matching partial ownership record,
+then renames the complete directory into place. The existing repository reserve
+and daemon limits remain unchanged. Capture enforces the full free-space reserve;
+purge only requires its bounded rollback allowance. Output clients hold the
+shared maintenance lock for their store lifetime, so managed changes exclude
+output work as well as search.
 
 ## Daemon maintenance
 

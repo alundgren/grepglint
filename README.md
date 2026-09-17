@@ -231,7 +231,8 @@ a committed result whose preview cannot be delivered expires normally.
 Output commands access a separate account-local store and do not contact the
 search daemon, including an older or incompatible running daemon. Search's
 16 KiB request and 64 KiB response protocol is unchanged. Output commands
-never stop a process or inspect a PID to decide ownership. Normal daemon
+never stop a process or inspect a PID to decide ownership. They hold the shared
+maintenance lock while accessing output, so managed maintenance excludes them. Normal daemon
 startup also attempts output cleanup; output corruption cannot disable search.
 
 | Output resource | Default policy |
@@ -243,7 +244,7 @@ startup also attempts output cleanup; output corruption cannot disable search.
 | Preview | First/last 256 input bytes; at most 8 KiB after escaping and metadata |
 | Page | At most 4,096 original bytes, preferring LF boundaries and preserving UTF-8; encoded output below 64 KiB |
 | Disk | 40 MiB database plus at most 41 MiB rollback journal; under 4 KiB ownership metadata and fixed empty lock files |
-| Reserve | Require the existing twice-repository-database plus 64 MiB reserve, and another 81 MiB for output work |
+| Reserve | Capture requires the existing twice-repository-database plus 64 MiB reserve and another 81 MiB; cleanup/purge need only the current output database size plus 1 MiB for rollback |
 | Memory | 256 KiB SQLite page cache per output client; 64 MiB SQLite heap ceiling; bounded buffers; no whole-log allocation |
 | Deadlines | 10 seconds without stdin, 120 seconds overall capture; two-second lock/database acquisition and output delivery waits |
 | Maintenance | At most 64 output records and two capture slots; runs on startup and output requests, never idle polling |
@@ -251,6 +252,10 @@ startup also attempts output cleanup; output corruption cannot disable search.
 Output bytes live in `output-v1` below the configured cache. The private
 ownership record identifies the database, persistent journal, and capture locks
 by device/inode. It is retained for reuse and future installer integration.
+A private `output-gate` file records an unpredictable initialization directory
+before its files are created. Incomplete initialization resumes on the next
+output request; the complete directory is published with one rename. No
+unrecorded directory is recursively removed.
 Output does not evict repository cache entries. Staging uses the same database;
 commit publishes metadata without copying the payload. Short transactions let
 other clients progress while a producer pauses. OS locks release on exit or

@@ -151,7 +151,6 @@ fn restart_purge_permissions_and_unrelated_files() {
         "ownership.json",
         "capture-0.lock",
         "capture-1.lock",
-        "gate",
     ] {
         assert_eq!(
             fs::metadata(f.root.path().join("cache/output-v1").join(name))
@@ -374,4 +373,95 @@ fn repository_search_and_idle_restart_work_during_capture() {
         .unwrap();
     assert!(search.status.success());
     std::thread::sleep(Duration::from_millis(1300));
+}
+
+#[test]
+fn interrupted_initialization_recovers_without_manual_deletion() {
+    use std::os::unix::process::CommandExt;
+    for limit in [0, 100] {
+        let f = Fixture::new();
+        let mut command = f.command();
+        unsafe {
+            command.pre_exec(move || {
+                let bound = libc::rlimit {
+                    rlim_cur: limit,
+                    rlim_max: limit,
+                };
+                if libc::setrlimit(libc::RLIMIT_FSIZE, &bound) != 0 {
+                    return Err(std::io::Error::last_os_error());
+                }
+                Ok(())
+            });
+        }
+        let mut child = command
+            .args(["output", "bounce"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        child
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(&vec![b'x'; 6000])
+            .unwrap();
+        let output = child.wait_with_output().unwrap();
+        assert!(!output.status.success());
+        assert!(output.stdout.is_empty());
+        let handle = f.handle(&vec![b'x'; 6000]);
+        assert!(f.page(&handle, None).status.success());
+        let leftovers = fs::read_dir(f.root.path().join("cache"))
+            .unwrap()
+            .filter_map(Result::ok)
+            .filter(|e| e.file_name().to_string_lossy().starts_with("output-init-"))
+            .count();
+        assert_eq!(leftovers, 0);
+    }
+}
+
+#[test]
+fn legitimate_symlinked_ancestor_works_and_final_file_symlinks_fail() {
+    use std::os::unix::fs::symlink;
+    let f = Fixture::new();
+    let real = f.root.path().join("real");
+    fs::create_dir(&real).unwrap();
+    let alias = f.root.path().join("alias");
+    symlink(&real, &alias).unwrap();
+    let mut c = f.command();
+    c.env("GREPGLINT_CACHE_DIR", alias.join("cache"));
+    let mut child = c
+        .args(["output", "bounce"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(&vec![b'x'; 6000])
+        .unwrap();
+    let o = child.wait_with_output().unwrap();
+    assert!(o.status.success(), "{}", String::from_utf8_lossy(&o.stderr));
+    let handle = String::from_utf8(o.stdout)
+        .unwrap()
+        .split_whitespace()
+        .nth(1)
+        .unwrap()
+        .trim_end_matches(':')
+        .to_owned();
+    let path = real.join("cache/output-v1/output.sqlite");
+    fs::rename(&path, real.join("saved.sqlite")).unwrap();
+    symlink(real.join("saved.sqlite"), &path).unwrap();
+    assert!(
+        !f.command()
+            .env("GREPGLINT_CACHE_DIR", alias.join("cache"))
+            .args(["output", "page", &handle, "--json"])
+            .output()
+            .unwrap()
+            .status
+            .success()
+    );
 }

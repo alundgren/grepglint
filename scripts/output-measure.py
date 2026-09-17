@@ -3,7 +3,6 @@
 import json
 import os
 from pathlib import Path
-import statistics
 import subprocess
 import tempfile
 import threading
@@ -24,7 +23,7 @@ with tempfile.TemporaryDirectory(prefix="gg-output-") as temporary:
             except FileNotFoundError:
                 pass
 
-    sampler = threading.Thread(target=sample_disk)
+    sampler = threading.Thread(target=sample_disk, daemon=True)
     sampler.start()
     observations = []
 

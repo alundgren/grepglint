@@ -252,8 +252,11 @@ fn main() {
     if let Err(error) = run(&cli) {
         if matches!(
             cli.command,
-            Tool::Search { json: true, .. } | Tool::Status { json: true }
-                | Tool::Output { command: OutputTool::Page { json: true, .. } }
+            Tool::Search { json: true, .. }
+                | Tool::Status { json: true }
+                | Tool::Output {
+                    command: OutputTool::Page { json: true, .. }
+                }
         ) {
             println!("{}", json!({"error":format!("{error:#}")}));
         } else {

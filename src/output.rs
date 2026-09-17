@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
     fs::{self, File, OpenOptions},
-    io::{Read, Write},
+    io::{Read, Seek, SeekFrom, Write},
     os::unix::fs::{MetadataExt, OpenOptionsExt},
     path::{Path, PathBuf},
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
@@ -45,6 +45,7 @@ pub struct Store {
     db: Connection,
     directory: PathBuf,
     reserve: u64,
+    _maintenance: File,
 }
 
 fn now() -> Result<u64> {
@@ -99,13 +100,92 @@ fn directory(path: &Path) -> Result<()> {
     Ok(())
 }
 
+const INIT_MAGIC: &str = "grepglint-output-init-v1\n";
+
+// The locked intent is complete before any staging file is created. Recovery
+// finishes only that unpredictable, recorded staging directory; it deletes nothing.
+fn initialize(cache: &Path, gate: &mut File) -> Result<PathBuf> {
+    let final_path = cache.join("output-v1");
+    if fs::symlink_metadata(&final_path).is_ok() {
+        directory(&final_path)?;
+        return Ok(final_path);
+    }
+    let mut state = Vec::new();
+    (&mut *gate).take(128).read_to_end(&mut state)?;
+    ensure!(
+        gate.metadata()?.len() < 128,
+        "Invalid output initialization record; preserve it for inspection."
+    );
+    let state = std::str::from_utf8(&state).context("Invalid output initialization record")?;
+    let stage_id = if let Some(id) = state
+        .strip_prefix(INIT_MAGIC)
+        .and_then(|s| s.strip_suffix('\n'))
+    {
+        validate_handle(id)?;
+        id.to_owned()
+    } else {
+        ensure!(
+            INIT_MAGIC.starts_with(state)
+                || state.strip_prefix(INIT_MAGIC).is_some_and(|s| s.len() <= 32
+                    && s.bytes()
+                        .all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase())),
+            "Unexpected output initialization record; preserve it for inspection."
+        );
+        let id = random_handle()?;
+        gate.set_len(0)?;
+        gate.seek(SeekFrom::Start(0))?;
+        gate.write_all(format!("{INIT_MAGIC}{id}\n").as_bytes())?;
+        gate.sync_all()?;
+        id
+    };
+    let stage = cache.join(format!("output-init-{stage_id}"));
+    directory(&stage)?;
+    let mut identities = Vec::new();
+    for name in [
+        "output.sqlite",
+        "output.sqlite-journal",
+        "capture-0.lock",
+        "capture-1.lock",
+    ] {
+        let file = private(&stage.join(name), true)?;
+        let metadata = file.metadata()?;
+        ensure!(
+            metadata.len() == 0,
+            "Unexpected contents in output initialization state; preserve it for inspection."
+        );
+        identities.push(Identity {
+            name: name.into(),
+            device: metadata.dev(),
+            inode: metadata.ino(),
+        });
+    }
+    let bytes = serde_json::to_vec(&Ownership {
+        version: 1,
+        files: identities,
+    })?;
+    let mut owner = private(&stage.join("ownership.json"), true)?;
+    let mut partial = Vec::new();
+    (&mut owner)
+        .take(MAX_MANIFEST + 1)
+        .read_to_end(&mut partial)?;
+    ensure!(
+        bytes.starts_with(&partial),
+        "Output initialization ownership was changed; preserve it for inspection."
+    );
+    owner.seek(SeekFrom::Start(partial.len() as u64))?;
+    owner.write_all(&bytes[partial.len()..])?;
+    owner.sync_all()?;
+    fs::rename(&stage, &final_path)?;
+    Ok(final_path)
+}
+
 impl Store {
     pub fn open(config: &Config) -> Result<Self> {
         directory(&config.directory)?;
-        let directory_path = config.directory.join("output-v1");
-        directory(&directory_path)?;
-        let gate = private(&directory_path.join("gate"), true)?;
+        let maintenance = crate::maintenance::shared(config)?;
+        let mut gate = private(&config.directory.join("output-gate"), true)?;
         lock(&gate)?;
+        let directory_path = initialize(&config.directory, &mut gate)?;
         let owner_path = directory_path.join("ownership.json");
         let names = [
             "output.sqlite",
@@ -113,40 +193,6 @@ impl Store {
             "capture-0.lock",
             "capture-1.lock",
         ];
-        if !owner_path.try_exists()? {
-            for name in names {
-                ensure!(
-                    !directory_path.join(name).try_exists()?,
-                    "Unrecorded output storage; preserve files and inspect the cache."
-                );
-            }
-            let mut identities = Vec::new();
-            for name in names {
-                let f = OpenOptions::new()
-                    .read(true)
-                    .write(true)
-                    .create_new(true)
-                    .mode(0o600)
-                    .open(directory_path.join(name))?;
-                let m = f.metadata()?;
-                identities.push(Identity {
-                    name: name.into(),
-                    device: m.dev(),
-                    inode: m.ino(),
-                });
-            }
-            let bytes = serde_json::to_vec(&Ownership {
-                version: 1,
-                files: identities,
-            })?;
-            let mut f = OpenOptions::new()
-                .write(true)
-                .create_new(true)
-                .mode(0o600)
-                .open(&owner_path)?;
-            f.write_all(&bytes)?;
-            f.sync_all()?;
-        }
         let owner = private(&owner_path, false)?;
         ensure!(
             owner.metadata()?.len() <= MAX_MANIFEST,
@@ -179,18 +225,13 @@ impl Store {
             }
         }
         ensure!(
-            fs2::available_space(&directory_path)?
-                >= config.max_bytes * 2 + 64 * 1024 * 1024 + 2 * DB_LIMIT + 1024 * 1024,
-            "Insufficient free disk space for output and repository reserves."
-        );
-        ensure!(
             fs::metadata(directory_path.join("output.sqlite"))?.len() <= DB_LIMIT
                 && fs::metadata(directory_path.join("output.sqlite-journal"))?.len()
                     <= DB_LIMIT + 1024 * 1024,
             "Output database exceeds its disk budget."
         );
         let db = Connection::open_with_flags(
-            directory_path.join("output.sqlite"),
+            fs::canonicalize(&directory_path)?.join("output.sqlite"),
             rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE
                 | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX
                 | rusqlite::OpenFlags::SQLITE_OPEN_NOFOLLOW,
@@ -224,6 +265,7 @@ impl Store {
             db,
             directory: directory_path,
             reserve: config.max_bytes * 2 + 64 * 1024 * 1024,
+            _maintenance: maintenance,
         };
         store.cleanup()?;
         Ok(store)
@@ -237,7 +279,18 @@ impl Store {
         Ok(())
     }
 
+    fn deletion_space(&self) -> Result<()> {
+        let journal_allowance =
+            fs::metadata(self.directory.join("output.sqlite"))?.len() + 1024 * 1024;
+        ensure!(
+            fs2::available_space(&self.directory)? >= journal_allowance,
+            "Output cleanup needs room for its rollback journal; free some disk space and retry output purge. Retained state is preserved."
+        );
+        Ok(())
+    }
+
     fn cleanup(&self) -> Result<()> {
+        self.deletion_space()?;
         self.db.execute(
             "DELETE FROM outputs WHERE committed=1 AND created <= ?1",
             [now()?.saturating_sub(TTL) as i64],
@@ -375,6 +428,8 @@ impl Store {
         let mut hash = Sha256::new();
         let mut total = 0u64;
         let mut ordinal = 0;
+        let mut actual_lines = 0u64;
+        let mut last_byte = None;
         let mut selected = Vec::with_capacity(PAGE + 4);
         while let Some(row) = rows.next()? {
             ensure!(
@@ -391,6 +446,8 @@ impl Store {
                 "Retained output is corrupt."
             );
             hash.update(&b);
+            actual_lines += b.iter().filter(|&&byte| byte == b'\n').count() as u64;
+            last_byte = b.last().copied();
             let start = offset.saturating_sub(total).min(b.len() as u64) as usize;
             if total + b.len() as u64 > offset && selected.len() < PAGE + 4 {
                 let count = (b.len() - start).min(PAGE + 4 - selected.len());
@@ -404,7 +461,9 @@ impl Store {
             );
         }
         ensure!(
-            total == bytes && format!("{:x}", hash.finalize()) == digest,
+            total == bytes
+                && actual_lines + u64::from(last_byte.is_some_and(|b| b != b'\n')) == lines
+                && format!("{:x}", hash.finalize()) == digest,
             "Retained output is corrupt; no page was returned."
         );
         let end = match std::str::from_utf8(&selected) {
@@ -436,6 +495,7 @@ impl Store {
     }
 
     pub fn purge(&mut self) -> Result<()> {
+        self.deletion_space()?;
         let mut leases = Vec::new();
         for slot in 0..2 {
             let f = private(&self.directory.join(format!("capture-{slot}.lock")), false)?;
@@ -507,7 +567,9 @@ fn decode_cursor(handle: &str, cursor: Option<&str>) -> Result<u64> {
 pub fn printable(s: &str) -> String {
     s.chars()
         .flat_map(|c| {
-            if c.is_control() || matches!(c, '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{2069}') {
+            if (c.is_control() && c != '\n')
+                || matches!(c, '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{2069}')
+            {
                 c.escape_default().collect::<Vec<_>>()
             } else {
                 vec![c]
@@ -737,6 +799,46 @@ mod tests {
             .is_err()
         );
     }
+    #[test]
+    fn recorded_initialization_resumes_before_ownership_publication() {
+        let (_dir, config) = fixture();
+        directory(&config.directory).unwrap();
+        let id = random_handle().unwrap();
+        let mut gate = private(&config.directory.join("output-gate"), true).unwrap();
+        gate.write_all(format!("{INIT_MAGIC}{id}\n").as_bytes())
+            .unwrap();
+        let stage = config.directory.join(format!("output-init-{id}"));
+        directory(&stage).unwrap();
+        private(&stage.join("output.sqlite"), true).unwrap();
+        drop(gate);
+        let mut store = Store::open(&config).unwrap();
+        let handle = retain(&mut store, 5000);
+        assert!(store.page(&handle, None).is_ok());
+        assert!(!stage.exists());
+    }
+
+    #[test]
+    fn purge_does_not_require_capture_reserve() {
+        let (_dir, config) = fixture();
+        let mut store = Store::open(&config).unwrap();
+        let handle = retain(&mut store, 5000);
+        store.reserve = u64::MAX - 2 * DB_LIMIT - 1024 * 1024;
+        assert!(store.begin().is_err());
+        store.purge().unwrap();
+        assert!(store.page(&handle, None).is_err());
+    }
+
+    #[test]
+    fn output_work_participates_in_maintenance_exclusion() {
+        let (_dir, config) = fixture();
+        let store = Store::open(&config).unwrap();
+        let maintenance = crate::maintenance::lock_file(&config, "maintenance.lock").unwrap();
+        assert!(maintenance.try_lock_exclusive().is_err());
+        drop(store);
+        maintenance.try_lock_exclusive().unwrap();
+        assert!(Store::open(&config).is_err());
+    }
+
     #[test]
     fn reservations_entries_and_fixed_expiry() {
         let (_dir, config) = fixture();

@@ -1,6 +1,7 @@
 # Retained output observations
 
-Measured on Linux with the release build using
+Measured on Linux with the pinned Rust 1.89 release build after integrating
+main ccddcaf, using
 `python3 scripts/output-measure.py`. The script makes no network or model calls.
 It creates disposable repositories and alternates capture, paging, and repository
 search for 20 cycles. Each log contains 2,079,000 bytes of repeated test results
@@ -10,14 +11,14 @@ log, confirms pressure eviction of the oldest handle, and purges output.
 
 | Operation | Cold elapsed | Warm median | Maximum elapsed | Maximum CLI peak RSS | Maximum encoded response |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Capture | 2.251 s | 1.0884 s | 2.4714 s | 7,140 KiB | 830 bytes |
-| First page | 45.6 ms | 24.7 ms | 61.6 ms | 7,116 KiB | 4,482 bytes |
-| Repository query | 568.4 ms | 23.4 ms | 568.4 ms | 4,924 KiB | 787 bytes |
+| Capture | 1.7998 s | 1.4497 s | 1.9554 s | 7,580 KiB | 817 bytes |
+| First page | 45.5 ms | 37.5 ms | 152.3 ms | 7,656 KiB | 4,482 bytes |
+| Repository query | 2.0436 s | 54.7 ms | 2.0436 s | 5,400 KiB | 787 bytes |
 
-The daemon had one thread and 7,872 KiB peak RSS after these alternating queries.
-A 10 ms sampler observed 63,016,960 allocated disk bytes at peak, including the
+The daemon had one thread and 8,196 KiB peak RSS after these alternating queries.
+A 10 ms sampler observed 63,025,152 allocated disk bytes at peak, including the
 repository cache, output database, rollback journal, ownership, and locks.
-After purge, 31,506,432 allocated bytes remained, mostly reusable empty output
+After purge, 31,514,624 allocated bytes remained, mostly reusable empty output
 database pages. The journal was truncated; source contents were erased with
 SQLite secure deletion. The sampler can miss shorter peaks, so the 81 MiB output
 file allowance, plus the repository's existing budget, is the enforced bound.

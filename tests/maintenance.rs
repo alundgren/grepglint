@@ -111,7 +111,15 @@ fn missing_daemon_help_and_catalog_do_not_start_or_create_cache() {
         }
         if args[0] == "tools" {
             let value: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
-            assert_eq!(value["tools"].as_array().unwrap().len(), 1);
+            assert_eq!(
+                value["tools"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|tool| tool["name"].as_str().unwrap())
+                    .collect::<Vec<_>>(),
+                ["search", "output bounce", "output page", "output purge"]
+            );
         }
     }
 }
