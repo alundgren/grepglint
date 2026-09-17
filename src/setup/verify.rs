@@ -39,6 +39,21 @@ pub fn installation(record: &Record, state: &Path) -> Result<()> {
         record.phase == "complete" || record.phase == "installed",
         "Installation interrupted; rerun ./install install to resume"
     );
+    executables(record, state)?;
+    cache(record)?;
+    match maintenance::status(&record.config())? {
+        Some(value) => {
+            health(record, &value)?;
+            println!("Real daemon identity and effective limits verified");
+        }
+        None => println!("No real daemon is running; verification will not start it"),
+    }
+    fixture(&record.destination)?;
+    println!("Verified binary, private cache, isolated search, reuse and dirty freshness");
+    Ok(())
+}
+
+pub fn executables(record: &Record, state: &Path) -> Result<()> {
     ensure!(
         files::hash(&state.join("maintenance"))? == record.digest,
         "Maintenance copy modified; verification failed"
@@ -53,6 +68,10 @@ pub fn installation(record: &Record, state: &Path) -> Result<()> {
             == format!("grepglint {}", record.release.trim_start_matches('v')),
         "Installed version mismatch"
     );
+    Ok(())
+}
+
+pub fn cache(record: &Record) -> Result<()> {
     files::directory(&record.cache, false, true)?;
     let cache_name = std::ffi::CString::new(record.cache.as_os_str().as_encoded_bytes())?;
     ensure!(
@@ -67,15 +86,18 @@ pub fn installation(record: &Record, state: &Path) -> Result<()> {
         let _ = files::open_writable(&cache_file, record.database_bytes)
             .context("Cache database is not readable and writable")?;
     }
-    match maintenance::status(&record.config())? {
-        Some(value) => {
-            health(record, &value)?;
-            println!("Real daemon identity and effective limits verified");
-        }
-        None => println!("No real daemon is running; verification will not start it"),
+    if !files::absent(&cache_file)? {
+        let db = rusqlite::Connection::open_with_flags(
+            &cache_file,
+            rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
+        )?;
+        db.busy_timeout(Duration::from_millis(500))?;
+        let version: i64 = db.query_row("PRAGMA user_version", [], |row| row.get(0))?;
+        ensure!(
+            version == crate::index::SCHEMA_VERSION,
+            "Incompatible cache format {version}; no migration performed. Preserve the cache and use the previous release or rg"
+        );
     }
-    fixture(&record.destination)?;
-    println!("Verified binary, private cache, isolated search, reuse and dirty freshness");
     Ok(())
 }
 

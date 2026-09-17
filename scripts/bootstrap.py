@@ -184,6 +184,45 @@ def fetch(tag, directory):
     return binary, expected_commit, digest
 
 
+RECORD_FIELDS = {"schema_version", "phase", "release", "commit", "digest", "destination", "cache", "cache_owned", "database_bytes", "idle_seconds", "previous_digest", "previous_mode", "cargo_digest"}
+PHASES = {"prepared", "retained", "installed", "complete", "upgrade_prepared", "upgrade_retained", "upgrade_installed", "upgrade_copied", "rollback", "rollback_complete", "repairing"}
+
+
+def validate_record(record, state, prior=False):
+    require(isinstance(record, dict) and RECORD_FIELDS <= record.keys() and not record.keys() - RECORD_FIELDS - {"change"}, "Invalid installation record fields; state preserved")
+    require(type(record["schema_version"]) is int and record["schema_version"] in (1, 2), "Unsupported state version; state preserved")
+    require(record["phase"] in PHASES, "Unrecognized installation phase; state preserved")
+    require(isinstance(record["release"], str) and re.fullmatch(TAG, record["release"]), "Invalid recorded release")
+    for field, length in [("commit", 40), ("digest", 64), ("previous_digest", 64), ("cargo_digest", 64)]:
+        value = record[field]
+        require(value is None and field in ("previous_digest", "cargo_digest") or isinstance(value, str) and re.fullmatch(f"[0-9a-f]{{{length}}}", value), "Invalid recorded identity")
+    require(type(record["cache_owned"]) is bool, "Invalid cache ownership")
+    require(type(record["database_bytes"]) is int and 8*1024*1024 <= record["database_bytes"] <= 1024*1024*1024, "Invalid database limit")
+    require(type(record["idle_seconds"]) is int and 1 <= record["idle_seconds"] <= 3600, "Invalid idle limit")
+    mode = record["previous_mode"]
+    require((record["previous_digest"] is None) == (mode is None) and (mode is None or type(mode) is int and mode >= 0 and mode & ~0o777 == 0 and mode & 0o022 == 0), "Invalid prior permissions")
+    paths = [state]
+    for field in ("destination", "cache"):
+        require(isinstance(record[field], str), "Invalid recorded path")
+        path = Path(record[field])
+        path_check(path)
+        paths.append(path)
+    require(all(not a.is_relative_to(c) and not c.is_relative_to(a) for i, a in enumerate(paths) for c in paths[i+1:]), "Recorded paths must be separate")
+    require(len(os.fsencode(paths[2] / "daemon.sock")) < 100, "Cache path too long")
+    change = record.get("change")
+    if change is not None:
+        require(not prior and record["schema_version"] == 2 and isinstance(change, dict) and set(change) == {"prior", "destination_mode", "maintenance_mode"}, "Invalid upgrade recovery record")
+        validate_record(change["prior"], state, prior=True)
+        require(change["prior"]["phase"] == "complete", "Invalid prior phase")
+        for field in ("destination", "cache", "cache_owned", "database_bytes", "idle_seconds"):
+            require(record[field] == change["prior"][field], "Upgrade changed recorded paths or settings")
+        for field in ("destination_mode", "maintenance_mode"):
+            value = change[field]
+            require(type(value) is int and value >= 0 and value & ~0o777 == 0 and value & 0o022 == 0 and value & 0o100 != 0, "Invalid rollback permissions")
+    else:
+        require(not record["phase"].startswith("upgrade_") and not record["phase"].startswith("rollback"), "Missing upgrade recovery data")
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Install a verified release from this trusted checkout; local maintenance works offline")
     parser.add_argument("action", nargs="?", choices=["install", "verify", "status", "upgrade", "repair", "uninstall", "purge"])
@@ -203,16 +242,16 @@ def main(argv=None):
     if record_path.exists() or record_path.is_symlink():
         require(stat.S_IMODE(state.stat().st_mode) == 0o700 and state.stat().st_uid == os.getuid(), "State must be private and account-owned")
         record = json.loads(regular(record_path, 65536))
-        require(record.get("schema_version") == 1, "Unsupported state version; state preserved")
+        validate_record(record, state)
     if not args.action:
         require(sys.stdin.isatty(), "Noninteractive use requires an explicit action; see --help")
         print(f"Installation: {record['phase'] if record else 'not installed'}")
-        print("1 Install or resume\n2 Verify locally\n3 Status\n0 Cancel")
-        args.action = {"1": "install", "2": "verify", "3": "status"}.get(input("Choose: ").strip())
+        print("1 Install or resume\n2 Verify locally\n3 Status\n4 Upgrade\n5 Repair\n0 Cancel")
+        args.action = {"1": "install", "2": "verify", "3": "status", "4": "upgrade", "5": "repair"}.get(input("Choose: ").strip())
         if args.action is None:
             print("Cancelled; nothing changed")
             return 0
-    require(args.action not in ["upgrade", "repair", "uninstall", "purge"], "This action is not available in this version")
+    require(args.action not in ["uninstall", "purge"], "This action is not available in this version")
     native_args = ["setup", args.action, "--state-dir", str(state)]
     for key in ["destination", "cache_dir"]:
         if getattr(args, key):
@@ -222,24 +261,42 @@ def main(argv=None):
     if args.action == "status":
         print(f"Installation: {record['phase'] if record else 'not installed'}")
         return 0
+    recovery = False
     if record:
-        require(not args.release or args.release == record.get("release"), "Upgrade or downgrade is unavailable; recorded release preserved")
-        local = state / "maintenance"
+        recovery = record.get("change") is not None
+        require(args.action == "upgrade" or not args.release or args.release == record["release"], "Upgrade or downgrade requires the upgrade action; recorded release preserved")
+        if recovery:
+            native_args[1] = "repair"
+            args.release = record["release"]
+            local = state / "candidate"
+            if record["phase"] == "complete" and not local.exists() and not local.is_symlink():
+                local = state / "maintenance"
+        else:
+            local = state / "maintenance"
         if local.exists() or local.is_symlink():
-            require(hashlib.sha256(regular(local, CAP)).hexdigest() == record.get("digest"), "Maintenance copy changed; refusing to execute it")
-            return subprocess.call([str(local)] + native_args)
-        require(record.get("phase") == "prepared" and args.action == "install", "Maintenance copy missing; installation is unhealthy")
-        args.release = record["release"]
-    require(args.action == "install", "No installation record; nothing verified")
+            require(hashlib.sha256(regular(local, CAP)).hexdigest() == record["digest"], "Maintenance copy changed; refusing to execute it")
+            if args.action != "upgrade" or recovery:
+                return subprocess.call([str(local)] + native_args)
+        elif not recovery:
+            require(args.action == "repair" or record["phase"] == "prepared" and args.action == "install", "Maintenance copy missing; run ./install repair")
+            installed = Path(record["destination"])
+            if installed.exists() or installed.is_symlink():
+                require(hashlib.sha256(regular(installed, CAP)).hexdigest() == record["digest"], "Installed executable modified; preserved")
+                if args.action == "repair":
+                    return subprocess.call([str(installed)] + native_args)
+        if args.action != "upgrade" or recovery:
+            args.release = record["release"]
+    require(record is not None or args.action == "install", "No installation record; run ./install install first")
+    require(args.action in ("install", "upgrade", "repair") or recovery, "No installation record; nothing verified")
     if not args.release and sys.stdin.isatty():
         args.release = input("Exact release tag (e.g. v0.1.0), blank to cancel: ").strip()
         if not args.release:
             return 0
-    require(args.release, "Install requires --release vMAJOR.MINOR.PATCH")
+    require(args.release, "Install or upgrade requires --release vMAJOR.MINOR.PATCH")
     require(shutil.disk_usage(tempfile.gettempdir()).free >= 4 * CAP + 64 * 1024 * 1024, "Insufficient staging disk space")
     with tempfile.TemporaryDirectory(prefix="grepglint-download-") as directory:
         binary, source_commit, digest = fetch(args.release, Path(directory))
-        if record:
+        if record and (args.action != "upgrade" or recovery):
             require(source_commit == record["commit"] and digest == record["digest"], "Recovery release identity changed")
         return subprocess.call([str(binary)] + native_args + ["--release", args.release,
                                "--commit", source_commit, "--digest", digest])

@@ -1,4 +1,5 @@
 //! Human maintenance. Records live separately from the disposable search cache.
+mod change;
 mod files;
 mod process;
 mod verify;
@@ -62,6 +63,8 @@ pub struct Record {
     pub previous_digest: Option<String>,
     pub previous_mode: Option<u32>,
     pub cargo_digest: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub change: Option<Box<change::Change>>,
 }
 
 impl Record {
@@ -74,11 +77,24 @@ impl Record {
     }
     fn validate(&self, state: &Path) -> Result<()> {
         ensure!(
-            self.schema_version == 1,
+            matches!(self.schema_version, 1 | 2),
             "Unsupported installation record version; state preserved"
         );
         ensure!(
-            ["prepared", "retained", "installed", "complete"].contains(&self.phase.as_str()),
+            [
+                "prepared",
+                "retained",
+                "installed",
+                "complete",
+                "upgrade_prepared",
+                "upgrade_retained",
+                "upgrade_installed",
+                "upgrade_copied",
+                "rollback",
+                "rollback_complete",
+                "repairing"
+            ]
+            .contains(&self.phase.as_str()),
             "Unrecognized installation phase; state preserved"
         );
         ensure!(
@@ -104,6 +120,7 @@ impl Record {
                 .is_none_or(|digest| hex(digest, 64)),
             "Invalid Cargo migration digest"
         );
+        change::validate(self, state)?;
         files::paths(&self.destination)?;
         files::paths(&self.cache)?;
         ensure!(
@@ -197,7 +214,7 @@ pub fn run(options: &Options) -> Result<()> {
     ensure!(
         matches!(
             options.action,
-            Action::Install | Action::Verify | Action::Status
+            Action::Install | Action::Verify | Action::Status | Action::Upgrade | Action::Repair
         ),
         "This action is not available in this version"
     );
@@ -253,16 +270,28 @@ pub fn run(options: &Options) -> Result<()> {
             "Overrides differ from recorded paths; nothing changed"
         );
         ensure!(
-            options
-                .release
-                .as_ref()
-                .is_none_or(|value| value == &record.release),
-            "Upgrade or downgrade is unavailable; recorded release preserved"
+            matches!(options.action, Action::Upgrade)
+                || options
+                    .release
+                    .as_ref()
+                    .is_none_or(|value| value == &record.release),
+            "Upgrade or downgrade requires the upgrade action; recorded release preserved"
         );
+    }
+    if record
+        .as_ref()
+        .is_some_and(|record| record.change.is_some())
+    {
+        return change::run(options, &state, record.unwrap());
     }
     match options.action {
         Action::Verify => verify::installation(&record.context("No installation record")?, &state),
         Action::Install => install(options, &state, record),
+        Action::Upgrade | Action::Repair => change::run(
+            options,
+            &state,
+            record.context("No installation record; run ./install install first")?,
+        ),
         _ => unreachable!(),
     }
 }
@@ -397,6 +426,7 @@ fn install(options: &Options, state: &Path, existing: Option<Record>) -> Result<
             previous_digest: None,
             previous_mode: None,
             cargo_digest: None,
+            change: None,
         };
         record.validate(state)?;
         ensure!(

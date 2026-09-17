@@ -171,10 +171,45 @@ class BootstrapTests(unittest.TestCase):
             with patch.object(b.sys.stdin, "isatty", return_value=False):
                 with self.assertRaisesRegex(ValueError, "explicit action"):
                     b.main(["--state-dir", str(Path(temp).resolve()/"state")])
-            for action in ["upgrade", "repair", "uninstall", "purge"]:
+            for action in ["uninstall", "purge"]:
                 with self.assertRaisesRegex(ValueError, "not available"):
                     b.main([action, "--state-dir", str(Path(temp).resolve()/"state")])
             self.assertEqual(list(Path(temp).iterdir()), [])
+
+    def test_upgrade_and_missing_file_repair_use_existing_verifier(self):
+        for action in ("upgrade", "repair"):
+            with self.subTest(action=action), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp).resolve()
+                state = root / "state"
+                state.mkdir(mode=0o700)
+                destination = root / "binary"
+                destination.write_bytes(b"old verified binary")
+                destination.chmod(0o700)
+                digest = hashlib.sha256(destination.read_bytes()).hexdigest()
+                record = dict(schema_version=1, phase="complete", release="v0.1.0", commit="a"*40,
+                              digest=digest, destination=str(destination), cache=str(root/"cache"),
+                              cache_owned=True, database_bytes=8*1024*1024, idle_seconds=2,
+                              previous_digest=None, previous_mode=None, cargo_digest=None)
+                (state/"record.json").write_text(json.dumps(record))
+                (state/"record.json").chmod(0o600)
+                if action == "upgrade":
+                    (state/"maintenance").write_bytes(destination.read_bytes())
+                    (state/"maintenance").chmod(0o700)
+                else:
+                    destination.unlink()
+                before = (state/"record.json").read_bytes()
+                with patch.object(b, "fetch", side_effect=ValueError("attestation refused")) as fetch, patch.object(b.subprocess, "call") as execute:
+                    args = [action, "--state-dir", str(state)]
+                    if action == "upgrade": args += ["--release", "v0.2.0"]
+                    with self.assertRaisesRegex(ValueError, "attestation refused"): b.main(args)
+                    self.assertEqual(fetch.call_args.args[0], "v0.2.0" if action == "upgrade" else "v0.1.0")
+                    execute.assert_not_called()
+                self.assertEqual((state/"record.json").read_bytes(), before)
+                if action == "upgrade": self.assertEqual(destination.read_bytes(), b"old verified binary")
+                self.assertFalse((state/"candidate").exists())
+                record["unknown"] = "preserve"
+                (state/"record.json").write_text(json.dumps(record))
+                with self.assertRaisesRegex(ValueError, "record fields"): b.main([action, "--state-dir", str(state)])
 
     def test_cancel_changes_nothing(self):
         with tempfile.TemporaryDirectory() as temp, patch.object(b.sys.stdin, "isatty", return_value=True), patch("builtins.input", return_value="0"):

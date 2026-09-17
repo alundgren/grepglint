@@ -155,14 +155,29 @@ pub fn save(path: &Path, bytes: &[u8]) -> Result<()> {
     let stage = pending(path);
     if !absent(&stage)? {
         let partial = read(&stage, RECORD_CAP)?;
-        let mut value: serde_json::Value = serde_json::from_slice(bytes)?;
+        let mut records = vec![serde_json::from_slice::<super::Record>(bytes)?];
+        if !absent(path)? {
+            records.push(serde_json::from_slice(&read(path, RECORD_CAP)?)?);
+        }
         let mut recognized = false;
-        for phase in ["prepared", "retained", "installed", "complete"] {
-            value["phase"] = phase.into();
-            // Preserve struct field order, which is stable in the durable format.
-            let candidate: super::Record = serde_json::from_value(value.clone())?;
-            if serde_json::to_vec_pretty(&candidate)?.starts_with(&partial) {
-                recognized = true;
+        for mut record in records {
+            for phase in [
+                "prepared",
+                "retained",
+                "installed",
+                "complete",
+                "upgrade_prepared",
+                "upgrade_retained",
+                "upgrade_installed",
+                "upgrade_copied",
+                "rollback",
+                "rollback_complete",
+                "repairing",
+            ] {
+                record.phase = phase.into();
+                if serde_json::to_vec_pretty(&record)?.starts_with(&partial) {
+                    recognized = true;
+                }
             }
         }
         ensure!(recognized, "Unexpected pending record preserved");
@@ -184,24 +199,7 @@ pub fn replace(source: &Path, destination: &Path, digest: &str, prior: Option<&s
         .parent()
         .context("Missing destination directory")?;
     let stage = pending(destination);
-    if !absent(&stage)? {
-        let mut partial = open(&stage, BINARY_CAP)?;
-        let mut original = open(source, BINARY_CAP)?;
-        let mut left = [0u8; 65536];
-        let mut right = [0u8; 65536];
-        loop {
-            let count = partial.read(&mut left)?;
-            if count == 0 {
-                break;
-            }
-            original.read_exact(&mut right[..count])?;
-            ensure!(
-                left[..count] == right[..count],
-                "Unexpected pending executable preserved"
-            );
-        }
-        fs::remove_file(&stage)?;
-    }
+    discard_pending(destination, &[source])?;
     let mut input = open(source, BINARY_CAP)?;
     let mut output = pending_file(&stage)?;
     let size = std::io::copy(
@@ -243,6 +241,37 @@ pub fn replace(source: &Path, destination: &Path, digest: &str, prior: Option<&s
         );
     }
     sync(parent)
+}
+
+pub fn discard_pending(destination: &Path, sources: &[&Path]) -> Result<()> {
+    let stage = pending(destination);
+    if absent(&stage)? {
+        return Ok(());
+    }
+    for source in sources {
+        let mut partial = open(&stage, BINARY_CAP)?;
+        let mut original = open(source, BINARY_CAP)?;
+        let mut left = [0u8; 65536];
+        let mut right = [0u8; 65536];
+        let mut matches = true;
+        loop {
+            let count = partial.read(&mut left)?;
+            if count == 0 {
+                break;
+            }
+            if original.read_exact(&mut right[..count]).is_err() || left[..count] != right[..count]
+            {
+                matches = false;
+                break;
+            }
+        }
+        if matches {
+            fs::remove_file(&stage)?;
+            sync(stage.parent().unwrap())?;
+            return Ok(());
+        }
+    }
+    anyhow::bail!("Unexpected pending executable preserved")
 }
 
 pub fn absent(path: &Path) -> Result<bool> {

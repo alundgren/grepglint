@@ -99,14 +99,16 @@ version is then checked before native installation.
 ./install install --release v0.1.0
 ./install verify
 ./install status
+./install upgrade --release v0.2.0
+./install repair
 ```
 
 With a terminal, `./install` shows the recorded phase and offers install or
-resume, verify, status, or cancel. Without a terminal, select an action
+resume, verify, status, upgrade, repair, or cancel. Without a terminal, select an action
 explicitly. Installation also requires an exact release tag. Cancellation
 before installation changes nothing. Exit zero means success or cancellation;
 one means refusal or failed verification; command-line usage errors exit two.
-Upgrade, general repair, uninstall and purge currently return unavailable.
+Uninstall and purge currently return unavailable. Upgrade requires an exact release tag; repair uses recorded identities.
 
 The default executable is `~/.local/bin/grepglint`. Add that directory to PATH
 when needed; installation never edits profiles. `--destination`, `--cache-dir`
@@ -116,11 +118,14 @@ Destination, cache and state paths must be separate. Existing destination
 parents cannot be writable by another account. State and cache must be private
 and account-owned. Installation refuses root execution.
 
-The version-one `record.json` lives under `$XDG_STATE_HOME/grepglint` or
+The `record.json` lives under `$XDG_STATE_HOME/grepglint` or
 `~/.local/state/grepglint`. It records selected tag, resolved commit, executable
 SHA-256, paths, cache ownership, effective settings, prior executable hash and
-operation phase. `maintenance` is the retained verified executable; `previous`
-is the single temporary Cargo recovery copy. These paths and their
+operation phase. Existing version-one records remain readable. Upgrade records
+use version two and retain the complete prior record and both permission modes
+until completion. `maintenance` is the retained verified executable; `previous`
+is the single temporary recovery copy. During upgrade, `candidate` holds the
+verified replacement. These paths and their
 `.grepglint-pending` files are reserved by the durable installation intent.
 Unknown record versions, changed executables, symlinks, FIFOs, multiple hard
 links and unsafe permissions are refused. No Cargo registry is edited.
@@ -163,6 +168,54 @@ preserves the fixture and reports its path. Verification never repairs an
 unhealthy installation. Installing the same healthy release runs verification
 without replacing files or restarting the real daemon.
 
+### Upgrade and repair
+
+`./install upgrade --release vX.Y.Z` stages and attests the candidate using the
+same release policy as installation. Native setup checks both existing copies,
+free disk space and cache format before recording intended changes. It retains
+one prior executable and the candidate, then holds daemon maintenance exclusion
+through shutdown, both replacements, isolated verification and durable
+completion. Only a daemon whose executable hash matches the current or prior
+record is stopped. Unknown or legacy daemons require pausing searches until
+their normal idle exit; use `rg` meanwhile.
+
+Upgrade records progress through `upgrade_prepared`, `upgrade_retained`,
+`upgrade_installed`, `upgrade_copied` and `complete`. The candidate and prior
+copy remain until completion is durable. A failed verification restores both
+prior executable locations and their original permissions. `rollback` and
+`rollback_complete` record restoration and cleanup separately. A failed
+restoration reports failure and preserves recovery data for `./install repair`.
+Repair never overwrites an edited file to make recovery succeed.
+
+An interrupted upgrade is rolled back before another action proceeds. Rerun
+upgrade afterward if still wanted. A completed upgrade with interrupted cleanup
+finishes cleanup. The bootstrap selects a hash-checked recorded candidate for
+recovery; if it is absent, it fetches that exact recorded release and requires
+the same commit and digest. This lets the recovery code understand the new
+record even when the retained old executable predates that format. The old
+record is restored after successful rollback cleanup.
+
+`./install repair` restores missing owned files from a verified retained or
+installed copy. If both are missing, it downloads and attests the exact recorded
+release. The durable `repairing` phase records missing-file restoration until verification
+succeeds. Repair also resumes an interrupted first installation. Changed bytes,
+unsafe file objects, unknown fields and unknown record versions cause a refusal
+that preserves the files. Healthy repair reports no changes. Upgrading to the
+same healthy release leaves both files and the real daemon instance unchanged.
+
+Cache checks open an existing database read-only and require its recorded
+SQLite format version to match the binary. An incompatible cache is refused
+before replacement or migration. No real-cache schema migration or personal
+repository search occurs during setup. Existing cache ownership is unchanged.
+The fixture uses a different cache while the real-cache exclusion stays held.
+
+The operation lock rejects competing installer actions immediately. Search
+startup and requests refuse work during maintenance. Operations perform a
+fixed number of bounded subprocesses, with no automatic retry or restart loop.
+Interrupted partial copies are removed only after their bytes match a verified
+source prefix. Unknown temporary contents remain for inspection. Cleanup only
+removes files named by the durable record; stable coordination locks remain.
+
 ### Installer resource limits
 
 | Resource | Limit |
@@ -174,12 +227,14 @@ without replacing files or restarting the real daemon.
 | Download | 120-second absolute fresh-interpreter worker deadline, including DNS/headers/body; 10-second socket timeout; no retries; HTTPS-only redirects |
 | Native subprocess | 20 seconds, 64 KiB combined output; process group killed on failure |
 | Verification fixture | Four searches; 8 MiB database, at most 8 MiB rollback journal; two-second idle fallback |
-| Disk preflight | 576 MiB free on staging, destination and state filesystems; fixture needs 80 MiB |
+| Disk preflight | Install/staging 576 MiB; upgrade/repair 960 MiB on destination and state filesystems; fixture 80 MiB |
 | Concurrency | One installer per state directory; daemon exclusion through replacement, fixture and completion |
 
 The disk preflight covers the bounded download, retained executable,
 destination staging and one prior copy with a 64 MiB reserve. Checks are
-conservative when paths share a filesystem. External disk consumption can
+conservative when paths share a filesystem. Upgrade additionally reserves space
+for both old executables, the candidate, the rollback copy and replacement
+staging. External disk consumption can
 still exhaust space after preflight; filesystem errors preserve the durable
 recovery state. Executable copying and hashing use 64 KiB buffers. The Python
 bootstrap holds at most one 128 MiB asset plus bounded metadata while hashing.
@@ -199,3 +254,15 @@ these observations are not memory guarantees. Native installation returned
 network transfer and Python download verification. Each verification creates
 a new fixture; its internal second search proves cache reuse. Repeated whole
 verification measures a warmed machine, not a retained personal index.
+
+A Linux release-build sample measured native upgrade at 0.58 seconds and repair
+of a missing installed or retained executable at 0.41 to 0.45 seconds. Sampled
+upgrade files peaked at 54.1 MB including the staged source, both executables,
+recovery files and fixture; completed retained installer data was 9.0 MB.
+Summed installer, daemon and Git RSS samples peaked near 19.6 MiB during
+upgrade. Healthy upgrade and repair took 0.45 to 0.46 seconds and preserved the
+real daemon instance; their samples reached 29.3 MiB with that daemon running.
+Outputs were 179 to 218 bytes with no stderr. These are single local samples
+with synthetic provenance, excluding download, GitHub CLI and Python costs.
+Sampling can miss short peaks and double-count shared pages. They establish
+observed behavior, not worst-case resource guarantees.

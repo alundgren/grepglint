@@ -1,6 +1,6 @@
 use serde_json::Value;
 use sha2::{Digest, Sha256};
-use std::os::unix::fs::{PermissionsExt, symlink};
+use std::os::unix::fs::{MetadataExt, PermissionsExt, symlink};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -307,6 +307,20 @@ fn live_daemon_noop_keeps_identity_and_mismatched_settings_fail() {
         .unwrap();
         if mb == 8 {
             success(f.install());
+            success(f.command("repair").output().unwrap());
+            success(
+                f.command("upgrade")
+                    .args([
+                        "--release",
+                        "v0.1.0",
+                        "--commit",
+                        &"a".repeat(40),
+                        "--digest",
+                        &digest(&f.root.join("source")),
+                    ])
+                    .output()
+                    .unwrap(),
+            );
             fs::set_permissions(
                 f.root.join("cache/daemon.sock"),
                 fs::Permissions::from_mode(0o666),
@@ -604,4 +618,446 @@ fn readonly_database_fails_verification_without_changes() {
         fs::metadata(&database).unwrap().permissions().mode() & 0o777,
         0o400
     );
+}
+
+impl Fixture {
+    fn candidate(&self) {
+        use std::io::Write;
+        fs::OpenOptions::new()
+            .append(true)
+            .open(self.root.join("source"))
+            .unwrap()
+            .write_all(b"candidate build")
+            .unwrap();
+    }
+    fn upgrade(&self) -> Command {
+        let mut command = self.command("upgrade");
+        command.args([
+            "--release",
+            "v0.1.0",
+            "--commit",
+            &"b".repeat(40),
+            "--digest",
+            &digest(&self.root.join("source")),
+        ]);
+        command
+    }
+    fn write_record(&self, value: &Value) {
+        fs::write(
+            self.state().join("record.json"),
+            serde_json::to_vec_pretty(value).unwrap(),
+        )
+        .unwrap();
+    }
+    fn interrupted_upgrade(&self, phase: &str) -> Value {
+        let prior = self.record();
+        self.candidate();
+        let mut record = prior.clone();
+        record["schema_version"] = 2.into();
+        record["phase"] = phase.into();
+        record["commit"] = "b".repeat(40).into();
+        record["digest"] = digest(&self.root.join("source")).into();
+        record["change"] = serde_json::json!({"prior": prior, "destination_mode": 0o750, "maintenance_mode": 0o500});
+        fs::copy(self.root.join("source"), self.state().join("candidate")).unwrap();
+        fs::copy(self.destination(), self.state().join("previous")).unwrap();
+        fs::set_permissions(
+            self.state().join("previous"),
+            fs::Permissions::from_mode(0o700),
+        )
+        .unwrap();
+        if ["upgrade_installed", "upgrade_copied", "complete"].contains(&phase) {
+            fs::copy(self.root.join("source"), self.destination()).unwrap();
+        }
+        if ["upgrade_copied", "complete"].contains(&phase) {
+            fs::copy(self.root.join("source"), self.state().join("maintenance")).unwrap();
+        }
+        self.write_record(&record);
+        record
+    }
+}
+
+#[test]
+fn upgrade_replaces_both_and_cleans_only_recorded_recovery_files() {
+    let f = Fixture::new();
+    success(f.install());
+    f.candidate();
+    success(f.upgrade().output().unwrap());
+    assert_eq!(digest(&f.destination()), digest(&f.root.join("source")));
+    assert_eq!(
+        digest(&f.state().join("maintenance")),
+        digest(&f.root.join("source"))
+    );
+    assert_eq!(f.record()["phase"], "complete");
+    assert!(f.record().get("change").is_none());
+    assert!(!f.state().join("previous").exists());
+    assert!(!f.state().join("candidate").exists());
+    let before = fs::metadata(f.destination()).unwrap().modified().unwrap();
+    success(f.upgrade().output().unwrap());
+    success(f.command("repair").output().unwrap());
+    assert_eq!(
+        before,
+        fs::metadata(f.destination()).unwrap().modified().unwrap()
+    );
+}
+
+#[test]
+fn upgrade_recovery_restores_both_files_and_modes_at_every_phase() {
+    for phase in [
+        "upgrade_prepared",
+        "upgrade_retained",
+        "upgrade_installed",
+        "upgrade_copied",
+        "rollback",
+        "rollback_complete",
+        "complete",
+    ] {
+        let f = Fixture::new();
+        success(f.install());
+        let old = digest(&f.destination());
+        let record = f.interrupted_upgrade(phase);
+        if phase == "upgrade_prepared" {
+            let bytes = fs::read(f.state().join("previous")).unwrap();
+            fs::remove_file(f.state().join("previous")).unwrap();
+            fs::write(f.state().join("previous.grepglint-pending"), &bytes[..8192]).unwrap();
+            fs::set_permissions(
+                f.state().join("previous.grepglint-pending"),
+                fs::Permissions::from_mode(0o600),
+            )
+            .unwrap();
+        }
+        if phase == "upgrade_installed" {
+            let bytes = fs::read(f.state().join("candidate")).unwrap();
+            fs::write(
+                f.state().join("maintenance.grepglint-pending"),
+                &bytes[..8192],
+            )
+            .unwrap();
+            fs::set_permissions(
+                f.state().join("maintenance.grepglint-pending"),
+                fs::Permissions::from_mode(0o600),
+            )
+            .unwrap();
+        }
+        success(f.command("repair").output().unwrap());
+        let expected = if phase == "complete" {
+            record["digest"].as_str().unwrap()
+        } else {
+            &old
+        };
+        assert_eq!(digest(&f.destination()), expected, "{phase}");
+        assert_eq!(digest(&f.state().join("maintenance")), expected, "{phase}");
+        assert_eq!(f.record()["phase"], "complete");
+        if !["complete", "rollback_complete"].contains(&phase) {
+            assert_eq!(fs::metadata(f.destination()).unwrap().mode() & 0o777, 0o750);
+            assert_eq!(
+                fs::metadata(f.state().join("maintenance")).unwrap().mode() & 0o777,
+                0o500
+            );
+        }
+        assert!(!f.state().join("candidate").exists());
+        assert!(!f.state().join("previous").exists());
+    }
+}
+
+#[test]
+fn failed_upgrade_verification_rolls_back_and_failed_rollback_remains_recoverable() {
+    let f = Fixture::new();
+    success(f.install());
+    let old = digest(&f.destination());
+    f.candidate();
+    failure(
+        f.upgrade()
+            .env("PATH", f.root.join("no-git"))
+            .output()
+            .unwrap(),
+        "Upgrade rolled back",
+    );
+    assert_eq!(digest(&f.destination()), old);
+    assert_eq!(digest(&f.state().join("maintenance")), old);
+    assert_eq!(f.record()["phase"], "complete");
+
+    let f = Fixture::new();
+    success(f.install());
+    let record = f.interrupted_upgrade("upgrade_copied");
+    fs::write(f.state().join("previous"), b"unexpected edit").unwrap();
+    failure(f.command("repair").output().unwrap(), "Rollback failed");
+    assert_eq!(
+        fs::read(f.state().join("previous")).unwrap(),
+        b"unexpected edit"
+    );
+    assert_eq!(f.record()["phase"], "rollback");
+    assert!(f.state().join("candidate").exists());
+    // Restore only the disposable test's deliberately damaged recorded backup.
+    fs::copy(env!("CARGO_BIN_EXE_grepglint"), f.state().join("previous")).unwrap();
+    fs::set_permissions(
+        f.state().join("previous"),
+        fs::Permissions::from_mode(0o700),
+    )
+    .unwrap();
+    success(f.command("repair").output().unwrap());
+    assert_eq!(
+        digest(&f.destination()),
+        record["change"]["prior"]["digest"]
+    );
+}
+
+#[test]
+fn repair_missing_owned_files_offline_and_preserve_modified_files() {
+    for missing in ["installed", "maintenance", "both"] {
+        let f = Fixture::new();
+        success(f.install());
+        if missing != "maintenance" {
+            fs::remove_file(f.destination()).unwrap();
+        }
+        if missing != "installed" {
+            fs::remove_file(f.state().join("maintenance")).unwrap();
+        }
+        success(f.command("repair").output().unwrap());
+        assert_eq!(
+            digest(&f.destination()),
+            digest(&f.state().join("maintenance"))
+        );
+    }
+    for modified in ["installed", "maintenance"] {
+        let f = Fixture::new();
+        success(f.install());
+        let path = if modified == "installed" {
+            f.destination()
+        } else {
+            f.state().join("maintenance")
+        };
+        fs::write(&path, b"user edit").unwrap();
+        failure(
+            f.command("repair").output().unwrap(),
+            "Modified executable preserved",
+        );
+        assert_eq!(fs::read(path).unwrap(), b"user edit");
+    }
+}
+
+#[test]
+fn incompatible_cache_refused_before_upgrade_changes() {
+    let f = Fixture::new();
+    success(f.install());
+    let database = f.root.join("cache/index.sqlite");
+    let db = rusqlite::Connection::open(&database).unwrap();
+    db.execute_batch("PRAGMA user_version=99; CREATE TABLE keep(value TEXT); INSERT INTO keep VALUES ('personal');").unwrap();
+    drop(db);
+    fs::set_permissions(&database, fs::Permissions::from_mode(0o600)).unwrap();
+    let bytes = fs::read(&database).unwrap();
+    let record = f.record();
+    let old = digest(&f.destination());
+    f.candidate();
+    failure(f.upgrade().output().unwrap(), "Incompatible cache format");
+    assert_eq!(f.record(), record);
+    assert_eq!(digest(&f.destination()), old);
+    assert_eq!(fs::read(database).unwrap(), bytes);
+    assert!(!f.state().join("candidate").exists());
+}
+
+#[test]
+fn partial_upgrade_write_recovers_without_retaining_extra_files() {
+    use std::os::unix::process::CommandExt;
+    let f = Fixture::new();
+    success(f.install());
+    let old = digest(&f.destination());
+    f.candidate();
+    let mut command = f.upgrade();
+    unsafe {
+        command.pre_exec(|| {
+            let cap = libc::rlimit {
+                rlim_cur: 8192,
+                rlim_max: 8192,
+            };
+            if libc::setrlimit(libc::RLIMIT_FSIZE, &cap) != 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+            Ok(())
+        });
+    }
+    assert!(!command.output().unwrap().status.success());
+    assert_eq!(f.record()["phase"], "upgrade_prepared");
+    assert_eq!(digest(&f.destination()), old);
+    assert!(f.state().join("candidate.grepglint-pending").exists());
+    success(f.command("repair").output().unwrap());
+    assert_eq!(digest(&f.destination()), old);
+    assert_eq!(f.record()["phase"], "complete");
+    assert!(!f.state().join("candidate.grepglint-pending").exists());
+    assert!(!f.state().join("previous").exists());
+}
+
+#[test]
+fn trusted_bootstrap_repairs_missing_copy_and_recovers_mixed_upgrade() {
+    let bootstrap = Path::new(env!("CARGO_MANIFEST_DIR")).join("scripts/bootstrap.py");
+    for missing in ["destination", "maintenance"] {
+        let f = Fixture::new();
+        success(f.install());
+        fs::remove_file(if missing == "destination" {
+            f.destination()
+        } else {
+            f.state().join("maintenance")
+        })
+        .unwrap();
+        success(
+            Command::new("python3")
+                .arg(&bootstrap)
+                .args(["repair", "--state-dir"])
+                .arg(f.state())
+                .env("PATH", "/usr/bin:/bin")
+                .output()
+                .unwrap(),
+        );
+        assert_eq!(
+            digest(&f.destination()),
+            digest(&f.state().join("maintenance"))
+        );
+    }
+    let f = Fixture::new();
+    success(f.install());
+    let record = f.interrupted_upgrade("upgrade_installed");
+    success(
+        Command::new("python3")
+            .arg(&bootstrap)
+            .args(["repair", "--state-dir"])
+            .arg(f.state())
+            .env("PATH", "/usr/bin:/bin")
+            .output()
+            .unwrap(),
+    );
+    assert_eq!(
+        digest(&f.destination()),
+        record["change"]["prior"]["digest"]
+    );
+}
+
+#[test]
+fn upgrade_excludes_other_installers_and_search_startup() {
+    use std::time::{Duration, Instant};
+    let f = Fixture::new();
+    success(f.install());
+    f.candidate();
+    let tools = f.root.join("tools");
+    fs::create_dir(&tools).unwrap();
+    let marker = f.root.join("verification-started");
+    let script = format!(
+        "#!/bin/sh\nif mkdir '{}' 2>/dev/null; then /bin/sleep 2; fi\nexec /usr/bin/git \"$@\"\n",
+        marker.display()
+    );
+    fs::write(tools.join("git"), script).unwrap();
+    fs::set_permissions(tools.join("git"), fs::Permissions::from_mode(0o700)).unwrap();
+    let mut child = f
+        .upgrade()
+        .env("PATH", format!("{}:/usr/bin:/bin", tools.display()))
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while !marker.exists() {
+        assert!(Instant::now() < deadline);
+        assert!(child.try_wait().unwrap().is_none());
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    failure(
+        f.command("repair").output().unwrap(),
+        "Another installer operation",
+    );
+    let output = Command::new(f.destination())
+        .args(["search", "--json", "fixture"])
+        .current_dir(&f.root)
+        .env("GREPGLINT_CACHE_DIR", f.root.join("cache"))
+        .env("GREPGLINT_CACHE_MB", "8")
+        .env("GREPGLINT_IDLE_SECONDS", "2")
+        .output()
+        .unwrap();
+    assert!(
+        !output.status.success(),
+        "search started during maintenance"
+    );
+    assert!(!f.root.join("cache/index.sqlite").exists());
+    success(child.wait_with_output().unwrap());
+    assert_eq!(f.record()["phase"], "complete");
+}
+
+#[test]
+fn upgrade_stops_identified_old_daemon_before_replacement() {
+    use std::process::Stdio;
+    use std::time::{Duration, Instant};
+    let f = Fixture::new();
+    success(f.install());
+    let mut record = f.record();
+    record["idle_seconds"] = 60.into();
+    f.write_record(&record);
+    let mut child = Command::new(f.destination())
+        .arg("__daemon")
+        .env("GREPGLINT_CACHE_DIR", f.root.join("cache"))
+        .env("GREPGLINT_CACHE_MB", "8")
+        .env("GREPGLINT_IDLE_SECONDS", "60")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .unwrap();
+    let config = grepglint::daemon::Config {
+        directory: f.root.join("cache"),
+        max_bytes: 8 * 1024 * 1024,
+        idle: Duration::from_secs(60),
+    };
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while !matches!(grepglint::maintenance::status(&config), Ok(Some(_))) {
+        assert!(Instant::now() < deadline);
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    f.candidate();
+    success(f.upgrade().output().unwrap());
+    assert!(child.wait().unwrap().success());
+    assert!(grepglint::maintenance::status(&config).unwrap().is_none());
+    assert_eq!(digest(&f.destination()), digest(&f.root.join("source")));
+}
+
+#[test]
+fn interrupted_repair_and_record_write_resume() {
+    use std::os::unix::process::CommandExt;
+    let f = Fixture::new();
+    success(f.install());
+    fs::remove_file(f.destination()).unwrap();
+    let mut command = f.command("repair");
+    unsafe {
+        command.pre_exec(|| {
+            let cap = libc::rlimit {
+                rlim_cur: 8192,
+                rlim_max: 8192,
+            };
+            if libc::setrlimit(libc::RLIMIT_FSIZE, &cap) != 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+            Ok(())
+        });
+    }
+    assert!(!command.output().unwrap().status.success());
+    assert_eq!(f.record()["phase"], "repairing");
+    assert!(
+        f.destination()
+            .with_file_name("grepglint.grepglint-pending")
+            .exists()
+    );
+    success(f.command("repair").output().unwrap());
+    assert_eq!(f.record()["phase"], "complete");
+    let mut record = f.interrupted_upgrade("upgrade_copied");
+    record["phase"] = "complete".into();
+    let native: grepglint::setup::Record = serde_json::from_value(record).unwrap();
+    let bytes = serde_json::to_vec_pretty(&native).unwrap();
+    fs::write(
+        f.state().join("record.json.grepglint-pending"),
+        &bytes[..bytes.len() - 10],
+    )
+    .unwrap();
+    fs::set_permissions(
+        f.state().join("record.json.grepglint-pending"),
+        fs::Permissions::from_mode(0o600),
+    )
+    .unwrap();
+    success(f.command("repair").output().unwrap());
+    assert_eq!(f.record()["phase"], "complete");
+    assert!(!f.state().join("record.json.grepglint-pending").exists());
 }
