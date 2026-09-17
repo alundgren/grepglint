@@ -99,14 +99,14 @@ class CorpusTests(unittest.TestCase):
     def test_archive_paths_links_and_bytes(self):
         for name,link in [('source/../escape',None),('source/link','../../escape'),('source/.git/config',None)]:
             with tempfile.TemporaryDirectory() as temp:
-                root=Path(temp);archive=self.archive(root,name,link=link)
+                root=Path(temp).resolve();archive=self.archive(root,name,link=link)
                 with self.assertRaises(PreparationError):extract(archive,root/'out',100)
                 self.assertFalse((root/'escape').exists())
         with tempfile.TemporaryDirectory() as temp:
-            root=Path(temp);archive=self.archive(root,'source/file',b'oversized')
+            root=Path(temp).resolve();archive=self.archive(root,'source/file',b'oversized')
             with self.assertRaisesRegex(PreparationError,'byte limit'):extract(archive,root/'out',2)
         with tempfile.TemporaryDirectory() as temp:
-            root=Path(temp);archive=self.archive(root,'source/file',b'kept\r\n')
+            root=Path(temp).resolve();archive=self.archive(root,'source/file',b'kept\r\n')
             extract(archive,root/'out',6);self.assertEqual((root/'out/file').read_bytes(),b'kept\r\n')
 
     def test_oversized_source_rejected_before_fetch(self):
