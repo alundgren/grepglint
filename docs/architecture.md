@@ -115,8 +115,9 @@ enabling this tool broadly across agents.
 `output.rs` owns a separate SQLite database for immutable output handles and
 ordered byte chunks. The CLI captures stdin, validates UTF-8 incrementally,
 and commits a handle only after EOF. Small input never opens storage. The
-search daemon never waits for a producer. Output does not require protocol
-negotiation with a running search daemon, so older search daemons can coexist.
+search daemon never waits for a producer. Capture and paging do not require protocol negotiation with a running search
+daemon, so older search daemons can coexist. Output search uses an additive
+`output_search` request and gives a paging fallback when an older daemon refuses it.
 
 Two OS file locks limit captures. A short SQLite transaction reserves the full
 per-output allowance against aggregate bytes and entry count before capture
@@ -194,3 +195,26 @@ file. Startup reads at most 128 MiB of executable bytes using a fixed-size
 streaming buffer to compute build identity. Controls keep the existing 16 KiB
 request and 64 KiB response caps. No dependency, worker thread, source cache,
 or diagnostic log is added.
+
+## Temporary output ranking
+
+`temporary_rank.rs` ranks caller-provided bounded chunks with a disposable
+in-memory FTS5 database. It reuses `tokens.rs` query and identifier expansion.
+The corpus contains only the requested output. Ties use source byte position.
+Generic chunks overlap and split long lines at valid UTF-8 boundaries; repository
+file eligibility rules do not apply to retained output.
+
+The daemon serializes output search with repository work, using the existing
+64 MiB SQLite heap limit across all connections and the existing Linux process
+limit. `Store` validates one complete retained stream and keeps its SQLite read
+transaction until ranking finishes. The Rust source allocation is bounded to
+8 MiB. The temporary database has a 32 MiB logical page cap and cannot spill to
+disk. Its connection and buffers drop on success or failure. No output FTS rows
+or source content enter the repository database.
+
+The socket's lifetime and a 30-second deadline bound traversal, chunk generation,
+indexing and ranking. The CLI detects downstream closure during response waits
+and closes that socket. Capture, page and purge remain direct operations;
+producer waits never occupy a daemon request. A concurrent output writer may
+reach its existing two-second busy timeout while a search holds the consistent
+read transaction. A later page remains byte-exact if the handle is still retained.

@@ -1,0 +1,1742 @@
+{
+  "platform": "Linux",
+  "cases": [
+    {
+      "name": "noisy-tests",
+      "original_bytes": 88042,
+      "preview_bytes": 906,
+      "search_bytes": 1401,
+      "region_page_bytes": 4514,
+      "ranked_workflow_retrievals": 2,
+      "poor_query_search_bytes": 165,
+      "exact_page_count": 22,
+      "exact_page_response_bytes": 97188,
+      "reconstructed_after_searches": true
+    },
+    {
+      "name": "compiler-warnings",
+      "original_bytes": 136046,
+      "preview_bytes": 907,
+      "search_bytes": 1530,
+      "region_page_bytes": 4452,
+      "ranked_workflow_retrievals": 2,
+      "poor_query_search_bytes": 166,
+      "exact_page_count": 34,
+      "exact_page_response_bytes": 148094,
+      "reconstructed_after_searches": true
+    },
+    {
+      "name": "middle-version-path",
+      "original_bytes": 116029,
+      "preview_bytes": 907,
+      "search_bytes": 1444,
+      "region_page_bytes": 4470,
+      "ranked_workflow_retrievals": 2,
+      "poor_query_search_bytes": 166,
+      "exact_page_count": 29,
+      "exact_page_response_bytes": 126877,
+      "reconstructed_after_searches": true
+    }
+  ],
+  "alternating_cycles": 20,
+  "alternating": [
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.01993,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.04028,
+      "response_bytes": 781,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.01828,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01286,
+      "response_bytes": 781,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.01642,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.02314,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02124,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01902,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.01872,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01895,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02014,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01438,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.01942,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01401,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02059,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01556,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.01957,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01619,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.021,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02217,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01838,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02203,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01489,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02025,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01433,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.0217,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01455,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02304,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01536,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02212,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01437,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02351,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.02481,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02013,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01631,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02374,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01177,
+      "response_bytes": 781,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02344,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01387,
+      "response_bytes": 782,
+      "success": true
+    }
+  ],
+  "observations": [
+    {
+      "command": [
+        "output",
+        "bounce"
+      ],
+      "seconds": 0.06486,
+      "response_bytes": 906,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.14794,
+      "response_bytes": 1401,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00803,
+      "response_bytes": 4514,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.01294,
+      "response_bytes": 165,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00838,
+      "response_bytes": 4517,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00885,
+      "response_bytes": 4517,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00857,
+      "response_bytes": 4517,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00894,
+      "response_bytes": 4517,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00898,
+      "response_bytes": 4517,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00819,
+      "response_bytes": 4517,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00765,
+      "response_bytes": 4517,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01246,
+      "response_bytes": 4517,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01169,
+      "response_bytes": 4517,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00892,
+      "response_bytes": 4517,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00803,
+      "response_bytes": 4514,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00874,
+      "response_bytes": 4517,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01055,
+      "response_bytes": 4517,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00767,
+      "response_bytes": 4517,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.0096,
+      "response_bytes": 4517,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00921,
+      "response_bytes": 4517,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00959,
+      "response_bytes": 4517,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00974,
+      "response_bytes": 4517,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01033,
+      "response_bytes": 4517,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00891,
+      "response_bytes": 4517,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.0106,
+      "response_bytes": 4517,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.0116,
+      "response_bytes": 2334,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "bounce"
+      ],
+      "seconds": 0.05677,
+      "response_bytes": 907,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.01733,
+      "response_bytes": 1530,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00917,
+      "response_bytes": 4452,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.0155,
+      "response_bytes": 166,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.0087,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00986,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00829,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.0146,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01446,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.0116,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01591,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01094,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01857,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01733,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.0103,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01155,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00953,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01231,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00898,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00812,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00834,
+      "response_bytes": 4452,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01016,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00912,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01155,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00927,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01026,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.015,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01351,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01317,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01026,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00871,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01183,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01268,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00921,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00844,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00868,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00762,
+      "response_bytes": 4440,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00809,
+      "response_bytes": 1562,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "bounce"
+      ],
+      "seconds": 0.06271,
+      "response_bytes": 907,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02672,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.02737,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.0223,
+      "response_bytes": 166,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.02454,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.02605,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01781,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01392,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01302,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01246,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01607,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.02124,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01495,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01247,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01849,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01119,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01155,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.0089,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00977,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01166,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01393,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01217,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01321,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01288,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01124,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00971,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01041,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01108,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01386,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01166,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00911,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00955,
+      "response_bytes": 4470,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01228,
+      "response_bytes": 1717,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.01993,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.04028,
+      "response_bytes": 781,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.01828,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01286,
+      "response_bytes": 781,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.01642,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.02314,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02124,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01902,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.01872,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01895,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02014,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01438,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.01942,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01401,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02059,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01556,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.01957,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01619,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.021,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02217,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01838,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02203,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01489,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02025,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01433,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.0217,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01455,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02304,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01536,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02212,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01437,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02351,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.02481,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02013,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01631,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02374,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01177,
+      "response_bytes": 781,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.02344,
+      "response_bytes": 1444,
+      "success": true
+    },
+    {
+      "command": [
+        "search",
+        "refresh token"
+      ],
+      "seconds": 0.01387,
+      "response_bytes": 782,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "bounce"
+      ],
+      "seconds": 2.15372,
+      "response_bytes": 905,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.20555,
+      "response_bytes": 1616,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "bounce"
+      ],
+      "seconds": 0.16359,
+      "response_bytes": 909,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.01042,
+      "response_bytes": 8434,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "search"
+      ],
+      "seconds": 0.0457,
+      "response_bytes": 261,
+      "success": false
+    },
+    {
+      "command": [
+        "output",
+        "page"
+      ],
+      "seconds": 0.00943,
+      "response_bytes": 8434,
+      "success": true
+    },
+    {
+      "command": [
+        "status",
+        "--json"
+      ],
+      "seconds": 0.00271,
+      "response_bytes": 396,
+      "success": true
+    },
+    {
+      "command": [
+        "output",
+        "purge"
+      ],
+      "seconds": 0.27653,
+      "response_bytes": 63,
+      "success": true
+    }
+  ],
+  "peaks_before_large_limit_fixtures": {
+    "disk_bytes": 667648,
+    "daemon_rss_kib": 8936,
+    "daemon_hwm_kib": 9004
+  },
+  "sampled_peaks": {
+    "disk_bytes": 21893120,
+    "daemon_rss_kib": 25860,
+    "daemon_hwm_kib": 26020
+  },
+  "maximum_output_bytes": 8388608,
+  "maximum_output_search_success": true,
+  "chunk_limit_error_preserved_paging": true,
+  "shared_limits": {
+    "sqlite_heap_bytes": 67108864,
+    "address_space_bytes": 536870912,
+    "work_seconds": 30,
+    "response_bytes": 65536
+  },
+  "cache_files_before_purge": [
+    "daemon.lock",
+    "daemon.pid",
+    "index.sqlite",
+    "maintenance.lock",
+    "output-gate",
+    "output-v1/capture-0.lock",
+    "output-v1/capture-1.lock",
+    "output-v1/output.sqlite",
+    "output-v1/output.sqlite-journal",
+    "output-v1/ownership.json"
+  ]
+}

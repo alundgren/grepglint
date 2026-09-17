@@ -171,7 +171,7 @@ index free of CPU or disk activity. A repository that exceeds the limits needs
 ## Agent instructions and validation
 
 `grepglint tools --json` lists tools with their purpose, inputs, output, and
-side effects. It lists repository search and output capture, paging, and purge without starting
+side effects. It lists repository search and output capture, search, paging, and purge without starting
 the daemon. Future services can add subcommands and catalog entries. No routing framework is
 needed for this prototype. Copy [the example instructions](examples/agent-instructions.md)
 into an agent's repository instructions.
@@ -217,6 +217,7 @@ and enable your shell's `pipefail` to retain the producer's failure status:
 ```sh
 set -o pipefail
 cargo test 2>&1 | grepglint output bounce
+grepglint output search <handle> "NodePtyModuleLoadError node-pty" --json
 grepglint output page <handle> --json
 grepglint output page <handle> --json --cursor <next_cursor>
 grepglint output purge
@@ -231,7 +232,20 @@ Previewing does not advance paging. Without a cursor, paging starts at byte zero
 Decode each JSON `content` and concatenate it until `end_of_output` is true;
 this reconstructs the original UTF-8 bytes. Cursors can be repeated and are
 bound to one handle and format version. Human-readable output escapes controls.
-There is no relevance-search command for retained output yet.
+`output search` ranks one retained output with the same lexical expansion and
+OR query rules as code search. It uses only that output's BM25 statistics.
+Queries accept at most 2,000 bytes and use the first 32 distinct expanded terms
+in lexical order. Results default to five, with `--limit 1` through `20`.
+Each result includes original byte offsets, line ranges, a clipped excerpt and
+a paging command positioned at that excerpt. Byte ranges are zero-based and
+end-exclusive; line numbers are one-based. Long lines remain searchable and
+can produce several regions on the same source line.
+
+Try identifiers such as `NodePtyModuleLoadError`, `node-pty`, `linux-x64`,
+`constructEvent`, `SQLITE_BUSY`, `v24.20.0`, or `src/auth/session.ts`. Expansion
+and OR matching are not exact-match semantics. The best-ranked excerpt need
+not contain the answer. Empty results include a command to page the original.
+A poor query never removes the ability to retrieve omitted bytes.
 
 Input containing NUL or invalid UTF-8 is rejected, even when the invalid bytes
 arrive late. Failures can consume input, so you may need to rerun the producer.
@@ -239,8 +253,11 @@ Keep another copy of irreplaceable logs. A successful capture does not mean
 the producer succeeded. Breaking the downstream pipe cancels ongoing capture;
 a committed result whose preview cannot be delivered expires normally.
 
-Output commands access a separate account-local store and do not contact the
-search daemon, including an older or incompatible running daemon. Search's
+Capture, paging and purge access a separate account-local store directly and
+do not contact a running daemon. Output search runs in the daemon to share its
+existing memory and work limits with repository search. An older daemon may
+reject output search; pause searches and retry after its idle exit, or page the
+original immediately. Repository search's
 16 KiB request and 64 KiB response protocol is unchanged. Output commands
 never stop a process or inspect a PID to decide ownership. They hold the shared
 maintenance lock while accessing output, so managed maintenance excludes them. Normal daemon
@@ -256,7 +273,7 @@ startup also attempts output cleanup; output corruption cannot disable search.
 | Page | At most 4,096 original bytes, preferring LF boundaries and preserving UTF-8; encoded output below 64 KiB |
 | Disk | 40 MiB database plus at most 41 MiB rollback journal; under 4 KiB ownership metadata and fixed empty lock files |
 | Reserve | Capture requires the existing twice-repository-database plus 64 MiB reserve and another 81 MiB; cleanup/purge need only the current output database size plus 1 MiB for rollback |
-| Memory | 256 KiB SQLite page cache per output client; 64 MiB SQLite heap ceiling; bounded buffers; no whole-log allocation |
+| Memory | Capture/page: 256 KiB SQLite page cache per client, 64 MiB SQLite heap ceiling, bounded buffers; search uses the daemon budget below |
 | Deadlines | 10 seconds without stdin, 120 seconds overall capture; two-second lock/database acquisition and output delivery waits |
 | Maintenance | At most 64 output records and two capture slots; runs on startup and output requests, never idle polling |
 
@@ -287,3 +304,38 @@ unsafe files are preserved and cause an error; inspect those files rather than
 recursively deleting a cache directory. Isolation is between OS accounts, not
 between sessions of the same account. No power-loss durability guarantee is
 added. See [output measurements](docs/output-measurements.md) for observations.
+
+### Output search limits
+
+Search verifies the full retained stream once in a read transaction, then builds
+and drops an in-memory FTS5 database. It does not register a Git repository or
+add output to the repository index. It creates no temporary disk index and
+retains no search cache. The read transaction protects the complete result
+against concurrent eviction or purge. Writers may receive the existing
+two-second database-busy error while a search reads; retry after it finishes.
+Expiry is checked before returning results and access does not extend it.
+
+| Search resource | Bound |
+| --- | --- |
+| Source allocation | At most 8 MiB, validated UTF-8; other chunk text borrows that allocation |
+| Generic chunks | At most 8,192 chunks; each at most 8,192 bytes and 60 LF-terminated lines; up to six lines and 1,024 bytes overlap, or 256 bytes inside a long line |
+| Expansion | At most 64 KiB per chunk and 32 MiB total expanded text; lexical expansion works on one bounded chunk at a time |
+| Temporary SQLite | At most 32 MiB logical database; in-memory only, including sort work; shares the daemon's existing 64 MiB total SQLite heap limit |
+| Process/concurrency | One daemon request at a time, including repository and output searches; existing 512 MiB Linux address-space limit and lower scheduling priority |
+| Work | 30-second work deadline, checked per retained chunk, ranking chunk, result and SQLite progress; request receipt and response delivery retain their separate deadlines |
+| Results | At most 20, each excerpt at most 1,000 original bytes and eight lines; complete encoded response at most 64 KiB, including metadata and escaping |
+
+The ranker searches every generated chunk or fails explicitly on a limit,
+timeout, cancellation or SQLite allocation failure. It never reports a prefix
+as a complete corpus. Extremely many short lines or a large vocabulary can
+exceed the ranking budget even when capture accepted the output. Use exact
+paging after such a failure. Human responses escape unsafe controls; JSON
+contains exact excerpt text. Clipping flags describe text omitted within the
+ranked chunk, while the top-level paging command starts the entire output.
+
+The CLI checks for downstream closure while waiting and disconnects the socket.
+The daemon checks that connection during traversal and ranking, so abandoned
+searches release their temporary database. No producer runs in the daemon.
+See [release search measurements](docs/output-search-measurements.md) for
+scripted retrieval and resource observations. These are not agent-effectiveness
+trials.

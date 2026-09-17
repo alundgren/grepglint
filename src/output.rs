@@ -400,72 +400,20 @@ impl Store {
         self.cleanup()?;
         let offset = decode_cursor(handle, cursor)?;
         let tx = self.db.transaction()?;
-        let (bytes, lines, created, digest): (u64, u64, u64, String) = tx
-            .query_row(
-                "SELECT bytes,lines,created,CASE WHEN length(digest)=64 THEN digest ELSE NULL END FROM outputs WHERE handle=?1 AND committed=1",
-                [handle],
-                |r| {
-                    Ok((
-                        r.get::<_, u32>(0)? as u64,
-                        r.get::<_, u32>(1)? as u64,
-                        r.get::<_, u32>(2)? as u64,
-                        r.get(3)?,
-                    ))
-                },
-            )
-            .optional()?
-            .context(
-                "Output is missing, expired, evicted, or purged; rerun the producer if needed.",
-            )?;
-        ensure!(
-            created + TTL > now()? && bytes <= MAX_OUTPUT && offset < bytes,
-            "Output cursor is out of range or output has expired."
-        );
-        let mut stmt = tx.prepare(
-            "SELECT ordinal,content,length(content) FROM chunks WHERE handle=?1 ORDER BY ordinal",
-        )?;
-        let mut rows = stmt.query([handle])?;
-        let mut hash = Sha256::new();
-        let mut total = 0u64;
-        let mut ordinal = 0;
-        let mut actual_lines = 0u64;
-        let mut last_byte = None;
         let mut selected = Vec::with_capacity(PAGE + 4);
-        while let Some(row) = rows.next()? {
-            ensure!(
-                row.get::<_, u32>(0)? == ordinal,
-                "Retained output is corrupt."
-            );
-            ensure!(
-                (1..=CHUNK as u32).contains(&row.get::<_, u32>(2)?),
-                "Retained output is corrupt."
-            );
-            let b: Vec<u8> = row.get(1)?;
-            ensure!(
-                !b.is_empty() && b.len() <= CHUNK && total + b.len() as u64 <= bytes,
-                "Retained output is corrupt."
-            );
-            hash.update(&b);
-            actual_lines += b.iter().filter(|&&byte| byte == b'\n').count() as u64;
-            last_byte = b.last().copied();
+        let Retained {
+            bytes,
+            lines,
+            created,
+        } = read_stream(&tx, handle, |total, b| {
             let start = offset.saturating_sub(total).min(b.len() as u64) as usize;
             if total + b.len() as u64 > offset && selected.len() < PAGE + 4 {
                 let count = (b.len() - start).min(PAGE + 4 - selected.len());
                 selected.extend_from_slice(&b[start..start + count]);
             }
-            total += b.len() as u64;
-            ordinal += 1;
-            ensure!(
-                ordinal as u64 <= MAX_OUTPUT.div_ceil(CHUNK as u64),
-                "Retained output has too many chunks."
-            );
-        }
-        ensure!(
-            total == bytes
-                && actual_lines + u64::from(last_byte.is_some_and(|b| b != b'\n')) == lines
-                && format!("{:x}", hash.finalize()) == digest,
-            "Retained output is corrupt; no page was returned."
-        );
+            Ok(())
+        })?;
+        ensure!(offset < bytes, "Output cursor is out of range.");
         let end = match std::str::from_utf8(&selected) {
             Ok(_) => selected.len(),
             Err(e) if e.error_len().is_none() => e.valid_up_to(),
@@ -494,6 +442,73 @@ impl Store {
         })
     }
 
+    pub fn search(&mut self, handle: &str, query: &str, limit: usize) -> Result<Search> {
+        let budget = crate::temporary_rank::Budget::new(1);
+        self.search_with_budget(handle, query, limit, budget)
+    }
+
+    pub(crate) fn search_with_budget(
+        &mut self,
+        handle: &str,
+        query: &str,
+        limit: usize,
+        budget: crate::temporary_rank::Budget,
+    ) -> Result<Search> {
+        crate::temporary_rank::validate(query, limit)?;
+        validate_handle(handle)?;
+        budget.check()?;
+        self.cleanup()?;
+        self.db
+            .progress_handler(1000, Some(move || budget.check().is_err()))?;
+        let result = (|| {
+            let tx = self.db.transaction()?;
+            let mut text = Vec::new();
+            let retained = read_stream(&tx, handle, |_, bytes| {
+                budget.check()?;
+                text.extend_from_slice(bytes);
+                Ok(())
+            })?;
+            let text = std::str::from_utf8(&text).context("Retained output is not UTF-8")?;
+            let ranked = crate::temporary_rank::rank(
+                crate::temporary_rank::Chunks::new(text),
+                query,
+                limit,
+                budget,
+            )
+            .context("Output search failed within its 32 MiB temporary database and shared 64 MiB SQLite heap budgets; the original remains available through output page")?;
+            budget.check()?;
+            ensure!(
+                retained.created + TTL > now()?,
+                "Output expired during search."
+            );
+            let results = ranked
+                .into_iter()
+                .map(|region| {
+                    let page_command = format!(
+                        "grepglint output page {handle} --json --cursor {}",
+                        encode_cursor(handle, region.excerpt_start_byte)
+                    );
+                    SearchResult {
+                        region,
+                        page_command,
+                    }
+                })
+                .collect();
+            Ok(Search {
+                handle: handle.to_owned(),
+                bytes: retained.bytes,
+                lines: retained.lines,
+                results,
+                page_command: format!("grepglint output page {handle} --json"),
+            })
+        })();
+        self.db.progress_handler(0, None::<fn() -> bool>)?;
+        if result.is_err() {
+            budget.check()?;
+        }
+        result
+    }
+
     pub fn purge(&mut self) -> Result<()> {
         self.deletion_space()?;
         let mut leases = Vec::new();
@@ -507,6 +522,85 @@ impl Store {
         // Keep the bounded empty database and ownership records for reuse.
         Ok(())
     }
+}
+
+struct Retained {
+    bytes: u64,
+    lines: u64,
+    created: u64,
+}
+
+fn read_stream(
+    tx: &Connection,
+    handle: &str,
+    mut visit: impl FnMut(u64, &[u8]) -> Result<()>,
+) -> Result<Retained> {
+    let (bytes, lines, created, digest): (u64, u64, u64, String) = tx
+            .query_row(
+                "SELECT bytes,lines,created,CASE WHEN length(digest)=64 THEN digest ELSE NULL END FROM outputs WHERE handle=?1 AND committed=1",
+                [handle],
+                |r| {
+                    Ok((
+                        r.get::<_, u32>(0)? as u64,
+                        r.get::<_, u32>(1)? as u64,
+                        r.get::<_, u32>(2)? as u64,
+                        r.get(3)?,
+                    ))
+                },
+            )
+            .optional()?
+            .context(
+                "Output is missing, expired, evicted, or purged; rerun the producer if needed.",
+            )?;
+    ensure!(
+        created + TTL > now()? && bytes > 0 && bytes <= MAX_OUTPUT,
+        "Output cursor is out of range or output has expired."
+    );
+    let mut stmt = tx.prepare(
+        "SELECT ordinal,content,length(content) FROM chunks WHERE handle=?1 ORDER BY ordinal",
+    )?;
+    let mut rows = stmt.query([handle])?;
+    let mut hash = Sha256::new();
+    let mut total = 0u64;
+    let mut ordinal = 0;
+    let mut actual_lines = 0u64;
+    let mut last_byte = None;
+    while let Some(row) = rows.next()? {
+        ensure!(
+            row.get::<_, u32>(0)? == ordinal,
+            "Retained output is corrupt."
+        );
+        ensure!(
+            (1..=CHUNK as u32).contains(&row.get::<_, u32>(2)?),
+            "Retained output is corrupt."
+        );
+        let b: Vec<u8> = row.get(1)?;
+        ensure!(
+            !b.is_empty() && b.len() <= CHUNK && total + b.len() as u64 <= bytes,
+            "Retained output is corrupt."
+        );
+        hash.update(&b);
+        actual_lines += b.iter().filter(|&&byte| byte == b'\n').count() as u64;
+        last_byte = b.last().copied();
+        visit(total, &b)?;
+        total += b.len() as u64;
+        ordinal += 1;
+        ensure!(
+            ordinal as u64 <= MAX_OUTPUT.div_ceil(CHUNK as u64),
+            "Retained output has too many chunks."
+        );
+    }
+    ensure!(
+        total == bytes
+            && actual_lines + u64::from(last_byte.is_some_and(|b| b != b'\n')) == lines
+            && format!("{:x}", hash.finalize()) == digest,
+        "Retained output is corrupt; no result was returned."
+    );
+    Ok(Retained {
+        bytes,
+        lines,
+        created,
+    })
 }
 
 struct Capture {
@@ -681,13 +775,14 @@ pub fn bounce(config: &Config) -> Result<()> {
         if let (Some(store), Some(capture)) = (&store, &capture) {
             store.commit(capture)?;
             let preview = format!(
-                "Output {}: {} bytes, {} lines\nHead: {}\n...\nTail: {}\nRetained for at most {} seconds from capture start; may be evicted sooner.\nPage from the beginning: grepglint output page {} --json\nCapture success does not report producer status.\n",
+                "Output {}: {} bytes, {} lines\nHead: {}\n...\nTail: {}\nRetained for at most {} seconds from capture start; may be evicted sooner.\nPage from the beginning: grepglint output page {} --json\nFind relevant sections: grepglint output search {} \"<query>\" --json\nCapture success does not report producer status.\n",
                 capture.handle,
                 capture.bytes,
                 capture.lines + u64::from(capture.last.is_some_and(|b| b != b'\n')),
                 printable(&String::from_utf8_lossy(&head)),
                 printable(&String::from_utf8_lossy(&tail)),
                 TTL,
+                capture.handle,
                 capture.handle
             );
             ensure!(preview.len() <= 8192, "Output preview exceeds its budget.");
@@ -826,6 +921,7 @@ mod tests {
         assert!(store.begin().is_err());
         store.purge().unwrap();
         assert!(store.page(&handle, None).is_err());
+        assert!(store.search(&handle, "x", 5).is_err());
     }
 
     #[test]
@@ -848,6 +944,7 @@ mod tests {
             retain(&mut store, 5000);
         }
         assert!(store.page(&oldest, None).is_err());
+        assert!(store.search(&oldest, "x", 5).is_err());
         let handle = retain(&mut store, 5000);
         let created: u32 = store
             .db
@@ -877,6 +974,7 @@ mod tests {
             )
             .unwrap();
         assert!(store.page(&handle, None).is_err());
+        assert!(store.search(&handle, "x", 5).is_err());
         assert!(
             store
                 .db
@@ -906,6 +1004,7 @@ mod tests {
             .unwrap();
         assert!(used as u64 <= TOTAL);
         assert!(store.page(&oldest, None).is_err());
+        assert!(store.search(&oldest, "x", 5).is_err());
         drop(first);
         drop(second);
         store.cleanup().unwrap();
@@ -948,6 +1047,7 @@ mod tests {
             )
             .unwrap();
         assert!(store.page(&handle, None).is_err());
+        assert!(store.search(&handle, "x", 5).is_err());
     }
     #[test]
     fn low_space_and_full_database_fail_without_committed_handle() {
@@ -970,6 +1070,28 @@ mod tests {
         assert!(store.page(&capture.handle, None).is_err());
     }
     #[test]
+    fn cancellation_preserves_pages() {
+        use std::os::fd::AsRawFd;
+        let (_dir, config) = fixture();
+        let mut store = Store::open(&config).unwrap();
+        let handle = retain(&mut store, 10000);
+        let before = store.page(&handle, None).unwrap().content;
+        let (consumer, server) = std::os::unix::net::UnixStream::pair().unwrap();
+        drop(consumer);
+        assert!(
+            store
+                .search_with_budget(
+                    &handle,
+                    "x",
+                    5,
+                    crate::temporary_rank::Budget::new(server.as_raw_fd())
+                )
+                .is_err()
+        );
+        assert_eq!(store.page(&handle, None).unwrap().content, before);
+    }
+
+    #[test]
     fn purge_erases_journal_and_data_without_deleting_ownership() {
         let (_dir, config) = fixture();
         let mut store = Store::open(&config).unwrap();
@@ -989,4 +1111,24 @@ mod tests {
         );
         assert!(store.directory.join("ownership.json").exists());
     }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Search {
+    pub handle: String,
+    pub bytes: u64,
+    pub lines: u64,
+    pub results: Vec<SearchResult>,
+    pub page_command: String,
+}
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SearchResult {
+    #[serde(flatten)]
+    pub region: crate::temporary_rank::Region,
+    pub page_command: String,
+}
+
+pub fn search(config: &Config, handle: &str, query: &str, limit: usize) -> Result<Search> {
+    crate::temporary_rank::validate(query, limit)?;
+    crate::daemon::output_search(config, handle, query, limit)
 }

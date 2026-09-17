@@ -34,6 +34,14 @@ if needed. Keep a separate copy of irreplaceable output.
 For retained output, run the printed `grepglint output page <handle> --json`
 command. Concatenate decoded `content`, using each `next_cursor` until
 `end_of_output`. The preview does not advance this traversal. Handles expire
-within one hour and may be evicted sooner. Relevance search is not available.
+within one hour and may be evicted sooner.
+
+To find relevant sections before paging, use
+`grepglint output search <handle> "error identifier" --json --limit 3`.
+Follow a result's paging command to inspect its original region. Lexical OR
+ranking can miss an answer or match only one component; no-match and ranking
+limit errors still leave exact paging available. Search only uses this handle's
+contents and does not need a Git checkout. It starts the daemon if needed to
+share the existing resource budget with repository queries.
 Use `grepglint output purge` to erase owned output contents. Repository caches
 are preserved.

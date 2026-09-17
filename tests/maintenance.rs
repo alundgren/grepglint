@@ -118,7 +118,13 @@ fn missing_daemon_help_and_catalog_do_not_start_or_create_cache() {
                     .iter()
                     .map(|tool| tool["name"].as_str().unwrap())
                     .collect::<Vec<_>>(),
-                ["search", "output bounce", "output page", "output purge"]
+                [
+                    "search",
+                    "output bounce",
+                    "output page",
+                    "output search",
+                    "output purge"
+                ]
             );
         }
     }

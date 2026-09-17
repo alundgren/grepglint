@@ -70,6 +70,15 @@ enum OutputTool {
         #[arg(long)]
         json: bool,
     },
+    /// Find likely sections of retained output; exact paging remains available
+    Search {
+        handle: String,
+        query: String,
+        #[arg(short = 'n', long, default_value_t = 5)]
+        limit: usize,
+        #[arg(long)]
+        json: bool,
+    },
     /// Erase owned retained output; preserve repository caches and unrelated files
     Purge,
 }
@@ -154,6 +163,38 @@ fn run(cli: &Cli) -> Result<()> {
                     };
                     grepglint::output::write_stdout(rendered.as_bytes())?;
                 }
+                OutputTool::Search {
+                    handle,
+                    query,
+                    limit,
+                    json,
+                } => {
+                    let response = grepglint::output::search(&config, handle, query, *limit)?;
+                    let rendered = if *json {
+                        format!("{}\n", serde_json::to_string(&response)?)
+                    } else {
+                        let mut text = format!(
+                            "Output {}: {} bytes, {} lines\n",
+                            response.handle, response.bytes, response.lines
+                        );
+                        if response.results.is_empty() {
+                            text.push_str(
+                                "No matching sections. Try fewer terms or page the original.\n",
+                            );
+                        }
+                        for (index, result) in response.results.iter().enumerate() {
+                            let r = &result.region;
+                            text.push_str(&format!("{}. Lines {}-{}, bytes {}..{}, score {:.6}\n{}\n{}{}\nInspect: {}\n\n",
+                                index + 1, r.excerpt_start_line, r.excerpt_end_line, r.excerpt_start_byte, r.excerpt_end_byte, r.score,
+                                grepglint::output::printable(&r.content),
+                                if r.clipped_before { "[earlier chunk text omitted] " } else { "" },
+                                if r.clipped_after { "[later chunk text omitted]" } else { "" }, result.page_command));
+                        }
+                        text.push_str(&format!("Lexical OR matches are suggestions, not exact matches or guaranteed answers.\nRead all original bytes: {}\n", response.page_command));
+                        text
+                    };
+                    grepglint::output::write_stdout(rendered.as_bytes())?;
+                }
                 OutputTool::Purge => {
                     grepglint::output::Store::open(&config)?.purge()?;
                     println!("Owned output contents purged. Repository caches are unchanged.");
@@ -186,6 +227,12 @@ fn run(cli: &Cli) -> Result<()> {
                             "returns":"Exact decoded content with a next cursor or end-of-output.",
                             "side_effects":"Cleans expired output on demand."
                         }, {
+                            "name":"output search", "command":"grepglint output search <handle> <query> --json [--limit 1..20]",
+                            "use_when":"Find likely sections in one retained output without reading every page. Lexical OR ranking does not guarantee exact matches or an answer.",
+                            "inputs":"Query up to 2000 bytes and 32 expanded OR terms; default 5 results, maximum 20.",
+                            "returns":"Ranked excerpts with original byte/line ranges, handle identity, clipping indicators and exact paging commands. Empty results include paging guidance.",
+                            "side_effects":"Cleans expired output; starts the local daemon if needed and uses a disposable in-memory index within its shared 30-second/64 MiB SQLite budget. No repository registration or persistent output index."
+                        }, {
                             "name":"output purge", "command":"grepglint output purge",
                             "use_when":"Erase owned retained output while preserving repository caches.",
                             "side_effects":"Deletes output contents; fails while capture remains active."
@@ -194,7 +241,7 @@ fn run(cli: &Cli) -> Result<()> {
                 );
             } else {
                 println!(
-                    "search  Find likely code regions when you know the concept but not its identifier or location.\n        grepglint search --json \"refresh token validation\"\n\nUse rg for exact matches, then read the relevant code.\noutput bounce  Retain large stdin with a bounded preview.\noutput page    Retrieve exact retained text with --json.\noutput purge   Erase owned output contents.\nRun grepglint tools --json for the machine-readable tool catalog."
+                    "search  Find likely code regions when you know the concept but not its identifier or location.\n        grepglint search --json \"refresh token validation\"\n\nUse rg for exact matches, then read the relevant code.\noutput bounce  Retain large stdin with a bounded preview.\noutput search  Find relevant sections; use paging to inspect original bytes.\noutput page    Retrieve exact retained text with --json.\noutput purge   Erase owned output contents.\nRun grepglint tools --json for the machine-readable tool catalog."
                 );
             }
         }
@@ -256,6 +303,7 @@ fn main() {
                 | Tool::Status { json: true }
                 | Tool::Output {
                     command: OutputTool::Page { json: true, .. }
+                        | OutputTool::Search { json: true, .. }
                 }
         ) {
             println!("{}", json!({"error":format!("{error:#}")}));

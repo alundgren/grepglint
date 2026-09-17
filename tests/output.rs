@@ -465,3 +465,292 @@ fn legitimate_symlinked_ancestor_works_and_final_file_symlinks_fail() {
             .success()
     );
 }
+
+impl Fixture {
+    fn search(&self, handle: &str, query: &str) -> std::process::Output {
+        self.command()
+            .env("GREPGLINT_IDLE_SECONDS", "1")
+            .args(["output", "search", handle, query, "--json"])
+            .output()
+            .unwrap()
+    }
+    fn search_json(&self, handle: &str, query: &str) -> Value {
+        let output = self.search(handle, query);
+        assert!(
+            output.status.success(),
+            "{} {}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(output.stdout.len() <= 65536);
+        serde_json::from_slice(&output.stdout).unwrap()
+    }
+}
+
+#[test]
+fn search_finds_middle_diagnostics_and_poor_queries_preserve_exact_retrieval() {
+    let f = Fixture::new();
+    let input = format!(
+        "{}\nNodePtyModuleLoadError node-pty linux-x64 constructEvent SQLITE_BUSY v24.20.0 src/auth/session.ts\n{}",
+        "test component ... ok\n".repeat(2000),
+        "warning: unused compiler variable\n".repeat(2000)
+    );
+    let handle = f.handle(input.as_bytes());
+    let other = f.handle(
+        format!(
+            "{} otherHandleSecret",
+            "unrelated information\n".repeat(500)
+        )
+        .as_bytes(),
+    );
+    for query in [
+        "NodePtyModuleLoadError",
+        "node-pty",
+        "linux-x64",
+        "constructEvent",
+        "SQLITE_BUSY",
+        "v24.20.0",
+        "src/auth/session.ts",
+    ] {
+        let result = f.search_json(&handle, query);
+        assert_eq!(result["handle"], handle);
+        let first = &result["results"][0];
+        let text = first["content"].as_str().unwrap();
+        assert!(text.contains(query), "{query}: {text}");
+        assert_eq!(
+            text,
+            &input[first["excerpt_start_byte"].as_u64().unwrap() as usize
+                ..first["excerpt_end_byte"].as_u64().unwrap() as usize]
+        );
+        assert_eq!(first["excerpt_start_line"], 2002);
+        let command: Vec<_> = first["page_command"]
+            .as_str()
+            .unwrap()
+            .split_whitespace()
+            .collect();
+        let page = f.command().args(&command[1..]).output().unwrap();
+        assert!(page.status.success());
+        let page: Value = serde_json::from_slice(&page.stdout).unwrap();
+        assert!(page["content"].as_str().unwrap().contains(query));
+    }
+    assert!(
+        f.search_json(&other, "NodePtyModuleLoadError")["results"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+    let missed = f.search_json(&handle, "test component");
+    assert!(missed["results"].as_array().unwrap().iter().all(|r| {
+        !r["content"]
+            .as_str()
+            .unwrap()
+            .contains("NodePtyModuleLoadError")
+    }));
+    let empty = f.search_json(&handle, "nonexistentDiagnostic");
+    assert!(empty["results"].as_array().unwrap().is_empty());
+    assert!(empty["page_command"].as_str().unwrap().contains(&handle));
+    let mut restored = Vec::new();
+    let mut cursor = None;
+    loop {
+        let output = f.page(&handle, cursor.as_deref());
+        assert!(output.status.success());
+        let page: Value = serde_json::from_slice(&output.stdout).unwrap();
+        restored.extend_from_slice(page["content"].as_str().unwrap().as_bytes());
+        cursor = page["next_cursor"].as_str().map(str::to_owned);
+        if cursor.is_none() {
+            break;
+        }
+    }
+    assert_eq!(restored, input.as_bytes());
+    assert!(!f.root.path().join(".git").exists());
+    let db = rusqlite::Connection::open(f.root.path().join("cache/index.sqlite")).unwrap();
+    assert_eq!(
+        db.query_row("SELECT count(*) FROM repositories", [], |r| r
+            .get::<_, u32>(0))
+            .unwrap(),
+        0
+    );
+}
+
+#[test]
+fn search_limits_controls_purge_and_maximum_output() {
+    let f = Fixture::new();
+    let input = format!(
+        "{} constructEvent\x1b[31m\t\u{202e} {}",
+        "🙂".repeat(3000),
+        "é".repeat(3000)
+    );
+    let handle = f.handle(input.as_bytes());
+    let result = f.search_json(&handle, "constructEvent");
+    assert!(
+        result["results"][0]["content"]
+            .as_str()
+            .unwrap()
+            .contains("constructEvent")
+    );
+    let human = f
+        .command()
+        .args(["output", "search", &handle, "constructEvent"])
+        .output()
+        .unwrap();
+    assert!(human.status.success());
+    assert!(!human.stdout.contains(&0x1b));
+    assert!(!String::from_utf8_lossy(&human.stdout).contains('\u{202e}'));
+    for query in ["***".to_owned(), "x".repeat(2001)] {
+        let output = f.search(&handle, &query);
+        assert!(!output.status.success());
+        assert!(serde_json::from_slice::<Value>(&output.stdout).unwrap()["error"].is_string());
+    }
+    assert!(!f.search("malformed", "x").status.success());
+    let limit = f
+        .command()
+        .args(["output", "search", &handle, "x", "--limit", "21", "--json"])
+        .output()
+        .unwrap();
+    assert!(!limit.status.success());
+    let crowded = f.handle(&b"\n".repeat(600_000));
+    let failed = f.search(&crowded, "anything");
+    assert!(!failed.status.success());
+    assert!(String::from_utf8_lossy(&failed.stdout).contains("8,192"));
+    assert!(f.page(&crowded, None).status.success());
+    let mut maximum = vec![b'z'; 8 * 1024 * 1024];
+    let diagnostic = b" constructEvent ";
+    let start = maximum.len() / 2;
+    maximum[start..start + diagnostic.len()].copy_from_slice(diagnostic);
+    let max_handle = f.handle(&maximum);
+    assert!(
+        f.search_json(&max_handle, "constructEvent")["results"][0]["content"]
+            .as_str()
+            .unwrap()
+            .contains("constructEvent")
+    );
+    assert!(
+        f.command()
+            .args(["output", "purge"])
+            .output()
+            .unwrap()
+            .status
+            .success()
+    );
+    assert!(!f.search(&handle, "constructEvent").status.success());
+}
+
+#[test]
+fn legacy_search_refusal_keeps_exact_paging_and_socket() {
+    use std::{
+        io::{BufRead, BufReader},
+        os::unix::{fs::PermissionsExt, net::UnixListener},
+    };
+    let f = Fixture::new();
+    let handle = f.handle(&vec![b'x'; 6000]);
+    let socket = f.root.path().join("cache/daemon.sock");
+    let listener = UnixListener::bind(&socket).unwrap();
+    fs::set_permissions(&socket, fs::Permissions::from_mode(0o600)).unwrap();
+    let server = std::thread::spawn(move || {
+        let (mut stream, _) = listener.accept().unwrap();
+        let mut request = String::new();
+        BufReader::new(stream.try_clone().unwrap())
+            .read_line(&mut request)
+            .unwrap();
+        assert!(request.contains("output_search"));
+        stream
+            .write_all(b"{\"status\":\"error\",\"message\":\"Unknown control request\"}\n")
+            .unwrap();
+    });
+    let response = f.search(&handle, "x");
+    assert!(!response.status.success());
+    assert!(
+        String::from_utf8_lossy(&response.stdout).contains("exact output page remains available")
+    );
+    server.join().unwrap();
+    assert!(socket.exists());
+    assert!(f.page(&handle, None).status.success());
+}
+
+#[test]
+fn disconnect_cancels_daemon_ranking_and_preserves_original() {
+    let f = Fixture::new();
+    let handle = f.handle(&vec![b'z'; 8 * 1024 * 1024]);
+    let before = f.page(&handle, None).stdout;
+    let mut child = f
+        .command()
+        .env("GREPGLINT_IDLE_SECONDS", "1")
+        .args(["output", "search", &handle, "z", "--json"])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .unwrap();
+    let observer =
+        rusqlite::Connection::open(f.root.path().join("cache/output-v1/output.sqlite")).unwrap();
+    observer.busy_timeout(Duration::ZERO).unwrap();
+    let start = Instant::now();
+    loop {
+        match observer.execute_batch("BEGIN EXCLUSIVE") {
+            Ok(()) => observer.execute_batch("ROLLBACK").unwrap(),
+            Err(_) => break,
+        }
+        assert!(
+            start.elapsed() < Duration::from_secs(5),
+            "ranker never began its read transaction"
+        );
+        std::thread::sleep(Duration::from_millis(2));
+    }
+    drop(child.stdout.take());
+    let cancelled = Instant::now();
+    loop {
+        if let Some(status) = child.try_wait().unwrap() {
+            assert!(!status.success());
+            break;
+        }
+        assert!(cancelled.elapsed() < Duration::from_secs(3));
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    let status = f.command().args(["status", "--json"]).output().unwrap();
+    assert!(status.status.success());
+    assert!(cancelled.elapsed() < Duration::from_secs(3));
+    assert_eq!(f.page(&handle, None).stdout, before);
+    let db =
+        rusqlite::Connection::open(f.root.path().join("cache/output-v1/output.sqlite")).unwrap();
+    assert_eq!(
+        db.query_row(
+            "SELECT count(*) FROM sqlite_master WHERE name LIKE 'corpus%'",
+            [],
+            |r| r.get::<_, u32>(0)
+        )
+        .unwrap(),
+        0
+    );
+}
+
+#[test]
+fn search_response_limit_counts_json_escaping_and_metadata() {
+    let f = Fixture::new();
+    let input = format!("match{}\n", "\x01".repeat(140)).repeat(2000);
+    let handle = f.handle(input.as_bytes());
+    let response = f
+        .command()
+        .env("GREPGLINT_IDLE_SECONDS", "1")
+        .args([
+            "output", "search", &handle, "match", "--json", "--limit", "20",
+        ])
+        .output()
+        .unwrap();
+    assert!(!response.status.success());
+    assert!(response.stdout.len() < 65536);
+    assert!(
+        serde_json::from_slice::<Value>(&response.stdout).unwrap()["error"]
+            .as_str()
+            .unwrap()
+            .contains("64 KiB")
+    );
+    let small = f
+        .command()
+        .args([
+            "output", "search", &handle, "match", "--json", "--limit", "1",
+        ])
+        .output()
+        .unwrap();
+    assert!(small.status.success());
+    assert!(small.stdout.len() <= 65536);
+    assert!(f.page(&handle, None).status.success());
+}
