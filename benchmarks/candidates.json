@@ -54,8 +54,8 @@
     },
     {
       "task_id": "django-composite-field-recover-001",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited after rubric correction in review round 2."
     },
     {
       "task_id": "django-cross-team-boundary-001",
@@ -69,8 +69,8 @@
     },
     {
       "task_id": "django-modelchoice-fk-fix-001",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited after rubric correction in review round 2."
     },
     {
       "task_id": "django-orm-query-arch-001",
@@ -184,8 +184,8 @@
     },
     {
       "task_id": "numpy-rolling-median-feat-001",
-      "status": "selected_pending_review",
-      "reason": "Source verified; independent factual review pending."
+      "status": "selected_accepted",
+      "reason": "Source verified and independently audited after rubric correction in review round 2."
     },
     {
       "task_id": "vscode-code-review-001",

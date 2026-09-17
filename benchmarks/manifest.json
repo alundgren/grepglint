@@ -307,7 +307,7 @@
       ],
       "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -991,7 +991,7 @@
       ],
       "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
@@ -1988,7 +1988,7 @@
       ],
       "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
       "review": {
-        "status": "pending"
+        "status": "accepted"
       },
       "origin": {
         "kind": "published",
