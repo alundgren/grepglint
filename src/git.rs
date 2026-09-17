@@ -89,7 +89,7 @@ fn run(
         output.len() <= MAX_OUTPUT as usize,
         "Git output exceeded 16 MiB; this repository is too large for the prototype."
     );
-    if !status.success() && !(allow_missing && status.code() == Some(1)) {
+    if !(status.success() || allow_missing && status.code() == Some(1)) {
         bail!(
             "Git {} failed: {}",
             args[0],
