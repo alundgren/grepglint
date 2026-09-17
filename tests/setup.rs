@@ -1692,8 +1692,8 @@ fn terminal_removal_cancellation_succeeds_without_mutation() {
                     &mut master,
                     &mut slave,
                     std::ptr::null_mut(),
-                    std::ptr::null(),
-                    std::ptr::null(),
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
                 )
             },
             0
