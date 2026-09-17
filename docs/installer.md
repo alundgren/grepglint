@@ -197,7 +197,18 @@ record is restored after successful rollback cleanup.
 
 `./install repair` restores missing owned files from a verified retained or
 installed copy. If both are missing, it downloads and attests the exact recorded
-release. The durable `repairing` phase records missing-file restoration until verification
+release. For older installer executables that do not expose the native `--repair-source`
+option, healthy repair uses their existing verify action without downloading
+anything. Interrupted first installation uses their existing install action.
+Missing-file repair may need newer maintenance code. The bootstrap prints its
+selected helper release and verifies it through the same release policy, then
+passes the hash-checked recorded executable as the restoration source. The
+installed release remains unchanged. `./install repair --release vX.Y.Z`
+selects that helper explicitly; otherwise the repository's latest stable release
+is selected and verified. If it still lacks repair support, repair refuses with
+instructions to choose a newer release. No unverified helper runs.
+
+The durable `repairing` phase records missing-file restoration until verification
 succeeds. Repair also resumes an interrupted first installation. Changed bytes,
 unsafe file objects, unknown fields and unknown record versions cause a refusal
 that preserves the files. Healthy repair reports no changes. Upgrading to the

@@ -24,7 +24,9 @@ verifies a selected published release before execution. `./install verify`
 checks a managed installation offline using its retained maintenance copy.
 Python 3, Git and authenticated gh 2.80.0 or newer are needed for initial
 release installation. See [managed installation](docs/installer.md#managed-installation)
-for consent, recovery, paths and limits. Upgrade and removal are not available yet.
+for consent, recovery, paths and limits. Use `./install upgrade --release vX.Y.Z`
+to replace a release and `./install repair` to recover interrupted operations or
+restore missing owned executables. Uninstall and purge are not available yet.
 
 For source development, use Linux or macOS, Git, Rust 1.89 or later, and a C compiler for bundled
 SQLite and tree-sitter. Linux is tested locally; CI also covers macOS.

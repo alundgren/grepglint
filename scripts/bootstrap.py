@@ -223,6 +223,44 @@ def validate_record(record, state, prior=False):
         require(not record["phase"].startswith("upgrade_") and not record["phase"].startswith("rollback"), "Missing upgrade recovery data")
 
 
+def supports_repair(binary):
+    return b"--repair-source" in run([str(binary), "setup", "--help"], timeout=10, cap=16384)
+
+
+def repair_with_helper(record, native_args, source, requested_release):
+    release = requested_release or run(["gh", "api", f"repos/{REPO}/releases/latest", "--jq", ".tag_name"]).decode().strip()
+    require(re.fullmatch(TAG, release), "Repair requires a stable helper release; use repair --release vMAJOR.MINOR.PATCH")
+    print(f"Repair will use verified helper {release}; installed release remains {record['release']}", flush=True)
+    require(shutil.disk_usage(tempfile.gettempdir()).free >= 7 * CAP + 64 * 1024 * 1024, "Insufficient repair staging disk space")
+    with tempfile.TemporaryDirectory(prefix="grepglint-repair-") as directory:
+        binary, _, _ = fetch(release, Path(directory))
+        require(supports_repair(binary), "Verified helper release does not support repair; choose a newer repair --release; installed files preserved")
+        return subprocess.call([str(binary)] + native_args + ["--repair-source", str(source)])
+
+
+def repair_local(record, native_args, source, requested_release):
+    if supports_repair(source):
+        if requested_release and requested_release != record["release"]:
+            return repair_with_helper(record, native_args, source, requested_release)
+        return subprocess.call([str(source)] + native_args)
+    if record["phase"] in ("prepared", "retained", "installed"):
+        resume_args = list(native_args)
+        resume_args[1] = "install"
+        return subprocess.call([str(source)] + resume_args)
+    destination = Path(record["destination"])
+    maintenance = Path(native_args[native_args.index("--state-dir") + 1]) / "maintenance"
+    if destination.exists() and maintenance.exists():
+        for path in (destination, maintenance):
+            require(hashlib.sha256(regular(path, CAP)).hexdigest() == record["digest"], "Modified executable preserved")
+        verify_args = list(native_args)
+        verify_args[1] = "verify"
+        result = subprocess.call([str(source)] + verify_args)
+        if result == 0:
+            print("Installation healthy; no changes and real daemon was not restarted")
+        return result
+    return repair_with_helper(record, native_args, source, requested_release)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Install a verified release from this trusted checkout; local maintenance works offline")
     parser.add_argument("action", nargs="?", choices=["install", "verify", "status", "upgrade", "repair", "uninstall", "purge"])
@@ -262,9 +300,10 @@ def main(argv=None):
         print(f"Installation: {record['phase'] if record else 'not installed'}")
         return 0
     recovery = False
+    repair_release = args.release if args.action == "repair" else None
     if record:
         recovery = record.get("change") is not None
-        require(args.action == "upgrade" or not args.release or args.release == record["release"], "Upgrade or downgrade requires the upgrade action; recorded release preserved")
+        require(args.action in ("upgrade", "repair") or not args.release or args.release == record["release"], "Upgrade or downgrade requires the upgrade action; recorded release preserved")
         if recovery:
             native_args[1] = "repair"
             args.release = record["release"]
@@ -275,6 +314,8 @@ def main(argv=None):
             local = state / "maintenance"
         if local.exists() or local.is_symlink():
             require(hashlib.sha256(regular(local, CAP)).hexdigest() == record["digest"], "Maintenance copy changed; refusing to execute it")
+            if args.action == "repair" and not recovery:
+                return repair_local(record, native_args, local, repair_release)
             if args.action != "upgrade" or recovery:
                 return subprocess.call([str(local)] + native_args)
         elif not recovery:
@@ -283,7 +324,7 @@ def main(argv=None):
             if installed.exists() or installed.is_symlink():
                 require(hashlib.sha256(regular(installed, CAP)).hexdigest() == record["digest"], "Installed executable modified; preserved")
                 if args.action == "repair":
-                    return subprocess.call([str(installed)] + native_args)
+                    return repair_local(record, native_args, installed, repair_release)
         if args.action != "upgrade" or recovery:
             args.release = record["release"]
     require(record is not None or args.action == "install", "No installation record; run ./install install first")
@@ -298,6 +339,8 @@ def main(argv=None):
         binary, source_commit, digest = fetch(args.release, Path(directory))
         if record and (args.action != "upgrade" or recovery):
             require(source_commit == record["commit"] and digest == record["digest"], "Recovery release identity changed")
+        if args.action == "repair" and not recovery:
+            return repair_local(record, native_args, binary, repair_release)
         return subprocess.call([str(binary)] + native_args + ["--release", args.release,
                                "--commit", source_commit, "--digest", digest])
 

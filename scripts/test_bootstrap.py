@@ -211,6 +211,36 @@ class BootstrapTests(unittest.TestCase):
                 (state/"record.json").write_text(json.dumps(record))
                 with self.assertRaisesRegex(ValueError, "record fields"): b.main([action, "--state-dir", str(state)])
 
+    def test_preceding_installer_repair_compatibility(self):
+        for missing in ("destination", "maintenance", "none", "interrupted", "repairing"):
+            with self.subTest(missing=missing), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp).resolve()
+                state = root / "state"
+                state.mkdir(mode=0o700)
+                destination = root / "binary"
+                maintenance = state / "maintenance"
+                marker = root / "action"
+                # The preceding installer accepts help/install/verify but rejects repair.
+                old = f"#!/bin/sh\ncase \"$2\" in --help) echo 'install verify status';; repair) echo 'This action is not available in this version' >&2; exit 1;; install|verify) echo \"$2\" > '{marker}';; *) exit 2;; esac\n".encode()
+                for path in (destination, maintenance):
+                    path.write_bytes(old)
+                    path.chmod(0o700)
+                source = maintenance
+                if missing == "destination": destination.unlink()
+                if missing == "maintenance": maintenance.unlink(); source = destination
+                if missing == "repairing": destination.unlink()
+                record = dict(phase="retained" if missing == "interrupted" else "repairing" if missing == "repairing" else "complete",
+                              destination=str(destination), release="v0.1.0", digest=hashlib.sha256(old).hexdigest())
+                args = ["setup", "repair", "--state-dir", str(state)]
+                with patch.object(b, "repair_with_helper", return_value=0) as helper:
+                    self.assertEqual(b.repair_local(record, args, source, "v0.2.0"), 0)
+                    if missing in ("none", "interrupted"):
+                        helper.assert_not_called()
+                        self.assertEqual(marker.read_text().strip(), "verify" if missing == "none" else "install")
+                    else:
+                        helper.assert_called_once_with(record, args, source, "v0.2.0")
+                        self.assertFalse(marker.exists())
+
     def test_cancel_changes_nothing(self):
         with tempfile.TemporaryDirectory() as temp, patch.object(b.sys.stdin, "isatty", return_value=True), patch("builtins.input", return_value="0"):
             self.assertEqual(b.main(["--state-dir", str(Path(temp).resolve()/"state")]), 0)

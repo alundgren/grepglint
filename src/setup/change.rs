@@ -219,7 +219,10 @@ pub fn run(options: &Options, state: &Path, mut record: Record) -> Result<()> {
             println!("Installation healthy; no changes and real daemon was not restarted");
             return Ok(());
         }
-        let source = std::env::current_exe()?.canonicalize()?;
+        let source = options
+            .repair_source
+            .clone()
+            .unwrap_or(std::env::current_exe()?.canonicalize()?);
         ensure!(
             files::hash(&source)? == record.digest,
             "Repair requires the recorded verified release or retained copy"

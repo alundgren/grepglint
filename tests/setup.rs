@@ -1061,3 +1061,40 @@ fn interrupted_repair_and_record_write_resume() {
     assert_eq!(f.record()["phase"], "complete");
     assert!(!f.state().join("record.json.grepglint-pending").exists());
 }
+
+#[test]
+fn newer_repair_helper_restores_only_recorded_source_bytes() {
+    for missing in ["destination", "maintenance"] {
+        let f = Fixture::new();
+        success(f.install());
+        let old = digest(&f.destination());
+        let source = f.root.join("verified-prior");
+        fs::copy(f.destination(), &source).unwrap();
+        fs::set_permissions(&source, fs::Permissions::from_mode(0o700)).unwrap();
+        f.candidate();
+        fs::remove_file(if missing == "destination" {
+            f.destination()
+        } else {
+            f.state().join("maintenance")
+        })
+        .unwrap();
+        failure(
+            f.command("repair")
+                .arg("--repair-source")
+                .arg(f.root.join("source"))
+                .output()
+                .unwrap(),
+            "recorded verified release",
+        );
+        success(
+            f.command("repair")
+                .arg("--repair-source")
+                .arg(&source)
+                .output()
+                .unwrap(),
+        );
+        assert_eq!(digest(&f.destination()), old);
+        assert_eq!(digest(&f.state().join("maintenance")), old);
+        assert_eq!(f.record()["digest"], old);
+    }
+}

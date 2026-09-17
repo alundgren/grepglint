@@ -42,6 +42,9 @@ pub struct Options {
     pub commit: Option<String>,
     #[arg(long)]
     pub digest: Option<String>,
+    /// Verified recorded executable to restore when a newer helper runs repair
+    #[arg(long)]
+    pub repair_source: Option<PathBuf>,
     /// Permit migration of a Cargo-recorded executable, retaining a rollback copy
     #[arg(long)]
     pub migrate_cargo: bool,
