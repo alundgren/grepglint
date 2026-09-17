@@ -9,7 +9,7 @@ use std::{
     io::{BufRead, BufReader, Read, Write},
     os::fd::AsRawFd,
     os::unix::{
-        fs::{DirBuilderExt, FileTypeExt, OpenOptionsExt, PermissionsExt},
+        fs::{DirBuilderExt, FileTypeExt, MetadataExt, OpenOptionsExt, PermissionsExt},
         net::{UnixListener, UnixStream},
         process::CommandExt,
     },
@@ -125,20 +125,77 @@ fn restrict_process() -> Result<()> {
 struct Cleanup {
     directory: PathBuf,
     socket: crate::maintenance::SocketIdentity,
-    pid: String,
+    pid: Option<PidFile>,
 }
 impl Drop for Cleanup {
     fn drop(&mut self) {
         if self.socket.matches(&self.directory.join("daemon.sock")) {
             let _ = fs::remove_file(self.directory.join("daemon.sock"));
         }
-        if fs::read_to_string(self.directory.join("daemon.pid"))
-            .ok()
-            .as_deref()
-            == Some(&self.pid)
-        {
-            let _ = fs::remove_file(self.directory.join("daemon.pid"));
+        if let Some(pid) = &self.pid {
+            let _ = pid.remove_if_unchanged(&self.directory.join("daemon.pid"));
         }
+    }
+}
+
+struct PidFile {
+    device: u64,
+    inode: u64,
+    text: String,
+}
+
+impl PidFile {
+    fn write(path: &std::path::Path) -> Result<Self> {
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .mode(0o600)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+            .open(path)?;
+        let metadata = file.metadata()?;
+        crate::maintenance::check_owner(&metadata)?;
+        ensure!(
+            metadata.is_file() && metadata.nlink() == 1 && metadata.mode() & 0o077 == 0,
+            "Refusing an unexpected PID file; preserve it and inspect the cache."
+        );
+        let text = std::process::id().to_string();
+        file.set_len(0)?;
+        file.write_all(text.as_bytes())?;
+        Ok(Self {
+            device: metadata.dev(),
+            inode: metadata.ino(),
+            text,
+        })
+    }
+
+    fn remove_if_unchanged(&self, path: &std::path::Path) -> Result<()> {
+        let file = OpenOptions::new()
+            .read(true)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+            .open(path)?;
+        let metadata = file.metadata()?;
+        crate::maintenance::check_owner(&metadata)?;
+        if !metadata.is_file()
+            || metadata.nlink() != 1
+            || metadata.dev() != self.device
+            || metadata.ino() != self.inode
+            || metadata.len() > 32
+        {
+            return Ok(());
+        }
+        let mut bytes = Vec::with_capacity(33);
+        file.take(33).read_to_end(&mut bytes)?;
+        let current = fs::symlink_metadata(path)?;
+        if bytes == self.text.as_bytes()
+            && current.is_file()
+            && current.dev() == self.device
+            && current.ino() == self.inode
+        {
+            fs::remove_file(path)?;
+        }
+        Ok(())
     }
 }
 
@@ -163,17 +220,14 @@ pub fn serve(config: &Config) -> Result<()> {
     let health = crate::maintenance::build_health(config)?;
     let mut index = Index::open(&config.directory, config.max_bytes)?;
     let listener = UnixListener::bind(config.socket())?;
-    let _cleanup = Cleanup {
+    let mut _cleanup = Cleanup {
         directory: config.directory.clone(),
         socket: crate::maintenance::SocketIdentity::read(&config.socket())?,
-        pid: std::process::id().to_string(),
+        pid: None,
     };
     listener.set_nonblocking(true)?;
     fs::set_permissions(config.socket(), fs::Permissions::from_mode(0o600))?;
-    fs::write(
-        config.directory.join("daemon.pid"),
-        std::process::id().to_string(),
-    )?;
+    _cleanup.pid = Some(PidFile::write(&config.directory.join("daemon.pid"))?);
     let _ = fs::remove_file(config.directory.join("startup-error.txt"));
     drop(startup);
     let mut last_request = Instant::now();

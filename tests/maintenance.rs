@@ -535,3 +535,43 @@ fn non_private_resources_and_shutdown_without_exclusion_are_refused() {
     fs::set_permissions(&socket, fs::Permissions::from_mode(0o600)).unwrap();
     assert_eq!(f.health().instance, health.instance);
 }
+
+#[test]
+fn shutdown_preserves_fifo_symlink_and_oversized_pid_replacements() {
+    use std::{ffi::CString, os::unix::ffi::OsStrExt};
+    for replacement in ["fifo", "symlink", "oversized"] {
+        let f = Fixture::new();
+        f.start();
+        let pid = f.cache.join("daemon.pid");
+        if replacement != "oversized" {
+            fs::remove_file(&pid).unwrap();
+        }
+        match replacement {
+            "fifo" => {
+                let path = CString::new(pid.as_os_str().as_bytes()).unwrap();
+                assert_eq!(unsafe { libc::mkfifo(path.as_ptr(), 0o600) }, 0);
+            }
+            "symlink" => symlink(f.root.join("source.txt"), &pid).unwrap(),
+            _ => {
+                // Sparse length tests the bound without allocating or writing source-sized data.
+                let file = fs::File::create(&pid).unwrap();
+                file.set_len(1024 * 1024 * 1024).unwrap();
+            }
+        }
+        let started = Instant::now();
+        assert!(grepglint::maintenance::shutdown(&f.config(), None).unwrap());
+        assert!(started.elapsed() < Duration::from_secs(3), "{replacement}");
+        assert!(fs::symlink_metadata(&pid).is_ok(), "{replacement}");
+        assert!(
+            grepglint::maintenance::status(&f.config())
+                .unwrap()
+                .is_none()
+        );
+        assert_eq!(
+            fs::read_to_string(f.root.join("source.txt")).unwrap(),
+            "maintenancequartz\n"
+        );
+        fs::remove_file(&pid).unwrap();
+        f.start();
+    }
+}
