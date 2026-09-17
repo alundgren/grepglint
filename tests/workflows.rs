@@ -174,11 +174,14 @@ fn old_worktree_registrations_expire_automatically() {
     fixture.search(&worktree, "refresh");
     fixture.stop();
     let db = Connection::open(fixture.cache.join("index.sqlite")).unwrap();
-    db.execute(
-        "UPDATE worktrees SET last_seen=0 WHERE root=?",
-        [worktree.to_str().unwrap()],
-    )
-    .unwrap();
+    let canonical = fs::canonicalize(&worktree).unwrap();
+    let updated = db
+        .execute(
+            "UPDATE worktrees SET last_seen=0 WHERE root=?",
+            [canonical.to_str().unwrap()],
+        )
+        .unwrap();
+    assert_eq!(updated, 1);
     let result = fixture.search(&fixture.root, "refresh");
     assert_eq!(result.stats.evicted_worktrees, 1);
     let count: i64 = db
