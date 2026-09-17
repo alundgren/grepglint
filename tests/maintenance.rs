@@ -611,7 +611,7 @@ fn health_refusal_detail_is_bounded_and_printable() {
     let error = grepglint::maintenance::status(&f.config())
         .unwrap_err()
         .to_string();
-    assert!(error.contains("Daemon refused health"));
+    assert!(error.contains("Daemon refused health"), "{error}");
     assert!(error.len() < 2500);
     assert!(!error.chars().any(char::is_control));
     server.join().unwrap();

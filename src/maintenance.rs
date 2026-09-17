@@ -377,7 +377,15 @@ fn exchange(
     stream.write_all(&bytes).context(REFUSAL)?;
     let mut response = Vec::new();
     loop {
-        stream.set_read_timeout(Some(remaining(deadline)?))?;
+        if let Err(error) = stream.set_read_timeout(Some(remaining(deadline)?)) {
+            if error.raw_os_error() == Some(libc::EINVAL) {
+                // BSD can reject timeout changes after peer shutdown with reply bytes still queued.
+                // Drain those bytes without allowing another blocking read.
+                stream.set_nonblocking(true).context(REFUSAL)?;
+            } else {
+                return Err(error).context(REFUSAL);
+            }
+        }
         let mut buffer = [0u8; 1024];
         let count = stream.read(&mut buffer).context(REFUSAL)?;
         ensure!(count != 0, "{REFUSAL}");
