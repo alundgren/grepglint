@@ -2,6 +2,7 @@
 mod change;
 mod files;
 mod process;
+mod remove;
 mod verify;
 
 use crate::daemon::Config;
@@ -48,6 +49,12 @@ pub struct Options {
     /// Permit migration of a Cargo-recorded executable, retaining a rollback copy
     #[arg(long)]
     pub migrate_cargo: bool,
+    /// Confirm irreversible removal of recorded cached source contents
+    #[arg(long)]
+    pub purge_cache: bool,
+    /// Confirm uninstall without prompting
+    #[arg(long)]
+    pub yes: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -61,6 +68,8 @@ pub struct Record {
     pub destination: PathBuf,
     pub cache: PathBuf,
     pub cache_owned: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cache_identity: Option<remove::Identity>,
     pub database_bytes: u64,
     pub idle_seconds: u64,
     pub previous_digest: Option<String>,
@@ -80,7 +89,7 @@ impl Record {
     }
     fn validate(&self, state: &Path) -> Result<()> {
         ensure!(
-            matches!(self.schema_version, 1 | 2),
+            matches!(self.schema_version, 1..=3),
             "Unsupported installation record version; state preserved"
         );
         ensure!(
@@ -95,7 +104,11 @@ impl Record {
                 "upgrade_copied",
                 "rollback",
                 "rollback_complete",
-                "repairing"
+                "repairing",
+                "uninstalling",
+                "uninstalled",
+                "purging",
+                "purge_finalizing"
             ]
             .contains(&self.phase.as_str()),
             "Unrecognized installation phase; state preserved"
@@ -122,6 +135,10 @@ impl Record {
                 .as_ref()
                 .is_none_or(|digest| hex(digest, 64)),
             "Invalid Cargo migration digest"
+        );
+        ensure!(
+            self.cache_identity.is_none() || self.cache_owned,
+            "Invalid cache ownership record"
         );
         change::validate(self, state)?;
         files::paths(&self.destination)?;
@@ -217,7 +234,13 @@ pub fn run(options: &Options) -> Result<()> {
     ensure!(
         matches!(
             options.action,
-            Action::Install | Action::Verify | Action::Status | Action::Upgrade | Action::Repair
+            Action::Install
+                | Action::Verify
+                | Action::Status
+                | Action::Upgrade
+                | Action::Repair
+                | Action::Uninstall
+                | Action::Purge
         ),
         "This action is not available in this version"
     );
@@ -236,7 +259,14 @@ pub fn run(options: &Options) -> Result<()> {
         }
         return Ok(());
     }
-    if matches!(options.action, Action::Verify) {
+    if matches!(options.action, Action::Uninstall | Action::Purge) && files::absent(&state)? {
+        println!("No managed installation remains; nothing to remove");
+        return Ok(());
+    }
+    if matches!(
+        options.action,
+        Action::Verify | Action::Uninstall | Action::Purge
+    ) {
         files::directory(&state, false, true)?;
     } else {
         files::directory(&state, true, true)?;
@@ -280,6 +310,9 @@ pub fn run(options: &Options) -> Result<()> {
                     .is_none_or(|value| value == &record.release),
             "Upgrade or downgrade requires the upgrade action; recorded release preserved"
         );
+    }
+    if matches!(options.action, Action::Uninstall | Action::Purge) {
+        return remove::run(options, &state, record);
     }
     if record
         .as_ref()
@@ -416,7 +449,7 @@ fn install(options: &Options, state: &Path, existing: Option<Record>) -> Result<
             config.directory = path.clone();
         }
         let mut record = Record {
-            schema_version: 1,
+            schema_version: 3,
             phase: "prepared".into(),
             release,
             commit,
@@ -424,6 +457,7 @@ fn install(options: &Options, state: &Path, existing: Option<Record>) -> Result<
             destination,
             cache: config.directory,
             cache_owned: false,
+            cache_identity: None,
             database_bytes: config.max_bytes,
             idle_seconds: config.idle.as_secs(),
             previous_digest: None,
@@ -463,7 +497,9 @@ fn install(options: &Options, state: &Path, existing: Option<Record>) -> Result<
         if !files::absent(&record.cache)? {
             files::directory(&record.cache, false, true)?;
         } else {
+            files::directory(&record.cache, true, true)?;
             record.cache_owned = true;
+            record.cache_identity = Some(remove::Identity::read(&record.cache)?);
         }
         let parent = record
             .destination

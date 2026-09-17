@@ -17,7 +17,7 @@ pub struct Change {
 pub fn validate(record: &Record, state: &Path) -> Result<()> {
     if let Some(change) = &record.change {
         ensure!(
-            record.schema_version == 2 && change.prior.change.is_none(),
+            matches!(record.schema_version, 2 | 3) && change.prior.change.is_none(),
             "Invalid upgrade recovery record"
         );
         ensure!(
@@ -29,6 +29,7 @@ pub fn validate(record: &Record, state: &Path) -> Result<()> {
             record.destination == change.prior.destination
                 && record.cache == change.prior.cache
                 && record.cache_owned == change.prior.cache_owned
+                && record.cache_identity == change.prior.cache_identity
                 && record.database_bytes == change.prior.database_bytes
                 && record.idle_seconds == change.prior.idle_seconds,
             "Upgrade changed recorded paths or settings"
@@ -293,7 +294,11 @@ pub fn run(options: &Options, state: &Path, mut record: Record) -> Result<()> {
     }
     capacity(&record, state)?;
     verify::cache(&record)?;
-    record.schema_version = 2;
+    record.schema_version = if record.cache_identity.is_some() {
+        3
+    } else {
+        2
+    };
     record.phase = "upgrade_prepared".into();
     record.release = release.clone();
     record.commit = commit.clone();

@@ -173,6 +173,10 @@ pub fn save(path: &Path, bytes: &[u8]) -> Result<()> {
                 "rollback",
                 "rollback_complete",
                 "repairing",
+                "uninstalling",
+                "uninstalled",
+                "purging",
+                "purge_finalizing",
             ] {
                 record.phase = phase.into();
                 if serde_json::to_vec_pretty(&record)?.starts_with(&partial) {

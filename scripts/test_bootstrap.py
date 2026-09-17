@@ -166,14 +166,14 @@ class BootstrapTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Wrong macOS"):
             b.check_header(b"\x7fELF" + bytes(30), "aarch64-apple-darwin")
 
-    def test_noninteractive_requires_action_and_future_actions_unavailable(self):
+    def test_noninteractive_requires_action_and_no_state_removal_is_local(self):
         with tempfile.TemporaryDirectory() as temp:
             with patch.object(b.sys.stdin, "isatty", return_value=False):
                 with self.assertRaisesRegex(ValueError, "explicit action"):
                     b.main(["--state-dir", str(Path(temp).resolve()/"state")])
             for action in ["uninstall", "purge"]:
-                with self.assertRaisesRegex(ValueError, "not available"):
-                    b.main([action, "--state-dir", str(Path(temp).resolve()/"state")])
+                with patch.object(b, "fetch", side_effect=AssertionError("network")):
+                    self.assertEqual(b.main([action, "--state-dir", str(Path(temp).resolve()/"state")]), 0)
             self.assertEqual(list(Path(temp).iterdir()), [])
 
     def test_upgrade_and_missing_file_repair_use_existing_verifier(self):
@@ -240,6 +240,37 @@ class BootstrapTests(unittest.TestCase):
                     else:
                         helper.assert_called_once_with(record, args, source, "v0.2.0")
                         self.assertFalse(marker.exists())
+
+    def test_old_removal_requires_explicit_local_helper_without_fetch(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp).resolve()
+            state = root / "state"
+            state.mkdir(mode=0o700)
+            marker = root / "action"
+            old = b"#!/bin/sh\nif [ \"$2\" = --help ]; then echo --repair-source; else exit 99; fi\n"
+            maintenance = state / "maintenance"
+            maintenance.write_bytes(old)
+            maintenance.chmod(0o700)
+            helper = root / "helper"
+            helper.write_text(f"#!/bin/sh\nif [ \"$2\" = --help ]; then echo --purge-cache; else echo \"$2\" > '{marker}'; fi\n")
+            helper.chmod(0o700)
+            record = dict(schema_version=2, phase="complete", release="v0.1.0", commit="a"*40,
+                          digest=hashlib.sha256(old).hexdigest(), destination=str(root/"binary"), cache=str(root/"cache"),
+                          cache_owned=True, database_bytes=8*1024*1024, idle_seconds=2,
+                          previous_digest=None, previous_mode=None, cargo_digest=None)
+            (state/"record.json").write_text(json.dumps(record))
+            (state/"record.json").chmod(0o600)
+            with patch.object(b, "fetch", side_effect=AssertionError("network")):
+                with self.assertRaisesRegex(ValueError, "predates offline removal"):
+                    b.main(["uninstall", "--yes", "--state-dir", str(state)])
+                self.assertFalse(marker.exists())
+                self.assertEqual(b.main(["uninstall", "--yes", "--state-dir", str(state), "--removal-helper", str(helper)]), 0)
+                self.assertEqual(marker.read_text().strip(), "uninstall")
+                marker.unlink()
+                maintenance.write_bytes(b"edited")
+                with self.assertRaisesRegex(ValueError, "Maintenance copy changed"):
+                    b.main(["purge", "--purge-cache", "--state-dir", str(state), "--removal-helper", str(helper)])
+                self.assertFalse(marker.exists())
 
     def test_cancel_changes_nothing(self):
         with tempfile.TemporaryDirectory() as temp, patch.object(b.sys.stdin, "isatty", return_value=True), patch("builtins.input", return_value="0"):

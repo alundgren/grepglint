@@ -101,14 +101,17 @@ version is then checked before native installation.
 ./install status
 ./install upgrade --release v0.2.0
 ./install repair
+./install uninstall --yes
+./install purge --purge-cache
 ```
 
 With a terminal, `./install` shows the recorded phase and offers install or
-resume, verify, status, upgrade, repair, or cancel. Without a terminal, select an action
+resume, verify, status, upgrade, repair, uninstall, purge, or cancel. Without a terminal, select an action
 explicitly. Installation also requires an exact release tag. Cancellation
 before installation changes nothing. Exit zero means success or cancellation;
 one means refusal or failed verification; command-line usage errors exit two.
-Uninstall and purge currently return unavailable. Upgrade requires an exact release tag; repair uses recorded identities.
+Uninstall retains cached source contents; purge requires separate consent.
+Upgrade requires an exact release tag; repair uses recorded identities.
 
 The default executable is `~/.local/bin/grepglint`. Add that directory to PATH
 when needed; installation never edits profiles. `--destination`, `--cache-dir`
@@ -277,3 +280,83 @@ Outputs were 179 to 218 bytes with no stderr. These are single local samples
 with synthetic provenance, excluding download, GitHub CLI and Python costs.
 Sampling can miss short peaks and double-count shared pages. They establish
 observed behavior, not worst-case resource guarantees.
+
+
+## Offline uninstall and purge
+
+`./install uninstall --yes` stops the identified daemon and removes the recorded
+installed executable. It retains cached source contents, the verified native
+maintenance copy, ownership record and coordination locks. Without `--yes`, a
+terminal gets a confirmation showing the paths; unattended use refuses.
+
+`./install purge --purge-cache` separately confirms irreversible deletion of
+recorded cached source contents. Run it after uninstall to remove retained
+installer files too. A new process uses the hash-checked maintenance copy,
+even when the installed executable and gh are absent and networking is
+unavailable. Purge while installed keeps the executable, maintenance copy and
+minimal record so the installation remains manageable. It prints that outcome.
+
+Cache ownership includes the device and inode of a private directory created
+by this installer. A matching path or the older `cache_owned` flag alone is
+insufficient. Preexisting caches, including Cargo caches, are never adopted.
+Purge refuses those caches and leaves their ownership record and maintenance
+copy for inspection. It also refuses substituted directories, symlinks,
+unexpected entries, edited executables, unsafe types and unknown record
+versions. Inspect the specific reported path, preserve any data you need, and
+move an unrelated entry only when you know it belongs to you. Retry the same
+command afterward. Do not recursively remove a recorded directory.
+
+Cleanup enumerates only `index.sqlite` and its rollback journal as removable
+cache data. Empty `maintenance.lock`, `daemon.lock`, and `operation.lock` files
+and their directories remain. Their stable inodes protect concurrent callers.
+An unexpected diagnostic or other extra file causes incomplete cleanup rather
+than automatic deletion. Permission failures return nonzero and retain durable
+progress; restore access only on the exact owned path before retrying.
+
+The native command keeps maintenance exclusion while stopping the daemon,
+deleting data and completing the record. It never signals a PID from a file.
+An unknown daemon or stale socket fails safely; pause searches, allow the
+identified old process to exit normally, then retry. Installer operations
+serialize on their existing operation lock. Daemon exclusion retains its
+35-second deadline and three-second control-exchange limit.
+
+If interruption removes the maintenance executable but leaves the final
+ownership record, the trusted entrypoint can finish locally. It validates that
+record, cache directory identity, absence of an installed executable, and the
+remaining entries while holding operation, maintenance and daemon locks.
+It then removes only the ownership record. If another process has repopulated
+the cache, it preserves the record and asks for the explicit local helper
+below. A completed purge repeated with no owned state is a local no-op.
+
+### Older retained releases
+
+Earlier releases cannot execute the new removal commands. The bootstrap checks
+removal capability independently of repair capability and never downloads a
+helper during removal. Use `--removal-helper /absolute/path/to/grepglint` to
+explicitly select a trusted current native executable obtained or built
+separately. For example, run `./install uninstall --yes --removal-helper
+/absolute/path/to/grepglint` on one command line. The same flag applies to
+purge. This is an explicit source-development trust choice, not release
+attestation verification; only select bytes you have independently trusted.
+The helper must be an account-owned, unlinked regular file with safe ancestors
+and permissions. Modified recorded maintenance bytes are still refused before
+any helper execution. No Cargo invocation, metadata update or network access
+occurs during cleanup.
+
+Older records without cache device/inode identity cannot authorize cache
+deletion. A current helper can uninstall their verified executable, but purge
+returns a clear ownership refusal and retains cache and recovery data. This
+compatibility limit deliberately avoids adopting existing source caches.
+Interrupted upgrade records are recovered using recorded local copies before
+removal. Missing verified recovery bytes cause a refusal, preserving the
+remaining files; repair those exact bytes separately before retrying removal.
+
+One Linux release-build sample measured native uninstall at 0.038 seconds,
+repeat uninstall at 0.020 seconds, and purge at 0.036 seconds. GNU time reported
+5.2 to 5.5 MiB maximum native-process RSS. Uninstall retained about 9.1 MB of
+maintenance executable and record; final purge retained zero file bytes in the
+state directory, plus its empty lock. Output was 314 to 316 bytes without
+stderr. Repeated bootstrap purge took 0.12 seconds. These are individual
+observations with synthetic local provenance, a small disposable cache and no
+running daemon during timing. They do not measure sustained load, gh/network,
+attestation, or a busy daemon's shutdown cost.

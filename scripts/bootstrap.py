@@ -2,6 +2,7 @@
 """Trusted release verification and hash-checked offline maintenance launcher."""
 import argparse
 import hashlib
+import fcntl
 import json
 import os
 from pathlib import Path
@@ -185,18 +186,20 @@ def fetch(tag, directory):
 
 
 RECORD_FIELDS = {"schema_version", "phase", "release", "commit", "digest", "destination", "cache", "cache_owned", "database_bytes", "idle_seconds", "previous_digest", "previous_mode", "cargo_digest"}
-PHASES = {"prepared", "retained", "installed", "complete", "upgrade_prepared", "upgrade_retained", "upgrade_installed", "upgrade_copied", "rollback", "rollback_complete", "repairing"}
+PHASES = {"prepared", "retained", "installed", "complete", "upgrade_prepared", "upgrade_retained", "upgrade_installed", "upgrade_copied", "rollback", "rollback_complete", "repairing", "uninstalling", "uninstalled", "purging", "purge_finalizing"}
 
 
 def validate_record(record, state, prior=False):
-    require(isinstance(record, dict) and RECORD_FIELDS <= record.keys() and not record.keys() - RECORD_FIELDS - {"change"}, "Invalid installation record fields; state preserved")
-    require(type(record["schema_version"]) is int and record["schema_version"] in (1, 2), "Unsupported state version; state preserved")
+    require(isinstance(record, dict) and RECORD_FIELDS <= record.keys() and not record.keys() - RECORD_FIELDS - {"change", "cache_identity"}, "Invalid installation record fields; state preserved")
+    require(type(record["schema_version"]) is int and record["schema_version"] in (1, 2, 3), "Unsupported state version; state preserved")
     require(record["phase"] in PHASES, "Unrecognized installation phase; state preserved")
     require(isinstance(record["release"], str) and re.fullmatch(TAG, record["release"]), "Invalid recorded release")
     for field, length in [("commit", 40), ("digest", 64), ("previous_digest", 64), ("cargo_digest", 64)]:
         value = record[field]
         require(value is None and field in ("previous_digest", "cargo_digest") or isinstance(value, str) and re.fullmatch(f"[0-9a-f]{{{length}}}", value), "Invalid recorded identity")
     require(type(record["cache_owned"]) is bool, "Invalid cache ownership")
+    identity = record.get("cache_identity")
+    require(identity is None or record["cache_owned"] and isinstance(identity, dict) and set(identity) == {"device", "inode"} and all(type(value) is int and 0 <= value <= 2**64-1 for value in identity.values()), "Invalid cache identity")
     require(type(record["database_bytes"]) is int and 8*1024*1024 <= record["database_bytes"] <= 1024*1024*1024, "Invalid database limit")
     require(type(record["idle_seconds"]) is int and 1 <= record["idle_seconds"] <= 3600, "Invalid idle limit")
     mode = record["previous_mode"]
@@ -211,11 +214,12 @@ def validate_record(record, state, prior=False):
     require(len(os.fsencode(paths[2] / "daemon.sock")) < 100, "Cache path too long")
     change = record.get("change")
     if change is not None:
-        require(not prior and record["schema_version"] == 2 and isinstance(change, dict) and set(change) == {"prior", "destination_mode", "maintenance_mode"}, "Invalid upgrade recovery record")
+        require(not prior and record["schema_version"] in (2, 3) and isinstance(change, dict) and set(change) == {"prior", "destination_mode", "maintenance_mode"}, "Invalid upgrade recovery record")
         validate_record(change["prior"], state, prior=True)
         require(change["prior"]["phase"] == "complete", "Invalid prior phase")
         for field in ("destination", "cache", "cache_owned", "database_bytes", "idle_seconds"):
             require(record[field] == change["prior"][field], "Upgrade changed recorded paths or settings")
+        require(record.get("cache_identity") == change["prior"].get("cache_identity"), "Upgrade changed cache identity")
         for field in ("destination_mode", "maintenance_mode"):
             value = change[field]
             require(type(value) is int and value >= 0 and value & ~0o777 == 0 and value & 0o022 == 0 and value & 0o100 != 0, "Invalid rollback permissions")
@@ -261,6 +265,82 @@ def repair_local(record, native_args, source, requested_release):
     return repair_with_helper(record, native_args, source, requested_release)
 
 
+def local_lock(path):
+    regular(path, 65536)
+    fd = os.open(path, os.O_RDWR | os.O_NOFOLLOW | os.O_NONBLOCK)
+    try:
+        info = os.fstat(fd)
+        require(stat.S_ISREG(info.st_mode) and info.st_uid == os.getuid() and info.st_nlink == 1 and info.st_mode & 0o077 == 0, f"Unsafe lock: {path}")
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return fd
+    except BaseException:
+        os.close(fd)
+        raise
+
+
+def finish_purge(state, expected, consent):
+    require(consent, "Purge finalization requires --purge-cache; nothing removed")
+    locks = []
+    try:
+        locks.append(local_lock(state / "operation.lock"))
+        raw = regular(state / "record.json", 65536)
+        record = json.loads(raw)
+        validate_record(record, state)
+        require(record == expected and record["phase"] == "purge_finalizing", "Installation changed; retry")
+        cache = Path(record["cache"])
+        info = cache.lstat()
+        require(stat.S_ISDIR(info.st_mode) and info.st_uid == os.getuid() and info.st_mode & 0o077 == 0 and record.get("cache_identity") == {"device": info.st_dev, "inode": info.st_ino}, "Cache identity changed; preserved")
+        for name in ("maintenance.lock", "daemon.lock"):
+            locks.append(local_lock(cache / name))
+        require(not os.path.lexists(record["destination"]), "Installed executable appeared; preserve ownership state and inspect it")
+        with os.scandir(cache) as entries:
+            for entry in entries:
+                require(entry.name in ("maintenance.lock", "daemon.lock"), f"Cache entry remains: {entry.path}; use a trusted --removal-helper to retry cleanup")
+        with os.scandir(state) as entries:
+            for entry in entries:
+                require(entry.name in ("record.json", "operation.lock"), f"Installer entry remains: {entry.path}; preserved")
+        require(regular(state / "record.json", 65536) == raw, "Ownership record changed; preserved")
+        (state / "record.json").unlink()
+        fd = os.open(state, os.O_RDONLY)
+        try: os.fsync(fd)
+        finally: os.close(fd)
+        print("Purge finalization complete. Empty directories and stable coordination locks remain.")
+        return 0
+    finally:
+        for fd in reversed(locks): os.close(fd)
+
+
+def removal(args, state, record, native_args):
+    if record is None:
+        if state.exists():
+            with os.scandir(state) as entries:
+                for entry in entries:
+                    require(entry.name == "operation.lock", f"Unrecorded installer entry preserved: {entry.path}")
+        print("No managed installation remains; nothing to remove")
+        return 0
+    for field in ("destination", "cache_dir"):
+        value = getattr(args, field)
+        require(not value or value == record["cache" if field == "cache_dir" else field], "Overrides differ from recorded paths; nothing changed")
+    local = state / "maintenance"
+    if record["phase"] == "purge_finalizing" and not os.path.lexists(local) and not args.removal_helper:
+        require(args.action == "purge", "Purge finalization pending; rerun purge --purge-cache")
+        return finish_purge(state, record, args.purge_cache)
+    if os.path.lexists(local):
+        allowed = [record["digest"]]
+        if record.get("change"):
+            allowed.append(record["change"]["prior"]["digest"])
+        require(hashlib.sha256(regular(local, CAP)).hexdigest() in allowed, "Maintenance copy changed; refusing to execute it")
+    else:
+        require(args.removal_helper and record["phase"] == "purge_finalizing", "Maintenance copy missing; preserved. Restore the recorded verified copy before retrying")
+    if args.removal_helper:
+        local = Path(args.removal_helper)
+        path_check(local)
+        regular(local, CAP)
+        print(f"Using explicitly trusted local removal helper {local}; no release is downloaded", flush=True)
+    require(b"--purge-cache" in run([str(local), "setup", "--help"], timeout=10, cap=16384), "Retained release predates offline removal. Supply --removal-helper /absolute/path/to/a/trusted/current/grepglint. Obtain or build it separately; this operation downloads nothing and preserves all files")
+    return subprocess.call([str(local)] + native_args)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Install a verified release from this trusted checkout; local maintenance works offline")
     parser.add_argument("action", nargs="?", choices=["install", "verify", "status", "upgrade", "repair", "uninstall", "purge"])
@@ -269,6 +349,9 @@ def main(argv=None):
     parser.add_argument("--cache-dir")
     parser.add_argument("--state-dir", default=str(Path(os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local/state"))) / "grepglint"))
     parser.add_argument("--migrate-cargo", action="store_true")
+    parser.add_argument("--yes", action="store_true", help="Confirm uninstall")
+    parser.add_argument("--purge-cache", action="store_true", help="Confirm irreversible cached source removal")
+    parser.add_argument("--removal-helper", help="Explicitly trusted local current executable for older retained releases; never downloaded")
     args = parser.parse_args(argv)
     os.umask(0o077)
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
@@ -284,18 +367,22 @@ def main(argv=None):
     if not args.action:
         require(sys.stdin.isatty(), "Noninteractive use requires an explicit action; see --help")
         print(f"Installation: {record['phase'] if record else 'not installed'}")
-        print("1 Install or resume\n2 Verify locally\n3 Status\n4 Upgrade\n5 Repair\n0 Cancel")
-        args.action = {"1": "install", "2": "verify", "3": "status", "4": "upgrade", "5": "repair"}.get(input("Choose: ").strip())
+        print("1 Install or resume\n2 Verify locally\n3 Status\n4 Upgrade\n5 Repair\n6 Uninstall, retain cache\n7 Purge cached source contents\n0 Cancel")
+        args.action = {"1": "install", "2": "verify", "3": "status", "4": "upgrade", "5": "repair", "6": "uninstall", "7": "purge"}.get(input("Choose: ").strip())
         if args.action is None:
             print("Cancelled; nothing changed")
             return 0
-    require(args.action not in ["uninstall", "purge"], "This action is not available in this version")
     native_args = ["setup", args.action, "--state-dir", str(state)]
     for key in ["destination", "cache_dir"]:
         if getattr(args, key):
             native_args += ["--" + key.replace("_", "-"), getattr(args, key)]
     if args.migrate_cargo:
         native_args += ["--migrate-cargo"]
+    if args.yes: native_args += ["--yes"]
+    if args.purge_cache: native_args += ["--purge-cache"]
+    if args.action in ("uninstall", "purge"):
+        return removal(args, state, record, native_args)
+    require(not args.removal_helper, "--removal-helper applies only to uninstall/purge")
     if args.action == "status":
         print(f"Installation: {record['phase'] if record else 'not installed'}")
         return 0

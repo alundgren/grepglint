@@ -26,7 +26,10 @@ Python 3, Git and authenticated gh 2.80.0 or newer are needed for initial
 release installation. See [managed installation](docs/installer.md#managed-installation)
 for consent, recovery, paths and limits. Use `./install upgrade --release vX.Y.Z`
 to replace a release and `./install repair` to recover interrupted operations or
-restore missing owned executables. Uninstall and purge are not available yet.
+restore missing owned executables. `./install uninstall --yes` retains cached
+source contents and offline maintenance. `./install purge --purge-cache` erases
+recorded cached source contents with separate consent. Both run locally without
+gh or network. See the removal and recovery details in the installer guide.
 
 For source development, use Linux or macOS, Git, Rust 1.89 or later, and a C compiler for bundled
 SQLite and tree-sitter. Linux is tested locally; CI also covers macOS.
