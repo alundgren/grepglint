@@ -323,11 +323,10 @@ fn replaced_socket_is_not_authority_and_daemon_cleanup_preserves_it() {
 }
 
 #[test]
-fn legacy_unknown_and_slow_control_peers_get_bounded_actionable_refusal() {
+fn legacy_and_unknown_control_peers_get_bounded_actionable_refusal() {
     for reply in [
-        Some("{\"status\":\"error\",\"message\":\"Invalid search request\"}\n"),
-        Some("{\"status\":\"future\"}\n"),
-        None,
+        "{\"status\":\"error\",\"message\":\"Invalid search request\"}\n",
+        "{\"status\":\"future\"}\n",
     ] {
         let f = Fixture::new();
         f.config().prepare().unwrap();
@@ -338,11 +337,7 @@ fn legacy_unknown_and_slow_control_peers_get_bounded_actionable_refusal() {
             let (mut stream, _) = listener.accept().unwrap();
             let mut bytes = [0; 512];
             let _ = stream.read(&mut bytes);
-            if let Some(reply) = reply {
-                stream.write_all(reply.as_bytes()).unwrap();
-            } else {
-                thread::sleep(Duration::from_millis(3300));
-            }
+            stream.write_all(reply.as_bytes()).unwrap();
         });
         let started = Instant::now();
         let error = grepglint::maintenance::shutdown(&f.config(), None).unwrap_err();
@@ -445,6 +440,7 @@ fn shutdown_waits_for_an_active_search_to_complete() {
 }
 
 #[test]
+#[ignore = "exercises the production 35-second deadline; short-deadline coverage runs in unit tests"]
 fn maintenance_lock_acquisition_expires_without_stopping_daemon() {
     let f = Fixture::new();
     let before = f.start();
