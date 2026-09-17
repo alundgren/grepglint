@@ -194,6 +194,17 @@ cargo build --release --locked
 python3 scripts/demo.py                  # requires Python 3 and rg
 ```
 
+Normal tests exercise maintenance timeouts with short deadlines and real OS
+locks and sockets. To also check the CLI's production 35-second timeout, run:
+
+```sh
+cargo test --locked --test maintenance maintenance_lock_acquisition_expires_without_stopping_daemon -- --ignored --exact
+```
+
+Development and test builds optimize the SHA-256 dependency because each daemon
+startup hashes its executable, including debug information. Application code
+keeps the default debug settings.
+
 The demo creates disposable repositories, validates the eight core workflows,
 and compares ranked search with literal and broader `rg` queries. See
 [measured results and next experiments](docs/evaluation.md).

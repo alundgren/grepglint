@@ -29,5 +29,9 @@ tempfile = "3"
 lto = "thin"
 strip = true
 
+# Daemon startup hashes the executable, including debug information in tests.
+[profile.dev.package.sha2]
+opt-level = 3
+
 [lints.clippy]
 all = "warn"
