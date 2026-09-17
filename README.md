@@ -147,8 +147,8 @@ index free of CPU or disk activity. A repository that exceeds the limits needs
 ## Agent instructions and validation
 
 `grepglint tools --json` lists tools with their purpose, inputs, output, and
-side effects. It currently lists `search` and does not start the daemon. Future
-services can add subcommands and catalog entries. No routing framework is
+side effects. It lists repository search and output capture, paging, and purge without starting
+the daemon. Future services can add subcommands and catalog entries. No routing framework is
 needed for this prototype. Copy [the example instructions](examples/agent-instructions.md)
 into an agent's repository instructions.
 
@@ -166,3 +166,78 @@ and compares ranked search with literal and broader `rg` queries. See
 MIT licensed. The name combines grep with noticing something useful. Exact-name
 web, GitHub, npm, and crates.io searches found no existing match when this
 prototype was created.
+
+## Retained tool output
+
+`output bounce` is an opt-in experiment for finite UTF-8 logs, inside or outside
+Git repositories. It reads stdout from the pipe. Use `2>&1` to merge stderr,
+and enable your shell's `pipefail` to retain the producer's failure status:
+
+```sh
+set -o pipefail
+cargo test 2>&1 | grepglint output bounce
+grepglint output page <handle> --json
+grepglint output page <handle> --json --cursor <next_cursor>
+grepglint output purge
+```
+
+Accepted input through 4,096 bytes passes through byte for byte, including
+ANSI sequences and the final newline state. This does not start a daemon or
+create a cache. Larger input returns an immutable random handle, original
+byte/line counts, and a head/tail preview bounded to 8 KiB including instructions.
+A line is terminated by LF, with a final unterminated line counted once.
+Previewing does not advance paging. Without a cursor, paging starts at byte zero.
+Decode each JSON `content` and concatenate it until `end_of_output` is true;
+this reconstructs the original UTF-8 bytes. Cursors can be repeated and are
+bound to one handle and format version. Human-readable output escapes controls.
+There is no relevance-search command for retained output yet.
+
+Input containing NUL or invalid UTF-8 is rejected, even when the invalid bytes
+arrive late. Failures can consume input, so you may need to rerun the producer.
+Keep another copy of irreplaceable logs. A successful capture does not mean
+the producer succeeded. Breaking the downstream pipe cancels ongoing capture;
+a committed result whose preview cannot be delivered expires normally.
+
+Output commands access a separate account-local store and do not contact the
+search daemon, including an older or incompatible running daemon. Search's
+16 KiB request and 64 KiB response protocol is unchanged. Output commands
+never stop a process or inspect a PID to decide ownership. Normal daemon
+startup also attempts output cleanup; output corruption cannot disable search.
+
+| Output resource | Default policy |
+| --- | --- |
+| Input | 8 MiB maximum; two captures; each reserves 8 MiB before storing bytes |
+| Retention | 32 MiB payload including reservations, at most 64 entries; one-hour fixed TTL from capture creation |
+| Pressure | Remove the oldest committed results when a reservation needs space; active captures remain reserved |
+| Buffers | 3,584-byte read/chunk buffer; at most 32,256 pending bytes; 28,672-byte write batches |
+| Preview | First/last 256 input bytes; at most 8 KiB after escaping and metadata |
+| Page | At most 4,096 original bytes, preferring LF boundaries and preserving UTF-8; encoded output below 64 KiB |
+| Disk | 40 MiB database plus at most 41 MiB rollback journal; under 4 KiB ownership metadata and fixed empty lock files |
+| Reserve | Require the existing twice-repository-database plus 64 MiB reserve, and another 81 MiB for output work |
+| Memory | 256 KiB SQLite page cache per output client; 64 MiB SQLite heap ceiling; bounded buffers; no whole-log allocation |
+| Deadlines | 10 seconds without stdin, 120 seconds overall capture; two-second lock/database acquisition and output delivery waits |
+| Maintenance | At most 64 output records and two capture slots; runs on startup and output requests, never idle polling |
+
+Output bytes live in `output-v1` below the configured cache. The private
+ownership record identifies the database, persistent journal, and capture locks
+by device/inode. It is retained for reuse and future installer integration.
+Output does not evict repository cache entries. Staging uses the same database;
+commit publishes metadata without copying the payload. Short transactions let
+other clients progress while a producer pauses. OS locks release on exit or
+crash, and the next output request removes abandoned captures.
+
+Expiry is checked on every page and does not extend on access. Expired bytes
+can remain on disk while Grepglint is idle, within the disk cap, until cleanup
+or explicit purge. Pages validate the retained stream's digest before returning
+content, and fail if the result disappeared or is corrupt. Each page reads at
+most 8 MiB to verify integrity. A read transaction prevents eviction halfway
+through a page; a later page may fail if the output was evicted in between.
+
+`output purge` erases retained contents and clears the journal while preserving
+repository caches, unknown files, and the empty bounded store/ownership record.
+It waits at most two seconds per capture slot and fails while a capture remains
+active. Retry after that capture finishes. Repeated purge is safe. Replaced or
+unsafe files are preserved and cause an error; inspect those files rather than
+recursively deleting a cache directory. Isolation is between OS accounts, not
+between sessions of the same account. No power-loss durability guarantee is
+added. See [output measurements](docs/output-measurements.md) for observations.

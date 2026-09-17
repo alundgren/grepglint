@@ -109,3 +109,27 @@ tree-sitter libraries contain no bugs. Linux applies an address-space limit
 and disables core dumps; macOS has application limits but no equivalent
 address-space ceiling in this implementation. Benchmark sustained use before
 enabling this tool broadly across agents.
+
+## Retained output
+
+`output.rs` owns a separate SQLite database for immutable output handles and
+ordered byte chunks. The CLI captures stdin, validates UTF-8 incrementally,
+and commits a handle only after EOF. Small input never opens storage. The
+search daemon never waits for a producer. Output does not require protocol
+negotiation with a running search daemon, so older search daemons can coexist.
+
+Two OS file locks limit captures. A short SQLite transaction reserves the full
+per-output allowance against aggregate bytes and entry count before capture
+writes. Abandoned reservations are removed only after acquiring their capture
+lock. Paging reads a consistent transaction, checks all chunks and their digest,
+and returns bounded exact text. Purge excludes capture with the same locks;
+SQLite coordinates it with readers. All cleanup visits bounded table records
+and fixed recorded filenames. There is no recursive traversal or deletion.
+
+The database uses secure deletion and a persistent rollback journal truncated
+after each committed transaction. Both files retain recorded inode identities.
+The 40 MiB database cap and 41 MiB journal allowance include retained/staged
+payload, indexes, deleted-page reuse, and rollback work. No second payload copy
+or vacuum file is created. Private ownership metadata remains after purge for
+later installer integration. Store initialization refuses unrecorded or replaced
+files. The existing repository reserve and daemon limits remain unchanged.

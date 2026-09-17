@@ -1,0 +1,377 @@
+use serde_json::Value;
+use std::{
+    fs,
+    io::Write,
+    process::{Command, Stdio},
+    time::{Duration, Instant},
+};
+use tempfile::TempDir;
+
+struct Fixture {
+    root: TempDir,
+}
+impl Fixture {
+    fn new() -> Self {
+        Self {
+            root: tempfile::tempdir().unwrap(),
+        }
+    }
+    fn command(&self) -> Command {
+        let mut c = Command::new(env!("CARGO_BIN_EXE_grepglint"));
+        c.current_dir(self.root.path())
+            .env("GREPGLINT_CACHE_DIR", self.root.path().join("cache"));
+        c
+    }
+    fn bounce(&self, input: &[u8]) -> std::process::Output {
+        let mut child = self
+            .command()
+            .args(["output", "bounce"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let mut stdin = child.stdin.take().unwrap();
+        let input = input.to_vec();
+        let writer = std::thread::spawn(move || {
+            let _ = stdin.write_all(&input);
+        });
+        let result = child.wait_with_output().unwrap();
+        writer.join().unwrap();
+        result
+    }
+    fn handle(&self, input: &[u8]) -> String {
+        let o = self.bounce(input);
+        assert!(o.status.success(), "{}", String::from_utf8_lossy(&o.stderr));
+        assert!(o.stdout.len() <= 8192);
+        String::from_utf8(o.stdout)
+            .unwrap()
+            .split_whitespace()
+            .nth(1)
+            .unwrap()
+            .trim_end_matches(':')
+            .to_owned()
+    }
+    fn page(&self, handle: &str, cursor: Option<&str>) -> std::process::Output {
+        let mut c = self.command();
+        c.args(["output", "page", handle, "--json"]);
+        if let Some(cursor) = cursor {
+            c.args(["--cursor", cursor]);
+        }
+        c.output().unwrap()
+    }
+}
+
+#[test]
+fn pass_through_is_exact_and_does_not_create_cache() {
+    let f = Fixture::new();
+    for bytes in [vec![], b"a\r\n\x1b[31m\t".to_vec(), vec![b'x'; 4096]] {
+        let o = f.bounce(&bytes);
+        assert!(o.status.success());
+        assert_eq!(o.stdout, bytes);
+        assert!(!f.root.path().join("cache").exists());
+    }
+    let handle = f.handle(&vec![b'x'; 4097]);
+    assert_eq!(handle.len(), 32);
+    assert!(!f.root.path().join("cache/daemon.sock").exists());
+}
+
+#[test]
+fn pages_reconstruct_unicode_controls_crlf_and_long_lines() {
+    let f = Fixture::new();
+    let input = format!(
+        "{}é🙂\r\n{}\x1b[31m\t\x07\r\n終",
+        "x".repeat(3583),
+        "long".repeat(3500)
+    )
+    .into_bytes();
+    let handle = f.handle(&input);
+    let mut cursor = None;
+    let mut reconstructed = Vec::new();
+    loop {
+        let o = f.page(&handle, cursor.as_deref());
+        assert!(o.status.success(), "{}", String::from_utf8_lossy(&o.stdout));
+        assert!(o.stdout.len() <= 65536);
+        let p: Value = serde_json::from_slice(&o.stdout).unwrap();
+        assert_eq!(f.page(&handle, cursor.as_deref()).stdout, o.stdout);
+        reconstructed.extend_from_slice(p["content"].as_str().unwrap().as_bytes());
+        cursor = p["next_cursor"].as_str().map(str::to_owned);
+        if cursor.is_none() {
+            assert_eq!(p["end_of_output"], true);
+            break;
+        }
+    }
+    assert_eq!(input, reconstructed);
+    let human = f
+        .command()
+        .args(["output", "page", &handle])
+        .output()
+        .unwrap();
+    assert!(!human.stdout.contains(&27));
+    let other = f.handle(&vec![b'y'; 9000]);
+    let p: Value = serde_json::from_slice(&f.page(&handle, None).stdout).unwrap();
+    assert!(!f.page(&other, p["next_cursor"].as_str()).status.success());
+    for c in ["bad", &"a".repeat(10000)] {
+        assert!(!f.page(&handle, Some(c)).status.success());
+    }
+}
+
+#[test]
+fn invalid_text_and_oversize_never_publish_handles() {
+    let f = Fixture::new();
+    for suffix in [&[0][..], &[255][..], &[0xe2, 0x82][..]] {
+        let mut input = vec![b'a'; 20000];
+        input.extend(suffix);
+        let o = f.bounce(&input);
+        assert!(!o.status.success());
+        assert!(o.stdout.is_empty());
+    }
+    let o = f.bounce(&vec![b'x'; 8 * 1024 * 1024 + 1]);
+    assert!(!o.status.success());
+    assert!(o.stdout.is_empty());
+    let db =
+        rusqlite::Connection::open(f.root.path().join("cache/output-v1/output.sqlite")).unwrap();
+    assert_eq!(
+        db.query_row("SELECT count(*) FROM outputs", [], |r| r.get::<_, i64>(0))
+            .unwrap(),
+        0
+    );
+}
+
+#[test]
+fn restart_purge_permissions_and_unrelated_files() {
+    use std::os::unix::fs::PermissionsExt;
+    let f = Fixture::new();
+    let handle = f.handle(&vec![b'a'; 10000]);
+    let unrelated = f.root.path().join("cache/output-v1/keep.txt");
+    fs::write(&unrelated, b"unrelated").unwrap();
+    for name in [
+        "output.sqlite",
+        "output.sqlite-journal",
+        "ownership.json",
+        "capture-0.lock",
+        "capture-1.lock",
+        "gate",
+    ] {
+        assert_eq!(
+            fs::metadata(f.root.path().join("cache/output-v1").join(name))
+                .unwrap()
+                .permissions()
+                .mode()
+                & 0o077,
+            0
+        );
+    }
+    assert!(f.page(&handle, None).status.success());
+    for _ in 0..2 {
+        let p = f.command().args(["output", "purge"]).output().unwrap();
+        assert!(p.status.success(), "{}", String::from_utf8_lossy(&p.stderr));
+    }
+    assert_eq!(fs::read(unrelated).unwrap(), b"unrelated");
+    assert!(!f.page(&handle, None).status.success());
+}
+
+#[test]
+fn replaced_storage_is_preserved() {
+    use std::os::unix::fs::symlink;
+    for name in [
+        "output.sqlite",
+        "output.sqlite-journal",
+        "capture-0.lock",
+        "ownership.json",
+    ] {
+        let f = Fixture::new();
+        let handle = f.handle(&vec![b'a'; 6000]);
+        let path = f.root.path().join("cache/output-v1").join(name);
+        fs::remove_file(&path).unwrap();
+        let sentinel = f.root.path().join("sentinel");
+        fs::write(&sentinel, b"keep").unwrap();
+        symlink(&sentinel, &path).unwrap();
+        assert!(!f.page(&handle, None).status.success());
+        assert!(
+            !f.command()
+                .args(["output", "purge"])
+                .status()
+                .unwrap()
+                .success()
+        );
+        assert_eq!(fs::read(sentinel).unwrap(), b"keep");
+    }
+}
+
+#[test]
+fn stalled_capture_does_not_block_clients_and_crash_recovers() {
+    let f = Fixture::new();
+    let mut children = Vec::new();
+    for _ in 0..2 {
+        let mut c = f
+            .command()
+            .args(["output", "bounce"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        c.stdin
+            .as_mut()
+            .unwrap()
+            .write_all(&vec![b'x'; 12000])
+            .unwrap();
+        children.push(c);
+        std::thread::sleep(Duration::from_millis(150));
+    }
+    let start = Instant::now();
+    let third = f.bounce(&vec![b'y'; 9000]);
+    assert!(!third.status.success());
+    assert!(start.elapsed() < Duration::from_secs(5));
+    let purge = f.command().args(["output", "purge"]).output().unwrap();
+    assert!(!purge.status.success());
+    for c in &mut children {
+        c.kill().unwrap();
+        c.wait().unwrap();
+    }
+    let handle = f.handle(&vec![b'z'; 8000]);
+    assert!(f.page(&handle, None).status.success());
+    let db =
+        rusqlite::Connection::open(f.root.path().join("cache/output-v1/output.sqlite")).unwrap();
+    assert_eq!(
+        db.query_row("SELECT count(*) FROM outputs WHERE committed=0", [], |r| {
+            r.get::<_, i64>(0)
+        })
+        .unwrap(),
+        0
+    );
+}
+
+#[test]
+fn broken_downstream_pipe_cancels_capture_promptly() {
+    let f = Fixture::new();
+    let mut c = f
+        .command()
+        .args(["output", "bounce"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    c.stdin
+        .as_mut()
+        .unwrap()
+        .write_all(&vec![b'x'; 9000])
+        .unwrap();
+    drop(c.stdout.take());
+    let start = Instant::now();
+    use wait_timeout::ChildExt;
+    let status = c.wait_timeout(Duration::from_secs(3)).unwrap();
+    if status.is_none() {
+        c.kill().unwrap();
+    }
+    assert!(status.is_some_and(|s| !s.success()));
+    assert!(start.elapsed() < Duration::from_secs(3));
+}
+
+#[test]
+fn stalled_input_has_idle_deadline() {
+    let f = Fixture::new();
+    let mut c = f
+        .command()
+        .args(["output", "bounce"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut stdin = c.stdin.take().unwrap();
+    stdin.write_all(&vec![b'x'; 9000]).unwrap();
+    let start = Instant::now();
+    let o = c.wait_with_output().unwrap();
+    drop(stdin);
+    assert!(!o.status.success());
+    assert!(o.stdout.is_empty());
+    assert!(start.elapsed() < Duration::from_secs(13));
+}
+
+#[test]
+fn legacy_daemon_socket_is_not_contacted_by_output_commands() {
+    use std::os::unix::{fs::PermissionsExt, net::UnixListener};
+    let f = Fixture::new();
+    let cache = f.root.path().join("cache");
+    fs::create_dir(&cache).unwrap();
+    fs::set_permissions(&cache, fs::Permissions::from_mode(0o700)).unwrap();
+    let listener = UnixListener::bind(cache.join("daemon.sock")).unwrap();
+    listener.set_nonblocking(true).unwrap();
+    let handle = f.handle(&vec![b'x'; 6000]);
+    assert!(f.page(&handle, None).status.success());
+    assert!(
+        f.command()
+            .args(["output", "purge"])
+            .output()
+            .unwrap()
+            .status
+            .success()
+    );
+    assert_eq!(
+        listener.accept().unwrap_err().kind(),
+        std::io::ErrorKind::WouldBlock
+    );
+    assert!(cache.join("daemon.sock").exists());
+}
+
+#[test]
+fn repository_search_and_idle_restart_work_during_capture() {
+    let f = Fixture::new();
+    assert!(
+        Command::new("git")
+            .args(["init", "-q"])
+            .current_dir(f.root.path())
+            .status()
+            .unwrap()
+            .success()
+    );
+    fs::write(
+        f.root.path().join("auth.rs"),
+        "fn validate_refresh_token() { /* refresh token validation */ }\n",
+    )
+    .unwrap();
+    fs::write(f.root.path().join(".gitignore"), "cache/\n").unwrap();
+    let handle = f.handle(&vec![b'x'; 7000]);
+    let mut c = f
+        .command()
+        .args(["output", "bounce"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    c.stdin
+        .as_mut()
+        .unwrap()
+        .write_all(&vec![b'x'; 9000])
+        .unwrap();
+    let start = Instant::now();
+    let search = f
+        .command()
+        .env("GREPGLINT_IDLE_SECONDS", "1")
+        .args(["search", "refresh token", "--json"])
+        .output()
+        .unwrap();
+    assert!(
+        search.status.success(),
+        "{}",
+        String::from_utf8_lossy(&search.stdout)
+    );
+    assert!(start.elapsed() < Duration::from_secs(30));
+    c.kill().unwrap();
+    c.wait().unwrap();
+    std::thread::sleep(Duration::from_millis(1300));
+    assert!(!f.root.path().join("cache/daemon.sock").exists());
+    assert!(f.page(&handle, None).status.success());
+    let search = f
+        .command()
+        .env("GREPGLINT_IDLE_SECONDS", "1")
+        .args(["search", "refresh token", "--json"])
+        .output()
+        .unwrap();
+    assert!(search.status.success());
+    std::thread::sleep(Duration::from_millis(1300));
+}

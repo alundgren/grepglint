@@ -134,6 +134,8 @@ impl Drop for Cleanup {
 pub fn serve(config: &Config) -> Result<()> {
     config.prepare()?;
     restrict_process()?;
+    // Output cleanup is independent: damaged output must not prevent repository search.
+    let _ = crate::output::startup_cleanup(config);
     let lock = OpenOptions::new()
         .read(true)
         .write(true)
