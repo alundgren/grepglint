@@ -11,7 +11,7 @@
       "excluded_path": 1
     },
     "static_policy": "README defaults; chunk count requires actual indexing",
-    "binary_sha256": "eea6f48b833888754b47689ba72c861a4e39407c9b47e310dbaa60f7b9dfb5c5",
+    "binary_sha256": "6640d9dfcbd600e9fc5ad566db0bbb3f981f0dc7a6f92b0403739eb7f9645cee",
     "query": "corpus coverage",
     "index_timeout_seconds": 45,
     "status": "success",
@@ -32,17 +32,16 @@
       "cached_contents": 1633,
       "cached_chunks": 10789,
       "evicted_worktrees": 0,
-      "elapsed_ms": 3459
+      "elapsed_ms": 3302
     },
     "response_bytes": 1049,
-    "cold_wall_seconds": 3.677,
+    "cold_wall_seconds": 3.467,
     "daemon_memory_kib": {
-      "VmPeak": 241160,
-      "VmHWM": 36416
+      "VmPeak": 282424,
+      "VmHWM": 36880
     },
     "cache_bytes": 81833984,
-    "indexed_files": 1449,
-    "sqlite_error_class": null
+    "indexed_files": 1449
   },
   "files": [
     {

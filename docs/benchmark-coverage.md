@@ -1,22 +1,22 @@
 # Corpus coverage
 
-These measurements use Grepglint at commit `85030ca1a7c77a9185a63c6ceb99a8208e7df564`, a release build, default limits, and a fresh private cache per source. No agent or paid benchmark trial ran. The query was the fixed text `corpus coverage`; its search hits did not affect task selection.
+These measurements use Grepglint at commit `ea3fa9e260288ae8ed5965cfa10113a1e640c23e`, a release build with pinned Rust 1.89.0, default limits, and a fresh private cache per source. No agent or paid benchmark trial ran. The query was the fixed text `corpus coverage`; its search hits did not affect task selection.
 
 | Source | Git paths | Source bytes | File lines | Indexed files | Cold seconds | Result |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
-| django-674eda1c | 7,013 | 45,732,462 | 1,120,268 | 0 | 11.384 | failed |
-| envoy-d7809ba2 | 11,700 | 90,089,286 | 1,835,265 | 0 | 5.752 | failed |
-| flipt-3d5a345f | 997 | 12,352,278 | 229,095 | 908 | 1.285 | success |
-| numpy-v2.2.2 | 2,211 | 34,990,979 | 908,039 | 2,113 | 5.065 | success |
-| pandas-41968da5 | 2,629 | 52,845,599 | 929,362 | 2,090 | 5.674 | success |
-| scikit-learn-cb7e82dd | 1,748 | 23,330,273 | 561,546 | 1,449 | 3.677 | success |
-| vscode-138f619c | 7,795 | 127,352,560 | 2,501,876 | 0 | 15.15 | failed |
-| vscode-17baf841 | 8,177 | 123,976,327 | 2,614,001 | 0 | 13.295 | failed |
-| eshop-b4a40872 | 1,144 | 18,179,447 | 134,384 | 891 | 0.946 | success |
+| django-674eda1c | 7,013 | 45,732,462 | 1,120,268 | 0 | 6.702 | failed |
+| envoy-d7809ba2 | 11,700 | 90,089,286 | 1,835,265 | 0 | 5.123 | failed |
+| flipt-3d5a345f | 997 | 12,352,278 | 229,095 | 908 | 1.135 | success |
+| numpy-v2.2.2 | 2,211 | 34,990,979 | 908,039 | 2,113 | 4.215 | success |
+| pandas-41968da5 | 2,629 | 52,845,599 | 929,362 | 2,090 | 4.513 | success |
+| scikit-learn-cb7e82dd | 1,748 | 23,330,273 | 561,546 | 1,449 | 3.467 | success |
+| vscode-138f619c | 7,795 | 127,352,560 | 2,501,876 | 0 | 13.417 | failed |
+| vscode-17baf841 | 8,177 | 123,976,327 | 2,614,001 | 0 | 12.175 | failed |
+| eshop-b4a40872 | 1,144 | 18,179,447 | 134,384 | 891 | 1.094 | success |
 
 Five sources indexed successfully. Django, Envoy and both VS Code sources returned `SQLITE_FULL` with the diagnostic "Index update failed; no partial search view was published: database or disk is full: Error code 13: database or disk is full". Their transactions rolled back and no source files were indexed. This was observed with the default 128 MiB database limit; the diagnostic does not distinguish every possible cause of SQLite FULL. These sources and their tasks remain in the corpus.
 
-The machine had over 70 GiB free during preparation. All nine prepared trees together, including local Git data, remained below the 8 GiB disposable-data limit. Source byte counts include every tracked blob, including links and binary assets. File lines count newline-delimited records in regular files, including binary files; this is an inventory count, not a claim about executable lines of code.
+The machine had over 70 GiB free during preparation and over 60 GiB during this coverage refresh. All nine prepared trees together, including local Git data, remained below the 8 GiB disposable-data limit. Source byte counts include every tracked blob, including links and binary assets. File lines count newline-delimited records in regular files, including binary files; this is an inventory count, not a claim about executable lines of code.
 
 The per-source JSON files in [benchmarks/coverage](../benchmarks/coverage) retain every tracked path, Git object ID, bytes, line count, default static skip reason and actual indexed chunk count. They also retain stdout size, elapsed time, cache bytes after idle exit, and Linux daemon high-water memory where available. Static skip counts count paths; Grepglint refresh counters may count shared blobs differently. The static classifier does not predict syntax-parser chunk limits. Actual chunk counts come from the completed cache, not from filename eligibility.
 
