@@ -74,3 +74,10 @@ answers and failed cold indexing remain trial outcomes. They must not be
 removed from denominators or turned into missing tasks. Corpus validation
 performs no agent runs or answer scoring; implementing this contract belongs
 to the scoring/report issue.
+
+## Durable runner input
+
+The [offline paired runner](benchmark-paired.md#scorer-input-version-1) writes
+versioned trial JSON and streamed call JSONL. It retains simulated provenance,
+raw answers, actual returned ranges and incomplete pairs. Simulation must never
+be accepted as live measurement. Factual grading remains separate from the runner.

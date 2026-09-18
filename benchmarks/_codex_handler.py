@@ -13,6 +13,28 @@ import uuid
 ARGUMENT_BYTES = 16 * 1024
 RESPONSE_BYTES = 64 * 1024
 SOURCE = Path('/source')
+DISK_PEAK = {'cache_bytes': 0, 'database_bytes': 0, 'journal_bytes': 0}
+
+
+def sample_disk():
+    sizes = {'cache_bytes': 0, 'database_bytes': 0, 'journal_bytes': 0}
+    count = 0
+    for root, dirs, files in os.walk('/cache', followlinks=False):
+        count += len(dirs) + len(files)
+        if count > 256:
+            raise HandlerError('cache_entry_limit_exceeded')
+        for name in files:
+            try:
+                info = (Path(root) / name).lstat()
+            except FileNotFoundError:
+                continue
+            sizes['cache_bytes'] += info.st_size
+            if name.endswith(('.db', '.sqlite')):
+                sizes['database_bytes'] += info.st_size
+            if name.endswith(('-journal', '-wal')):
+                sizes['journal_bytes'] += info.st_size
+    for key, value in sizes.items():
+        DISK_PEAK[key] = max(DISK_PEAK[key], value)
 
 
 class HandlerError(ValueError):
@@ -46,6 +68,7 @@ def command(arguments, seconds=32):
             selector.register(process.stdout, selectors.EVENT_READ, output)
             selector.register(process.stderr, selectors.EVENT_READ, diagnostic)
             while selector.get_map():
+                sample_disk()
                 if time.monotonic() >= deadline:
                     raise HandlerError('handler_deadline_exceeded')
                 for key, _ in selector.select(0.05):
@@ -98,29 +121,52 @@ def read_range(arguments):
         os.close(directory)
 
 
+def search_path(value):
+    if value == '.':
+        return value
+    path = relative_path(value)
+    current = SOURCE
+    for component in path.split('/'):
+        current = current / component
+        info = current.lstat()
+        if stat.S_ISLNK(info.st_mode) or not (stat.S_ISDIR(info.st_mode) or stat.S_ISREG(info.st_mode)):
+            raise HandlerError('invalid_source_path')
+    return path
+
+
 def execute(name, arguments):
-    fields = {'text_search': {'query'}, 'file_list': {'glob'},
-              'read_file': {'path', 'start', 'end'}, 'grepglint_search': {'query'}}
-    if name not in fields:
+    required = {'text_search': {'query'}, 'file_list': {'glob'},
+                'read_file': {'path', 'start', 'end'}, 'grepglint_search': {'query'}}
+    optional = {'text_search': {'path', 'regex'}, 'file_list': {'path'}}
+    if name not in required:
         raise HandlerError('unknown_handler')
-    if not isinstance(arguments, dict) or set(arguments) != fields[name]:
+    if (not isinstance(arguments, dict) or not required[name] <= set(arguments)
+            or set(arguments) - required[name] - optional.get(name, set())):
         raise HandlerError('invalid_arguments')
     if name == 'read_file':
         return read_range(arguments)
     if name == 'file_list':
         pattern = relative_path(arguments['glob'], glob=True)
+        path = search_path(arguments.get('path', '.'))
         code, output, errors = command(['/opt/rg', '--files', '--hidden', '--no-config',
-                                         '--glob', pattern, '--glob', '!.git', '.'])
+                                         '--glob', pattern, '--glob', '!.git', '--', path])
     elif name == 'text_search':
-        code, output, errors = command(['/opt/rg', '--json', '--fixed-strings', '--hidden',
-            '--no-config', '--glob', '!.git', '--', query_text(arguments['query']), '.'])
+        regex = arguments.get('regex', False)
+        if type(regex) is not bool:
+            raise HandlerError('invalid_regex_flag')
+        path = search_path(arguments.get('path', '.'))
+        args = ['/opt/rg', '--json', '--hidden', '--no-config', '--glob', '!.git']
+        if not regex:
+            args.append('--fixed-strings')
+        code, output, errors = command([*args, '--', query_text(arguments['query']), path])
     else:
         code, output, errors = command(['/opt/grepglint', 'search', '--json', '--',
                                         query_text(arguments['query'])])
-    if name != 'grepglint_search' and code not in (0, 1):
-        raise HandlerError('search_failed')
+    sample_disk()
     return {'content': output, 'bytes': len(output.encode()), 'stderr': errors,
-            'exit_code': code, 'success': code == 0 or name != 'grepglint_search'}
+            'exit_code': code, 'success': code == 0 or (name != 'grepglint_search' and code == 1),
+            'truncated': False, 'disk_peak': dict(DISK_PEAK),
+            'disk_method': 'file sizes sampled at pipe drain intervals, up to 50 ms; lower bounds'}
 
 
 def negative_checks(forbidden):
@@ -137,7 +183,7 @@ def negative_checks(forbidden):
     except OSError:
         checks['source_write'] = True
     try:
-        subprocess.run(['/source/execute.sh'], check=False, timeout=1,
+        subprocess.run(['/source/execute.sh' if (SOURCE / 'execute.sh').is_file() else '/source-execution-probe'], check=False, timeout=1,
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         checks['repository_execution'] = False
     except PermissionError:
