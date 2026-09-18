@@ -13,6 +13,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'benchmarks'))
 from _codex_artifacts import owned
+from _codex_isolation import authenticated_client_command
 
 
 @unittest.skipUnless(os.environ.get('GREPGLINT_CODEX_INTEGRATION') == '1', 'opt-in Linux pinned-client check')
@@ -40,6 +41,26 @@ class LinuxVerificationTests(unittest.TestCase):
                 self.assertTrue(all(session['isolation_checks'].values()))
                 self.assertTrue(session['source_unchanged'])
             owned(Path(status['receipt']).parent, sealed=True)
+
+    def test_authenticated_mount_resolves_and_authenticates_provider_tls_without_auth(self):
+        binary = Path(shutil.which('codex')).resolve()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            config = root / 'config'
+            config.mkdir()
+            auth = root / 'auth.json'
+            auth.write_text('{}')
+            auth.chmod(0o600)
+            command = authenticated_client_command(binary, config, auth, ['--version'])
+            marker = command.index('--')
+            script = ('import socket,ssl; '
+                      'raw=socket.create_connection(("chatgpt.com",443),5); '
+                      'tls=ssl.create_default_context().wrap_socket(raw,server_hostname="chatgpt.com"); '
+                      'print(tls.version()); tls.close()')
+            command = command[:marker + 1] + ['/usr/bin/python3', '-c', script]
+            result = subprocess.run(command, capture_output=True, timeout=10)
+            self.assertEqual(result.returncode, 0, result.stderr.decode())
+            self.assertTrue(result.stdout.startswith(b'TLS'))
 
     def test_sigterm_retains_partial_audit_and_stops_owned_service(self):
         with tempfile.TemporaryDirectory() as directory:

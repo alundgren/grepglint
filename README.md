@@ -242,7 +242,8 @@ questions, offline validation, source audits and a language-independent
 The [Codex preflight](docs/benchmark-preflight.md) checks tool and instruction
 isolation using the pinned client and a local stub without model inference.
 The [stock-client verification](docs/benchmark-verification.md) adds Linux
-source restrictions and a streaming call audit. ChatGPT verification remains pending.
+source restrictions, a streaming call audit and a separately confirmed,
+two-attempt ChatGPT smoke command. The approved real turns remain in issue #39.
 
 Grepglint code is MIT licensed. Retained benchmark evidence keeps its upstream
 licenses and notices. The name combines grep with noticing something useful. Exact-name

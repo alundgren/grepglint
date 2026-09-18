@@ -32,6 +32,7 @@ class Audit:
         self.raw_results = {}
         self.dynamic = {}
         self.responses = {}
+        self.response_usage = {}
 
     def record(self, kind, value, session):
         with self.lock:
@@ -92,6 +93,13 @@ class Audit:
                 if not isinstance(params.get('responseId'), str) or not isinstance(params.get('usage'), dict):
                     raise ProbeError('incompatible_raw_response')
                 self.responses.setdefault(session, set()).add(params['responseId'])
+                usage = params['usage']
+                required = ('inputTokens', 'outputTokens', 'totalTokens')
+                if all(type(usage.get(key)) is int and usage[key] >= 0 for key in required):
+                    exact = {key: usage[key] for key in required}
+                    previous = self.response_usage.setdefault((session, params['responseId']), exact)
+                    if previous != exact:
+                        raise ProbeError('conflicting_provider_usage')
             elif method in ('item/started', 'item/completed'):
                 item = params.get('item', {})
                 if item.get('type') == 'dynamicToolCall':
@@ -167,6 +175,16 @@ class Audit:
             return {'status': 'passed', 'calls': sum(key[0] == session for key in self.calls),
                     'controlled_calls': sum(key[0] == session for key in self.dynamic),
                     'outer_cell_association': 'unavailable'}
+
+    def usage(self, session):
+        with self.lock:
+            responses = self.responses.get(session, set())
+            recorded = {response_id for (name, response_id) in self.response_usage if name == session}
+            if not responses or recorded != responses:
+                raise ProbeError('incompatible_provider_usage')
+            values = [value for (name, _), value in self.response_usage.items() if name == session]
+            return {key: sum(value[key] for value in values)
+                    for key in ('inputTokens', 'outputTokens', 'totalTokens')}
 
     def close(self):
         self.output.close()
