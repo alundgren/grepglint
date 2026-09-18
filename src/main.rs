@@ -19,6 +19,8 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Tool {
+    /// Install or verify a managed release; not an agent exploration tool
+    Setup(grepglint::setup::Options),
     /// Rank likely code regions for a concept or group of identifiers
     Search {
         query: String,
@@ -85,6 +87,7 @@ enum OutputTool {
 
 fn run(cli: &Cli) -> Result<()> {
     match &cli.command {
+        Tool::Setup(options) => grepglint::setup::run(options)?,
         Tool::Search {
             query,
             json,

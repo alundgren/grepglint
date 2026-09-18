@@ -10,4 +10,5 @@ pub mod output;
 pub mod protocol;
 pub mod tokens;
 
+pub mod setup;
 mod temporary_rank;
