@@ -59,10 +59,10 @@ jobs:
             tag=$(python3 scripts/release.py tag)
           fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          python3 -m unittest discover -s scripts -p "test_*.py"
+          python3 -m unittest discover -s scripts -p "test_*.py" -q -b
       - run: cargo fmt --all -- --check
       - run: cargo clippy --locked --all-targets -- -D warnings
-      - run: cargo test --locked --all-targets
+      - run: cargo test --locked --all-targets -- --quiet
       - name: Build and fixture-test executable
         env:
           TARGET: ${{ matrix.target }}

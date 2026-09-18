@@ -88,3 +88,60 @@ when those costs change. Judge exploration improvements by real tasks as well
 as fixtures. Distinguish observed results from guarantees, and explain known
 limits plainly. Saving a few search tokens is not a win if the tool delays a
 build, fills a disk, or leaves someone debugging the daemon.
+
+## Testing
+
+Use the existing Cargo and Python runners. Keep test output capture enabled.
+Rust's `-- --quiet` prints progress dots,
+failure details, and a summary per test executable. Python's `-q -b` prints
+failures and a short summary, including buffered output when a test fails.
+Do not filter logs with `grep` or discard stderr; preserve failure details
+and the runner's exit status.
+
+During debugging, rerun the failing test or a small related group. Choose
+`--lib` for Rust unit tests or `--test NAME` for `tests/NAME.rs` to avoid
+building and running unrelated test executables. Examples:
+
+```sh
+# Discover full test names without running them.
+cargo test --locked --test maintenance -- --list
+
+# One integration test, with an exact name.
+cargo test --locked --test maintenance -- --quiet --exact missing_daemon_help_and_catalog_do_not_start_or_create_cache
+
+# Related tests whose names contain shutdown.
+cargo test --locked --test maintenance -- --quiet shutdown
+
+# A few specific tests: filters after -- are ORed together.
+cargo test --locked --test maintenance -- --quiet --exact two_simultaneous_shutdowns_are_idempotent shutdown_binds_to_socket_inspected_under_the_guard
+
+# All tests in one integration-test file.
+cargo test --locked --test maintenance -- --quiet
+
+# Unit tests matching a module path or test name.
+cargo test --locked --lib -- --quiet search
+
+# One Python test; add more dotted names to run a selected group.
+PYTHONPATH=scripts python3 -m unittest -q -b test_release.ReleaseContract.test_tag_matches_metadata
+
+# One Python benchmark test module.
+PYTHONPATH=benchmarks/tests python3 -m unittest -q -b test_corpus
+```
+
+Use full names from `--list` with `--exact`, including module paths for unit
+tests. A filter that matches nothing can still exit successfully; check the
+reported test count. Do not add `--nocapture` or `--show-output` unless you
+need passing-test logs for a specific investigation.
+
+After focused checks pass, run the suites affected by the change once. Run
+all suites for changes spanning Rust and Python, or when the affected tests
+are unclear. CI and release validation always run the full applicable suites:
+
+```sh
+cargo test --locked --all-targets -- --quiet
+python3 -m unittest discover -s scripts -p "test_*.py" -q -b
+python3 -m unittest discover -s benchmarks/tests -q -b
+```
+
+Keep ignored tests opt-in. The production maintenance timeout test and its
+command are documented in [README.md](README.md).

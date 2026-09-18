@@ -199,17 +199,32 @@ upgrading Rust.
 
 ```sh
 cargo fmt --all -- --check
-cargo test --locked --all-targets
+cargo test --locked --all-targets -- --quiet
 cargo clippy --locked --all-targets -- -D warnings
 cargo build --release --locked
 python3 scripts/demo.py                  # requires Python 3 and rg
 ```
 
+Rust's `-- --quiet` uses progress dots and a summary for each test executable,
+with failure details still visible. Keep test output captured by default;
+`--nocapture` and `--show-output` also print output from passing tests.
+CI uses this terse format. For Python, `-q -b` prints a short summary and
+buffers test output, showing it on failure:
+
+```sh
+python3 -m unittest discover -s scripts -p "test_*.py" -q -b
+python3 -m unittest discover -s benchmarks/tests -q -b
+```
+
+See [Testing in AGENTS.md](AGENTS.md#testing) for single-test, module, and
+multiple-test commands. Use focused runs while fixing a failure, then run the
+relevant suites before finishing.
+
 Normal tests exercise maintenance timeouts with short deadlines and real OS
 locks and sockets. To also check the CLI's production 35-second timeout, run:
 
 ```sh
-cargo test --locked --test maintenance maintenance_lock_acquisition_expires_without_stopping_daemon -- --ignored --exact
+cargo test --locked --test maintenance maintenance_lock_acquisition_expires_without_stopping_daemon -- --ignored --exact --quiet
 ```
 
 Development and test builds optimize the SHA-256 dependency because each daemon
