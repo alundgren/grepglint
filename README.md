@@ -14,7 +14,24 @@ embeddings, network services, Git hooks, or filesystem watchers.
 
 ## Install
 
-Requires Linux or macOS, Git, Rust 1.89 or later, and a C compiler for bundled
+The [release contract](docs/releases.md) describes raw binaries for Linux
+x86_64 and macOS Apple Silicon, supported runtime baselines, prerequisites,
+and verification tied to the selected release tag and source commit. The first
+published release and hosted verification remain a human release task.
+
+From a trusted checkout, `./install install --release v0.1.0` downloads and
+verifies a selected published release before execution. `./install verify`
+checks a managed installation offline using its retained maintenance copy.
+Python 3, Git and authenticated gh 2.80.0 or newer are needed for initial
+release installation. See [managed installation](docs/installer.md#managed-installation)
+for consent, recovery, paths and limits. Use `./install upgrade --release vX.Y.Z`
+to replace a release and `./install repair` to recover interrupted operations or
+restore missing owned executables. `./install uninstall --yes` retains cached
+source contents and offline maintenance. `./install purge --purge-cache` erases
+recorded cached source contents with separate consent. Both run locally without
+gh or network. See the removal and recovery details in the installer guide.
+
+For source development, use Linux or macOS, Git, Rust 1.89 or later, and a C compiler for bundled
 SQLite and tree-sitter. Linux is tested locally; CI also covers macOS.
 
 ```sh
@@ -23,8 +40,7 @@ cd grepglint
 cargo install --path . --locked
 ```
 
-A proposed guided install/upgrade/verify/repair/uninstall flow is described in
-[the installer investigation](docs/installer.md).
+The [installer investigation](docs/installer.md) records the rationale and deferred lifecycle work.
 
 Run the binary from any directory inside a Git checkout, including regular
 clones and linked worktrees. The first search starts the daemon and registers
@@ -178,8 +194,8 @@ into an agent's repository instructions.
 
 The repository pins Rust 1.89.0, Clippy, and rustfmt in `rust-toolchain.toml`.
 With rustup, Cargo selects and installs that toolchain automatically so local
-checks and CI use the same versions. Update the pin together with the release
-toolchain when upgrading Rust.
+checks and both CI workflows use the same versions. Update this pin when
+upgrading Rust.
 
 ```sh
 cargo fmt --all -- --check

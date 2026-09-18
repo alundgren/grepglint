@@ -4,7 +4,19 @@
 startup, OS lock, and process limits. `git.rs` discovers repositories and reads
 bounded Git output. `files.rs` applies file-selection rules. `chunks.rs` extracts code regions. `tokens.rs` expands
 identifiers. `index.rs` owns freshness, cache maintenance, and ranking; the
-schema is in `schema.sql`.
+schema is in `schema.sql`. `setup/` owns human installation records, safe file
+replacement, upgrade rollback, recorded removal and isolated verification.
+Installer-created cache directories have recorded device/inode identity
+before publication from an exclusive private staging directory. Publication
+refuses to replace a concurrently created cache.
+Removal holds daemon maintenance exclusion through file deletion and durable
+finalization. Empty coordination locks remain on stable inodes; the trusted
+bootstrap can finish deleting a final ownership record after the native copy
+has already been removed. Upgrade retains both
+old and candidate identities in a durable record until both installed copies
+are verified; cache-format checks are read-only and refuse migration. The trusted checkout's Python bootstrap
+verifies release provenance before invoking downloaded native setup code;
+maintenance never becomes a background service or an exploration tool.
 
 ## Stored data
 

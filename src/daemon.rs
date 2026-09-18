@@ -453,6 +453,9 @@ pub fn search(config: &Config, request: &Request) -> Result<Response> {
 }
 
 pub fn record_startup_error(config: &Config, message: &str) {
+    let Ok(_guard) = crate::maintenance::shared(config) else {
+        return;
+    };
     if let Ok(mut file) = OpenOptions::new()
         .write(true)
         .create(true)
