@@ -539,6 +539,7 @@ for line in sys.stdin:
             with patch('_codex_smoke.prerequisites'), \
                  patch('_codex_smoke.authenticated_client_command',
                        return_value=[sys.executable, str(server)]), \
+                 patch('_codex_smoke.children_in_current_cgroup', return_value=True), \
                  patch('_codex_smoke.Handlers', DummyHandlers):
                 provider = ChatGPTProvider(root / 'codex', grepglint, auth, audit)
                 try:

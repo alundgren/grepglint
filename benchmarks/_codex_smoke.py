@@ -157,6 +157,12 @@ def recover_receipt(path, invocation_id):
         return None, None
 
 
+def children_in_current_cgroup(processes):
+    group = Path('/proc/self/cgroup').read_text()
+    return all(Path(f'/proc/{process.proc.pid}/cgroup').read_text() == group
+               for process in processes)
+
+
 def require_local(path, binary, grepglint):
     owned(path.parent, sealed=True)
     if path.is_symlink() or path.stat().st_size > FRAME_LIMIT:
@@ -437,9 +443,7 @@ class ChatGPTProvider:
             [str(self.grepglint), 'tools', '--json'], cwd=self.source, timeout=3))
         self.handlers = Handlers(self.source, self.grepglint, self.budget, audit, treatment)
         self.handlers.start(self.client)
-        group = Path('/proc/self/cgroup').read_text()
-        if any(Path(f'/proc/{process.proc.pid}/cgroup').read_text() != group
-               for process in (self.client, self.handlers.child)):
+        if not children_in_current_cgroup((self.client, self.handlers.child)):
             raise ProbeError('child_outside_resource_group')
         started = self._send('thread/start', {'model': MODEL, 'modelProvider': PROVIDER_ID,
             'cwd': '/work', 'ephemeral': True, 'environments': [], 'experimentalRawEvents': True,
