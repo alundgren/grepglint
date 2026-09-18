@@ -160,6 +160,7 @@ def handler_command(source, grepglint, module, forbidden):
         '--ro-bind', str(grepglint), '/opt/grepglint',
         '--ro-bind', str(Path(shutil.which('rg')).resolve()), '/opt/rg',
         '--ro-bind', str(module), '/opt/handler.py',
+        '--ro-bind', '/usr/bin/true', '/source-execution-probe',
         '--size', str(384 * 1024 ** 2), '--tmpfs', '/cache', '--dir', '/cache/tmp']
     for name in ('_codex_isolation.py', '_codex_capture.py'):
         command += ['--ro-bind', str(module.parent / name), '/opt/' + name]

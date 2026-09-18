@@ -7,7 +7,7 @@ import threading
 import time
 
 from _codex_audit import ARGUMENT_BYTES, RESPONSE_BYTES, encoded
-from _codex_capture import Child, ProbeError, ResponsesStub, json_value
+from _codex_capture import Child, ProbeError, ResponsesStub, TOTAL_LIMIT, json_value
 from _codex_isolation import UnsupportedHost, client_command, handler_command
 from codex_preflight import (DISABLED_FEATURES, EFFORT, MARKERS, MODEL, digest,
                              dynamic_tools, instruction_blocks, toml_value, tool_catalog)
@@ -57,7 +57,7 @@ def definitions(treatment, catalog):
     return tools
 
 
-def inspect_policy(request, treatment):
+def inspect_policy(request, treatment, base=BASE, prompt=PROMPT):
     catalog = tool_catalog(request)
     expected = {t['name'] for t in dynamic_tools(treatment)}
     names = set(catalog['names'])
@@ -78,13 +78,13 @@ def inspect_policy(request, treatment):
         raise ProbeError('model_or_effort_mismatch')
     blocks = instruction_blocks(request)
     for block in blocks:
-        if block['sha256'] == digest(BASE):
+        if block['sha256'] == digest(base):
             block['origins'] = ['launch:model_instructions_file']
-        elif block['sha256'] == digest(PROMPT):
+        elif block['sha256'] == digest(prompt):
             block['origins'] = ['probe:user_prompt']
         if block['origins'] == ['client_generated_or_unattributed']:
             raise ProbeError('unattributed_instruction_block')
-    if not {digest(BASE), digest(PROMPT)} <= {block['sha256'] for block in blocks}:
+    if not {digest(base), digest(prompt)} <= {block['sha256'] for block in blocks}:
         raise ProbeError('expected_instructions_missing')
     text = json.dumps(request)
     if any(marker in text for marker in MARKERS.values()):
@@ -97,7 +97,7 @@ def inspect_policy(request, treatment):
 
 
 class Handlers:
-    def __init__(self, source, grepglint, budget, audit, session):
+    def __init__(self, source, grepglint, budget, audit, session, forbidden=None, file_limit=TOTAL_LIMIT):
         self.budget, self.audit, self.session = budget, audit, session
         self.error = None
         self.queued_max = 0
@@ -105,12 +105,12 @@ class Handlers:
         self.stop = threading.Event()
         self.client = None
         self.send_lock = threading.Lock()
-        forbidden = {name: str(source.parent / 'outside' / name)
+        forbidden = forbidden or {name: str(source.parent / 'outside' / name)
                      for name in ('source', 'oracle', 'credentials', 'history', 'controller')}
         if not all(Path(path).is_file() for path in forbidden.values()):
             raise ProbeError('missing_forbidden_sentinels')
         self.child = Child(handler_command(source, grepglint, Path(__file__).with_name('_codex_handler.py'), forbidden),
-                           source, {}, budget)
+                           source, {}, budget, file_limit=file_limit)
         self.thread = None
         try:
             ready = json_value(self.child.line())
@@ -295,15 +295,17 @@ def check_script(script, audit, session):
     return checks
 
 
-def local_session(binary, grepglint, source, config_dir, catalog, treatment, audit, budget):
+def local_session(binary, grepglint, source, config_dir, catalog, treatment, audit, budget,
+                  *, script=None, base=BASE, prompt=PROMPT, tools=None, forbidden=None, handler_file_limit=TOTAL_LIMIT):
     handlers = client = None
     stub = ResponsesStub(budget)
-    script = Script(treatment, audit, treatment)
+    fixture = script is None
+    script = script or Script(treatment, audit, treatment)
     initial = []
     def observe(request):
         audit.record('responses.request', request, treatment)
         if not initial:
-            initial.append(inspect_policy(request, treatment))
+            initial.append(inspect_policy(request, treatment, base, prompt))
     stub.responder, stub.observe = script, observe
     config = configuration(stub.url)
     args = []
@@ -311,7 +313,7 @@ def local_session(binary, grepglint, source, config_dir, catalog, treatment, aud
         args += ['-c', f'{key}={toml_value(value)}']
     args += ['app-server', '--listen', 'stdio://']
     try:
-        handlers = Handlers(source, grepglint, budget, audit, treatment)
+        handlers = Handlers(source, grepglint, budget, audit, treatment, forbidden, handler_file_limit)
         client = Child(client_command(binary, config_dir, args), source, {}, budget)
         group = Path('/proc/self/cgroup').read_text()
         if any(Path(f'/proc/{process.proc.pid}/cgroup').read_text() != group
@@ -348,13 +350,13 @@ def local_session(binary, grepglint, source, config_dir, catalog, treatment, aud
         handlers.send({'id': 2, 'method': 'thread/start', 'params': {
             'model': MODEL, 'modelProvider': 'preflight', 'cwd': '/work',
             'ephemeral': True, 'environments': [], 'experimentalRawEvents': True,
-            'dynamicTools': definitions(treatment, catalog)}})
+            'dynamicTools': tools if tools is not None else definitions(treatment, catalog)}})
         started = receive(request_id=2)
         if started.get('model') != MODEL or started.get('reasoningEffort') != EFFORT:
             raise ProbeError('reported_model_or_effort_mismatch')
         handlers.send({'id': 3, 'method': 'turn/start', 'params': {
             'threadId': started['thread']['id'], 'model': MODEL, 'effort': EFFORT,
-            'environments': [], 'input': [{'type': 'text', 'text': PROMPT}]}})
+            'environments': [], 'input': [{'type': 'text', 'text': prompt}]}})
         receive(request_id=3)
         completed = receive(method='turn/completed')
         if stub.error:
@@ -362,7 +364,7 @@ def local_session(binary, grepglint, source, config_dir, catalog, treatment, aud
         if completed['turn']['status'] != 'completed' or not initial:
             raise ProbeError('turn_not_completed')
         result = {'configuration': treatment, 'status': 'passed', **initial[0],
-                  'negative_checks': check_script(script, audit, treatment),
+                  'negative_checks': check_script(script, audit, treatment) if fixture else {},
                   'isolation_checks': handlers.checks,
                   'audit': audit.verify(treatment, script.expected, stub.exchanges),
                   'handler_work': {'concurrency': 1, 'observed_queue_peak': handlers.queued_max},
@@ -374,8 +376,12 @@ def local_session(binary, grepglint, source, config_dir, catalog, treatment, aud
         result['configuration_sha256'] = digest(encoded(normalized))
         return result
     finally:
-        if client:
-            client.close()
-        if handlers:
-            handlers.close()
-        stub.close()
+        try:
+            if client:
+                client.close()
+        finally:
+            try:
+                if handlers:
+                    handlers.close()
+            finally:
+                stub.close()

@@ -1,0 +1,692 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "paired-discovery-v1",
+  "title": "Simulated paired discovery trial",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "contract",
+    "simulation",
+    "inference_performed",
+    "state",
+    "configuration",
+    "partition",
+    "seed",
+    "repetition",
+    "order",
+    "run_id",
+    "trial_id",
+    "pair_id",
+    "task_id",
+    "source",
+    "answer",
+    "usage",
+    "audit",
+    "measurements",
+    "manifest_sha256",
+    "sources_sha256",
+    "task_sha256",
+    "prompt_sha256",
+    "implementation_sha256",
+    "client_sha256",
+    "grepglint_sha256",
+    "requested_model",
+    "requested_effort",
+    "reported_model",
+    "reported_effort"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "contract": {
+      "const": "paired-discovery-v1"
+    },
+    "simulation": {
+      "const": true
+    },
+    "inference_performed": {
+      "const": false
+    },
+    "state": {
+      "enum": [
+        "not-started",
+        "attempted",
+        "completed",
+        "failed"
+      ]
+    },
+    "configuration": {
+      "enum": [
+        "control",
+        "grepglint"
+      ]
+    },
+    "partition": {
+      "enum": [
+        "development",
+        "held_out"
+      ]
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 18446744073709551615
+    },
+    "repetition": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10
+    },
+    "order": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 159
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,100}$"
+    },
+    "trial_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,100}$"
+    },
+    "pair_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,100}$"
+    },
+    "task_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,100}$"
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "id",
+        "commit",
+        "tree",
+        "upstream_commit",
+        "upstream_tree"
+      ],
+      "properties": {
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "tree": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "upstream_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "upstream_tree": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      }
+    },
+    "answer": {
+      "type": "object",
+      "required": [
+        "status",
+        "raw",
+        "parsed"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "valid",
+            "malformed",
+            "missing",
+            "oversized"
+          ]
+        },
+        "raw": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 65536
+        },
+        "parsed": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": [
+                "explanation",
+                "evidence"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "explanation": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S"
+                },
+                "evidence": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "path",
+                      "start",
+                      "end"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "path": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 4096
+                      },
+                      "start": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 12000
+                      },
+                      "end": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 12000
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "usage": {
+      "type": "object",
+      "required": [
+        "simulation",
+        "counters",
+        "complete",
+        "quota"
+      ],
+      "properties": {
+        "simulation": {
+          "const": true
+        },
+        "counters": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "complete": {
+          "type": [
+            "object",
+            "boolean"
+          ]
+        },
+        "quota": {
+          "type": "null"
+        }
+      }
+    },
+    "audit": {
+      "type": "object"
+    },
+    "measurements": {
+      "type": "object"
+    },
+    "manifest_sha256": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sources_sha256": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "task_sha256": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "prompt_sha256": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "implementation_sha256": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "client_sha256": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "grepglint_sha256": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "requested_model": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]{1,100}$"
+    },
+    "requested_effort": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]{1,100}$"
+    },
+    "reported_model": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reported_effort": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "completed"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "manifest_sha256",
+          "sources_sha256",
+          "task_sha256",
+          "prompt_sha256",
+          "implementation_sha256",
+          "client_sha256",
+          "grepglint_sha256",
+          "catalog_sha256",
+          "configuration_sha256",
+          "reported_model",
+          "reported_effort",
+          "tools",
+          "answer",
+          "audit",
+          "source_before",
+          "source_after",
+          "measurements",
+          "grepglint",
+          "usage"
+        ],
+        "properties": {
+          "manifest_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "sources_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "task_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "prompt_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "implementation_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "client_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "grepglint_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "catalog_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "configuration_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "reported_model": {
+            "type": "string"
+          },
+          "reported_effort": {
+            "type": "string"
+          },
+          "tools": {
+            "type": "array",
+            "maxItems": 100
+          },
+          "answer": {
+            "properties": {
+              "status": {
+                "const": "valid"
+              },
+              "raw": {
+                "type": "string"
+              },
+              "parsed": {
+                "type": "object",
+                "required": [
+                  "explanation",
+                  "evidence"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "explanation": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "\\S"
+                  },
+                  "evidence": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "path",
+                        "start",
+                        "end"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "path": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 4096
+                        },
+                        "start": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 12000
+                        },
+                        "end": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 12000
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "audit": {
+            "type": "object",
+            "required": [
+              "status",
+              "sha256",
+              "records",
+              "calls",
+              "path"
+            ],
+            "properties": {
+              "status": {
+                "const": "passed"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "records": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "calls": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "path": {
+                "type": "string",
+                "pattern": "^t[0-9]{4}\\.jsonl$"
+              }
+            }
+          },
+          "source_before": {
+            "type": "object",
+            "required": [
+              "commit",
+              "tree",
+              "sha256",
+              "local_commit"
+            ],
+            "properties": {
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "local_commit": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              }
+            }
+          },
+          "source_after": {
+            "type": "object",
+            "required": [
+              "commit",
+              "tree",
+              "sha256",
+              "local_commit"
+            ],
+            "properties": {
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "local_commit": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              }
+            }
+          },
+          "measurements": {
+            "type": "object",
+            "required": [
+              "trial_wall_seconds",
+              "captured_bytes",
+              "source_verification_seconds",
+              "source_preparation_seconds",
+              "memory_peak_bytes",
+              "memory_method",
+              "tool_seconds"
+            ],
+            "properties": {
+              "trial_wall_seconds": {
+                "type": "number",
+                "minimum": 0
+              },
+              "captured_bytes": {
+                "type": "number",
+                "minimum": 0
+              },
+              "source_verification_seconds": {
+                "type": "number",
+                "minimum": 0
+              },
+              "memory_peak_bytes": {
+                "type": "number",
+                "minimum": 0
+              },
+              "tool_seconds": {
+                "type": "number",
+                "minimum": 0
+              },
+              "memory_method": {
+                "type": "string"
+              },
+              "source_preparation_seconds": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            }
+          },
+          "grepglint": {
+            "type": "object",
+            "required": [
+              "used",
+              "non_use",
+              "errors",
+              "fallback_calls"
+            ],
+            "properties": {
+              "used": {
+                "type": "boolean"
+              },
+              "non_use": {
+                "type": "boolean"
+              },
+              "errors": {
+                "type": "array"
+              },
+              "fallback_calls": {
+                "type": "array"
+              }
+            }
+          },
+          "usage": {
+            "type": "object",
+            "properties": {
+              "counters": {
+                "type": "object",
+                "required": [
+                  "inputTokens",
+                  "cachedInputTokens",
+                  "outputTokens",
+                  "reasoningOutputTokens",
+                  "totalTokens"
+                ],
+                "properties": {
+                  "inputTokens": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0
+                  },
+                  "cachedInputTokens": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0
+                  },
+                  "outputTokens": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0
+                  },
+                  "reasoningOutputTokens": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0
+                  },
+                  "totalTokens": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0
+                  }
+                }
+              },
+              "complete": {
+                "type": "object",
+                "required": [
+                  "inputTokens",
+                  "cachedInputTokens",
+                  "outputTokens",
+                  "reasoningOutputTokens",
+                  "totalTokens"
+                ],
+                "properties": {
+                  "inputTokens": {
+                    "type": "boolean"
+                  },
+                  "cachedInputTokens": {
+                    "type": "boolean"
+                  },
+                  "outputTokens": {
+                    "type": "boolean"
+                  },
+                  "reasoningOutputTokens": {
+                    "type": "boolean"
+                  },
+                  "totalTokens": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

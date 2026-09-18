@@ -55,14 +55,14 @@ class Budget:
                 raise ProbeError('capture_limit_exceeded')
 
 
-def child_limits():
+def child_limits(file_limit=TOTAL_LIMIT):
     signal.pthread_sigmask(signal.SIG_UNBLOCK, [signal.SIGINT, signal.SIGTERM])
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
-    resource.setrlimit(resource.RLIMIT_FSIZE, (TOTAL_LIMIT, TOTAL_LIMIT))
+    resource.setrlimit(resource.RLIMIT_FSIZE, (file_limit, file_limit))
 
 
 class Child:
-    def __init__(self, args, cwd, env, budget):
+    def __init__(self, args, cwd, env, budget, file_limit=TOTAL_LIMIT):
         self.budget = budget
         self.buffer = bytearray()
         self.stderr_hash = hashlib.sha256()
@@ -75,7 +75,7 @@ class Child:
             try:
                 self.proc = subprocess.Popen(args, cwd=cwd, env=env, stdin=subprocess.PIPE,
                                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                             start_new_session=True, preexec_fn=child_limits)
+                                             start_new_session=True, preexec_fn=lambda: child_limits(file_limit))
             finally:
                 signal.pthread_sigmask(signal.SIG_SETMASK, previous)
             for stream, name in [(self.proc.stdout, 'stdout'), (self.proc.stderr, 'stderr')]:

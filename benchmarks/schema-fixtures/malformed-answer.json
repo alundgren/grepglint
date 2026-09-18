@@ -1,0 +1,52 @@
+{
+  "trial_id": "t0001",
+  "pair_id": "p0001",
+  "task_id": "ccx-crossorg-217",
+  "partition": "development",
+  "repetition": 1,
+  "order": 0,
+  "configuration": "grepglint",
+  "prompt_sha256": "66a47ca379b04237e9dca637090e51950ac90103e487a213166b4e472a2b88d9",
+  "task_sha256": "77476695f504ae5d98eebaa6de13b244582baa9399c88de1612bc1531d1a2f73",
+  "source": {
+    "id": "django-674eda1c",
+    "commit": "674eda1c03a3187905f48afee0f15226aa62fdf3",
+    "tree": "25291df7b45924832a281cba7a86b335930b2c72",
+    "upstream_commit": "674eda1c03a3187905f48afee0f15226aa62fdf3",
+    "upstream_tree": "25291df7b45924832a281cba7a86b335930b2c72"
+  },
+  "schema_version": 1,
+  "contract": "paired-discovery-v1",
+  "run_id": "run-fixture",
+  "seed": 0,
+  "simulation": true,
+  "inference_performed": false,
+  "state": "failed",
+  "answer": {
+    "status": "malformed",
+    "raw": "SIMULATED malformed answer",
+    "parsed": null
+  },
+  "usage": {
+    "simulation": true,
+    "counters": null,
+    "complete": false,
+    "quota": null
+  },
+  "audit": {
+    "status": "incomplete"
+  },
+  "measurements": {},
+  "errors": [
+    "invalid_final_answer"
+  ],
+  "manifest_sha256": "e2f7fa5ff52402a6ded35fe2799f19ed3f300257f6beb770a5038b785c0cd941",
+  "sources_sha256": "2049e1e848d6ba0efb9cd6c28859157dc27cbf75d0a93a2ae81cb87fa2a7d482",
+  "implementation_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "client_sha256": "3188814c35471432d4123203e0eb38e5bddc60226e3d7ddf0e59e649ea140022",
+  "grepglint_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "requested_model": "gpt-5.6-luna",
+  "requested_effort": "high",
+  "reported_model": null,
+  "reported_effort": null
+}
