@@ -122,6 +122,37 @@ and disables core dumps; macOS has application limits but no equivalent
 address-space ceiling in this implementation. Benchmark sustained use before
 enabling this tool broadly across agents.
 
+## Retained output
+
+`output.rs` owns a separate SQLite database for immutable output handles and
+ordered byte chunks. The CLI captures stdin, validates UTF-8 incrementally,
+and commits a handle only after EOF. Small input never opens storage. The
+search daemon never waits for a producer. Capture and paging do not require protocol negotiation with a running search
+daemon, so older search daemons can coexist. Output search uses an additive
+`output_search` request and gives a paging fallback when an older daemon refuses it.
+
+Two OS file locks limit captures. A short SQLite transaction reserves the full
+per-output allowance against aggregate bytes and entry count before capture
+writes. Abandoned reservations are removed only after acquiring their capture
+lock. Paging reads a consistent transaction, checks all chunks and their digest,
+and returns bounded exact text. Purge excludes capture with the same locks;
+SQLite coordinates it with readers. All cleanup visits bounded table records
+and fixed recorded filenames. There is no recursive traversal or deletion.
+
+The database uses secure deletion and a persistent rollback journal truncated
+after each committed transaction. Both files retain recorded inode identities.
+The 40 MiB database cap and 41 MiB journal allowance include retained/staged
+payload, indexes, deleted-page reuse, and rollback work. No second payload copy
+or vacuum file is created. Private ownership metadata remains after purge for
+later installer integration. Store initialization refuses unrecorded or replaced
+files. A locked initialization intent names one unpredictable staging directory.
+Recovery completes only its empty files and matching partial ownership record,
+then renames the complete directory into place. The existing repository reserve
+and daemon limits remain unchanged. Capture enforces the full free-space reserve;
+purge only requires its bounded rollback allowance. Output clients hold the
+shared maintenance lock for their store lifetime, so managed changes exclude
+output work as well as search.
+
 ## Daemon maintenance
 
 `maintenance.rs` owns account and socket checks, bounded control requests, and
@@ -176,3 +207,30 @@ file. Startup reads at most 128 MiB of executable bytes using a fixed-size
 streaming buffer to compute build identity. Controls keep the existing 16 KiB
 request and 64 KiB response caps. No dependency, worker thread, source cache,
 or diagnostic log is added.
+
+## Temporary output ranking
+
+`temporary_rank.rs` ranks caller-provided bounded chunks with a disposable
+in-memory FTS5 database. It reuses `tokens.rs` query and identifier expansion.
+The corpus contains only the requested output. Ties use source byte position.
+Generic chunks overlap and split long lines at valid UTF-8 boundaries; repository
+file eligibility rules do not apply to retained output.
+
+The daemon serializes output search with repository work, using the existing
+64 MiB SQLite heap limit across all connections and the existing Linux process
+limit. `Store` validates one complete retained stream and keeps its SQLite read
+transaction until ranking finishes. The Rust source allocation is bounded to
+8 MiB. The temporary database has a 32 MiB logical page cap and cannot spill to
+disk. Its connection and buffers drop on success or failure. No output FTS rows
+or source content enter the repository database.
+
+The socket's lifetime and a 30-second deadline bound store opening, gate-lock
+waits, cleanup, traversal, chunk generation, indexing and ranking. Search installs
+the SQLite progress callback before store database work. Interrupted cleanup
+statements roll back; capture and paging keep their existing opening path. The CLI detects downstream closure during response waits
+and closes that socket. Output-search clients keep both directions open until
+the response; a client EOF cancels the request. Socket checks use a non-consuming
+peek for platforms that report EOF without a hangup flag. Capture, page and purge remain direct operations;
+producer waits never occupy a daemon request. A concurrent output writer may
+reach its existing two-second busy timeout while a search holds the consistent
+read transaction. A later page remains byte-exact if the handle is still retained.
