@@ -71,11 +71,11 @@ def read_range(arguments):
     start, end = arguments['start'], arguments['end']
     if type(start) is not int or type(end) is not int or not 1 <= start <= end <= 12000:
         raise HandlerError('invalid_line_range')
-    directory = os.open(SOURCE, os.O_PATH | os.O_DIRECTORY)
+    directory = os.open(SOURCE, os.O_RDONLY | os.O_DIRECTORY)
     try:
         parts = path.split('/')
         for part in parts[:-1]:
-            next_fd = os.open(part, os.O_PATH | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=directory)
+            next_fd = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=directory)
             os.close(directory)
             directory = next_fd
         fd = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory)

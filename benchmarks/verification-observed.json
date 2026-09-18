@@ -3,10 +3,10 @@
     "calls": 57,
     "outer_cell_association": "unavailable",
     "records": 390,
-    "sha256": "39facd15f7800dfabfd15880c874ab7d5d7840276d96eb6499d9cfac0b8bb807",
+    "sha256": "580a3f2d6d2f0079b5d1ddf10db4b24900c21c422a3c68bda7fb09a85d4ca73b",
     "status": "passed"
   },
-  "captured_bytes": 1202625,
+  "captured_bytes": 1202632,
   "checks": {
     "audit": "passed",
     "local_isolation": "passed",
@@ -25,10 +25,10 @@
     "version": "codex-cli 0.154.0"
   },
   "contract": "stock-codex-local-v2",
-  "elapsed_seconds": 5.324,
+  "elapsed_seconds": 5.204,
   "grepglint_catalog_sha256": "4c6a794d2c3a432624222b6cf4c71d456a17780450c96ce92dd55068180fc39b",
   "grepglint_sha256": "765bdf76b16034d3b947020d245f71687c6cc9717da6b57851aac520e7b98de9",
-  "implementation_sha256": "6826a948b7d599ffd83d8d038b5ea2e098fb365ca1672e27b889b7dca7c406ce",
+  "implementation_sha256": "b671e943b031f28afedd772ca61a306fb78507a918a2765a5c745ae73b36a04e",
   "inference_performed": false,
   "limits": {
     "aggregate_cpu_cores": 1,
@@ -49,7 +49,7 @@
     "allocation_oom_denied": true,
     "allocation_requested_bytes": 1153433600,
     "concurrent_cpu_loops_throttled": true,
-    "cpu_usec": 651693,
+    "cpu_usec": 647759,
     "memory_peak_including_fixture": 1073741824
   },
   "schema_version": 2,
@@ -98,7 +98,7 @@
         "yield_and_wait": true
       },
       "prompt_sha256": "3c8765dedd27d2deef221417680fa75a35fac6fcbfd1cfae18e961c3141752d2",
-      "source_sha256": "74b5343696472d43aa8266a6024efc28404affca373bfc614f0731a1f44b43dc",
+      "source_sha256": "04cb54db24e0ae6f4e0992345aa9c6910014bba4592317511d4283d7d93e8231",
       "status": "passed"
     },
     {
@@ -149,7 +149,7 @@
         "yield_and_wait": true
       },
       "prompt_sha256": "3c8765dedd27d2deef221417680fa75a35fac6fcbfd1cfae18e961c3141752d2",
-      "source_sha256": "74b5343696472d43aa8266a6024efc28404affca373bfc614f0731a1f44b43dc",
+      "source_sha256": "04cb54db24e0ae6f4e0992345aa9c6910014bba4592317511d4283d7d93e8231",
       "status": "passed"
     }
   ],
