@@ -1,0 +1,79 @@
+{
+  "archive_integrity": "Initial GitHub tarball preparation failed byte or tree equality for NumPy, pandas, scikit-learn, two VS Code revisions and eShop. The final preparer fetches exact Git objects, preserving raw tracked bytes and executable/link modes.",
+  "original_archive_outcomes": [
+    {
+      "source": "envoy-d7809ba2",
+      "tree_verified": "0c1485993024fe1713af1e58189e9e1d8fe8a57a",
+      "local_commit": "d7b6af422561f073792db74987d652c8d9d86ecf",
+      "upstream_commit": "d7809ba2b07fd869d49bfb122b27f6a7977b4d94"
+    },
+    {
+      "source": "flipt-3d5a345f",
+      "tree_verified": "732d865c2efa3ddd9d01f244b95fa227cd82192b",
+      "local_commit": "77d5a212e28a0755c08f5d922787c0939e397a8a",
+      "upstream_commit": "3d5a345f94c2adc8a0eaa102c189c08ad4c0f8e8"
+    },
+    {
+      "source": "numpy-v2.2.2",
+      "error": "Archive exceeds pinned source byte limit"
+    },
+    {
+      "source": "pandas-41968da5",
+      "error": "Source byte count differs: expected 52845599, got 23496401"
+    },
+    {
+      "source": "scikit-learn-cb7e82dd",
+      "error": "Source byte count differs: expected 23330273, got 22522654"
+    },
+    {
+      "source": "vscode-138f619c",
+      "error": "Archive exceeds pinned source byte limit"
+    },
+    {
+      "source": "vscode-17baf841",
+      "error": "Archive exceeds pinned source byte limit"
+    },
+    {
+      "source": "eshop-b4a40872",
+      "error": "Archive tree differs from verified Git tree: 2c72c2b43c52a7d773086e3f3ed299b33db9361c != d58447ef5b7695e99395065f51da2c69fb96b6a2"
+    }
+  ],
+  "final_object_outcomes": [
+    {
+      "source": "numpy-v2.2.2",
+      "tree_verified": "449d6b3570b4d33b9297c06ff16b227714e222de",
+      "local_commit": "2001fddc424107508d880d7dade079811c6ccfdb",
+      "upstream_commit": "fd8a68e4978defd094cffa23c71d7de7fb213e3f"
+    },
+    {
+      "source": "pandas-41968da5",
+      "tree_verified": "e94e0954d8c2b5a5bc5610ee9d767a7eb01fb8e3",
+      "local_commit": "5bc2dd2a47f70756a29c90e3b2f43731d3a6bb15",
+      "upstream_commit": "41968da5f87873dd49b2cff1da853c90181f7f89"
+    },
+    {
+      "source": "scikit-learn-cb7e82dd",
+      "tree_verified": "8b84e7d34512295802d6ba26feb5422cb3ea9d02",
+      "local_commit": "20dfbbb6bcc236c544f4c9f3b260d2f3fd573bd4",
+      "upstream_commit": "cb7e82dd443aa1eb24bb70a3188b067536320a40"
+    },
+    {
+      "source": "vscode-138f619c",
+      "tree_verified": "6f0a85492df00580caf3572b5d8cd1f5383d8436",
+      "local_commit": "82cdabce698fcfaa7a05b7399de1082d98736704",
+      "upstream_commit": "138f619c86f1199955d53b4166bef66ef252935c"
+    },
+    {
+      "source": "vscode-17baf841",
+      "tree_verified": "bf523f8da33060f2be8eea627d3b8c0aac91722e",
+      "local_commit": "667280b357ea71730d3758ac39c406035d2da686",
+      "upstream_commit": "17baf841131aa23349f217ca7c570c76ee87b957"
+    },
+    {
+      "source": "eshop-b4a40872",
+      "tree_verified": "d58447ef5b7695e99395065f51da2c69fb96b6a2",
+      "local_commit": "e02dd9c5afa145e7a2308f7efef8c2b2a5e1e284",
+      "upstream_commit": "b4a40872005d4bb29e5b1fa1ff7e244143d39215"
+    }
+  ]
+}

@@ -1,0 +1,315 @@
+{
+  "status": "All 40 tasks accepted by independent source audit",
+  "reviewer": {
+    "id": "/root/issue_14/completion_reviewer",
+    "requested_model": "gpt-6-astra",
+    "requested_effort": "low",
+    "reported_model": null,
+    "reported_effort": null
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "head": "90f5a9cdda6eee6d18e0e4ac8b8287ce32eb9f13",
+      "base": "ea3fa9e260288ae8ed5965cfa10113a1e640c23e",
+      "plan": "pass",
+      "record": {
+        "path": "review-records/round-1.md",
+        "sha256": "16753432ad34b60af3e0bfb0580d3f6e94a09f8a56c8400857292a7697543c50"
+      }
+    },
+    {
+      "round": 2,
+      "head": "8d9ff1b3597619350544cb3d672039cb9147170b",
+      "base": "ea3fa9e260288ae8ed5965cfa10113a1e640c23e",
+      "plan": "pass",
+      "technical_and_ux": "pass; no remaining findings",
+      "record": {
+        "path": "review-records/round-2.md",
+        "sha256": "1c8d313603a273bdcd8a987f47936d0b4cc9d76093476b019000691e5ffc3517"
+      }
+    }
+  ],
+  "tasks": {
+    "django-pre-validate-signal-design-001": {
+      "task_sha256": "16cf2046bea2c9e5c920bb8031122ca13c6e2315c69dfd6b89944912de296a5c",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Model validation order and pre_save dispatch.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "django-rate-limit-design-001": {
+      "task_sha256": "412e3eb0bb4b7b688dcdaa432326ead78d0af9a20050306e9fc3be451e5d725d",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Request short circuit and response hook.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "django-rate-limit-middleware-feat-001": {
+      "task_sha256": "ad5c089e95ca2a2c5da08be6e218eb668063805347ff6ef63e061811ec7ebad0",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Default cache construction and middleware hooks.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "django-request-factory-refac-001": {
+      "task_sha256": "464bf234c4176e59b304f490f171cadecf6159ab9f44ac888bdd9d82debda51a",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Public export and HTTP request construction.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "django-audit-trail-implement-001": {
+      "task_sha256": "e6d00cdde5383aa1cc2ca53480c5df79d7ea235c59277bce268b481bbb3c15cc",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Isolated include context and dictionary reset.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "django-cross-team-boundary-001": {
+      "task_sha256": "5c9b3207f7fdec153f8f5050ffa3454b44263a408f23ab5ad3da42f6e3d60b3e",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Login session rotation and retained data.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "django-legacy-dep-vuln-001": {
+      "task_sha256": "05fda6c85d6c978cd1afa6e7bb08a3eb904f79f4d438837aa27b04d5b5223221",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Byte decoding, protected values and escaping.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "django-repo-scoped-access-001": {
+      "task_sha256": "1c40c7423c6afe5307bd86611af362866133e5fef0394d0ff65b726bc97ec484",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Related-filter choices and visibility.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "django-role-based-access-001": {
+      "task_sha256": "276727d9a0dbe47149c6f582bc6e5369d474f39b631994842e1a124fb3038c29",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Widget attribute merge and template rendering.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "django-sensitive-file-exclusion-001": {
+      "task_sha256": "dd6daa823e1476c74189efe4398b2fb299ff351229c79723166a9ceebb402c0c",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Connection age and other closure conditions.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "django-template-inherit-recall-001": {
+      "task_sha256": "22146d69f4d249e23ae3f62af3d7cf4c742c1f718353638451886efefe30eaf9",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Block selection and queue restoration.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "ccx-crossorg-217": {
+      "task_sha256": "7592128208b6cce765ed89c95802a8069f53eaf91b2357255ec359097d5ceedf",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Middleware chain construction and hook order; competing upstream file lists resolved correctly.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "ccx-migration-203": {
+      "task_sha256": "e277bc0a353ec4166551c7f796503d56479c8fc491d584910a50728212050a27",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: URL includes, resolvers and callable-view patterns.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "ccx-migration-204": {
+      "task_sha256": "67c5a181140500c39048b0b1b3f9e59c4187efb31eeb4b0184d2407f45ab8a5e",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Model/form maximum length and widget attributes.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "flipt-dep-refactor-001": {
+      "task_sha256": "e07224e7a941c2571f49c16d467b4081183659436fa7889cec99c31183b5198a",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Resource identity, revision options and separate context argument.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "flipt-flagexists-refactor-001": {
+      "task_sha256": "4ad953296ff1cbd5bcfbfd51d61e1097ab8acec03ee05429536a8c4e74ab4bf5",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Storage interface and not-found error handling.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "flipt-degraded-context-fix-001": {
+      "task_sha256": "254f808b81e3671f2e3f3593458640b8f06e39e1fff33252fd4f78ca3004fb83",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Boolean and legacy evaluation failure responses.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "flipt-protobuf-metadata-design-001": {
+      "task_sha256": "3631874aa037ab0fdc96667b7e3b950bd06ac3c77c0085dbaf4e00d96e1af212",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Segment matching and response propagation.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "flipt-repo-scoped-access-001": {
+      "task_sha256": "272f86fbd1a71dcf821e52a8629fa8f7fa63e25abe51780c7817795cd93d2881",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Batch missing flags, helper dispatch and failures.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "numpy-array-dispatch-refac-001": {
+      "task_sha256": "c04df90024cd3bec9f4dbbe780cce9f8faf0cb9c782a463c016067d86d212f10",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Dispatcher wrapping and median dispatcher.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "vscode-custom-fold-region-feat-001": {
+      "task_sha256": "1b1cafb2996f579997bc8e11fde8461d3af7c7f7a4e0712d1fe34c8b93ae2e06",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Collected ranges, typed arrays and storage limits.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "vscode-stale-diagnostics-feat-001": {
+      "task_sha256": "0b49a18a94d56188cc6dc0a8bebfada1fd426b27464684d9e3e5b702f08727fb",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Overflow markers, owner updates and clearing.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "ccx-onboard-search-213": {
+      "task_sha256": "54a2dbb63689990aed75d2cf8d8ae3156d162da26d64219a81905d90753b49cd",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Three-way keybinding merge; corrected function ranges.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "ccx-onboard-search-211": {
+      "task_sha256": "e35d437ef68191ef23fa90d951bbc03a5e0dd8fba8ac5535b8df50ff495a1d47",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: FastICA fitting and unit-variance source computation; upstream description corrected.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "ccx-crossorg-218": {
+      "task_sha256": "3448ee89f6923c390461d58b84a59d55cea34eb6c1e41fbcd5856ed944e34e81",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Warning class versus NotFittedError; upstream description corrected.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "ccx-onboard-search-212": {
+      "task_sha256": "29905541eb6707fe6be80a8873ef7f93f924a9bd83e7aca1a8d40c5bcfddd779",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Pivot aggregation, unstacking, filling and totals; corrected function ranges.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "ccx-onboard-search-210": {
+      "task_sha256": "5649c479c762f603d93ee703c87bdeb11b1edaa9bac44d37edf7b4990f4b828f",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Pool-ready connection setup and callbacks; corrected function ranges.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "eshop-basket-identity": {
+      "task_sha256": "db961d4c81da8f029818f01e8d68d37f54c1e90a65d6fde85e7e5f18dd25aac9",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Identity lookup and missing-identity read/update behavior.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "eshop-basket-storage": {
+      "task_sha256": "16324045d49a1862eaf1996cb0d137ca083b26b94c91c000ce34300ea3ccb886",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Redis keys, JSON storage, missing reads and failed writes.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "eshop-catalog-price-event": {
+      "task_sha256": "630b77d16c574727bd8076193e9b62b1475c96bf82b7a73179c53b708d27331e",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Original/new price event and conditional persistence.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "eshop-order-add-product": {
+      "task_sha256": "3d05e35338fa62734ddafbc04435c91cd867c1b83a37f6bddb5b27010e4004a1",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Existing/new product quantity and discount checks.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "eshop-order-paid": {
+      "task_sha256": "b8487b28ddc164a4d894749b5447f573c441384f58dcd3e8da6bb9fcb22232cc",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Required prior status, state update and event.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "eshop-order-cancellation": {
+      "task_sha256": "83f8fa01f4c3b010c8faa30a3de902eab6cc42c762505200db0c9a54fc4ef10d",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: General cancellation restrictions and stock rejection.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "eshop-stock-check-and-removal": {
+      "task_sha256": "6e941f26c7d6f8097a06f3dc2e62a1fc6a0eaa58a02de5110d96b62f1bf4ae12",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Missing catalog products, validation and later stock removal.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "eshop-grace-period": {
+      "task_sha256": "50fd5af96bf8abb247749281b9016ba16310d16dcb9ed9f18c849470ca6fd912",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Order selection, database errors and event publication.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "eshop-payment-choice": {
+      "task_sha256": "dc25214e353aa4a5fae31688354b15b07ab2ec64b9fefbe1bbd3ddfc7c31c947",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Configured simulated payment outcome.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "eshop-event-transaction": {
+      "task_sha256": "6aa2f693b77889b03cde8f0f0fa9639b195fd1b6beb25d0c9def17f922f10632",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "The required claims and reference answer are supported by the recorded source regions; the adaptation adequately explains the change from the preserved original where applicable. Audited behavior: Commit-before-publication and event failure recording.",
+      "verdict": "accepted",
+      "round": 1
+    },
+    "django-modelchoice-fk-fix-001": {
+      "task_sha256": "7ad4c6db09847fcf10614ea4d48148df553e194a6439373cbd18efdd484722c2",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "Claims and reference answer match prepare_value and to_python, including empty values and lookup error handling.",
+      "verdict": "accepted",
+      "round": 2
+    },
+    "django-composite-field-recover-001": {
+      "task_sha256": "3154e2af59ba618b87a6b956e6b08c4d4155adaaa74a20d84eecc4f803981ee7",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "Claims and reference answer match the early-return predicates, cleaning order and form-wide error handling.",
+      "verdict": "accepted",
+      "round": 2
+    },
+    "numpy-rolling-median-feat-001": {
+      "task_sha256": "5f049c2196340b89f05056dbd19ccc2c003505c53b77bd30e3129307e3f9e8f6",
+      "reviewer": "/root/issue_14/completion_reviewer",
+      "source_audit": "Claims and reference answer match middle-index selection, direct versus flattened-result partitioning, scalar return and averaging.",
+      "verdict": "accepted",
+      "round": 2
+    }
+  }
+}

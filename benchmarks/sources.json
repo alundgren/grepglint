@@ -1,0 +1,2057 @@
+[
+  {
+    "id": "django-674eda1c",
+    "mirror": "sg-evals/django--674eda1c",
+    "upstream": "django/django",
+    "commit": "674eda1c03a3187905f48afee0f15226aa62fdf3",
+    "upstream_commit": "674eda1c03a3187905f48afee0f15226aa62fdf3",
+    "tree": "25291df7b45924832a281cba7a86b335930b2c72",
+    "upstream_tree": "25291df7b45924832a281cba7a86b335930b2c72",
+    "path_count": 7013,
+    "source_bytes": 45732462,
+    "truncated": false,
+    "mirror_difference": [],
+    "gitlinks": [],
+    "identity_note": "Full mirror commit and tree are pinned; upstream identity and every differing path are recorded. The complete mirror tree is used unchanged.",
+    "licenses": [
+      {
+        "path": "notices/django-674eda1c/AUTHORS",
+        "sha256": "fc95820f367cda50b9cd1487e3866e4903f3faf75ddb0815a547dc31492c2e9f",
+        "source_path": "AUTHORS",
+        "license": "BSD-3-Clause"
+      },
+      {
+        "path": "notices/django-674eda1c/LICENSE",
+        "sha256": "b846415d1b514e9c1dff14a22deb906d794bc546ca6129f950a18cd091e2a669",
+        "source_path": "LICENSE",
+        "license": "BSD-3-Clause"
+      },
+      {
+        "path": "notices/django-674eda1c/LICENSE.python",
+        "sha256": "765e2b1e339fef8d3e9f12892e7e072a8be309996a0be43ffc5796398ec4e7d4",
+        "source_path": "LICENSE.python",
+        "license": "BSD-3-Clause"
+      }
+    ],
+    "pin_evidence": {
+      "path": "provenance/django-674eda1c-commit.json",
+      "sha256": "321f9477c66f233e057a4cee554b087ad34d5afc741bc1389f721c7e8d0e219c"
+    }
+  },
+  {
+    "id": "envoy-d7809ba2",
+    "mirror": "sg-evals/envoy--d7809ba2",
+    "upstream": "envoyproxy/envoy",
+    "commit": "449050ec9ea290303692f0ec2b09fceb31308b9a",
+    "upstream_commit": "d7809ba2b07fd869d49bfb122b27f6a7977b4d94",
+    "tree": "0c1485993024fe1713af1e58189e9e1d8fe8a57a",
+    "upstream_tree": "3bac5d98e985f402d822b935dc45a4b196338cdc",
+    "path_count": 11700,
+    "source_bytes": 90089286,
+    "truncated": false,
+    "mirror_difference": [
+      {
+        "path": ".vscode/.gitignore",
+        "upstream": {
+          "path": ".vscode/.gitignore",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "c2393f450708de795a5b1d4a309e6ee63e934117",
+          "size": 26,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/c2393f450708de795a5b1d4a309e6ee63e934117"
+        },
+        "mirror": null
+      },
+      {
+        "path": ".vscode/tasks.json",
+        "upstream": {
+          "path": ".vscode/tasks.json",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "1352b71ad9dd3304ff6df77fd6cbc2137f99c489",
+          "size": 1322,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/1352b71ad9dd3304ff6df77fd6cbc2137f99c489"
+        },
+        "mirror": null
+      },
+      {
+        "path": "ci/Dockerfile-envoy",
+        "upstream": {
+          "path": "ci/Dockerfile-envoy",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "4ab1284c07fd8060d24545ad455f4b2ee28f5f89",
+          "size": 4104,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/4ab1284c07fd8060d24545ad455f4b2ee28f5f89"
+        },
+        "mirror": {
+          "path": "ci/Dockerfile-envoy",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "c17dddfcce47c4f0f4000208879d29533f7980cb",
+          "size": 4104,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/c17dddfcce47c4f0f4000208879d29533f7980cb"
+        }
+      },
+      {
+        "path": "mobile/.drstring.toml",
+        "upstream": {
+          "path": "mobile/.drstring.toml",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "b243ab75392ccd30a45d3a9a0d96458f5511f24b",
+          "size": 297,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/b243ab75392ccd30a45d3a9a0d96458f5511f24b"
+        },
+        "mirror": null
+      },
+      {
+        "path": "mobile/.editorconfig",
+        "upstream": {
+          "path": "mobile/.editorconfig",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "9e62d0de5aa49e05692d88c842e863b1d434ec83",
+          "size": 4249,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/9e62d0de5aa49e05692d88c842e863b1d434ec83"
+        },
+        "mirror": null
+      },
+      {
+        "path": "mobile/.kotlinlint.yml",
+        "upstream": {
+          "path": "mobile/.kotlinlint.yml",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "18e6b73dc8fe5ce2c8b88777f37ec6be26e8dc51",
+          "size": 778,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/18e6b73dc8fe5ce2c8b88777f37ec6be26e8dc51"
+        },
+        "mirror": null
+      },
+      {
+        "path": "mobile/.pre-commit-config.yaml",
+        "upstream": {
+          "path": "mobile/.pre-commit-config.yaml",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "dd80f896d1b0f54f3f636404252db9dbe73966b5",
+          "size": 672,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/dd80f896d1b0f54f3f636404252db9dbe73966b5"
+        },
+        "mirror": null
+      },
+      {
+        "path": "mobile/.swiftlint.yml",
+        "upstream": {
+          "path": "mobile/.swiftlint.yml",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "dbf1d3b10eabf6990533b379eee5a22fa870b794",
+          "size": 3408,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/dbf1d3b10eabf6990533b379eee5a22fa870b794"
+        },
+        "mirror": null
+      },
+      {
+        "path": "mobile/examples/swift/swiftpm/EnvoySwiftPMExample.xcodeproj/project.pbxproj",
+        "upstream": {
+          "path": "mobile/examples/swift/swiftpm/EnvoySwiftPMExample.xcodeproj/project.pbxproj",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "62ea558ce8a6f424570e8f28e5606350c2bc88d3",
+          "size": 13160,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/62ea558ce8a6f424570e8f28e5606350c2bc88d3"
+        },
+        "mirror": null
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case000",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case000",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "91eb7c93c04d4640861ab96e86b5534796f75d4d",
+          "size": 206,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/91eb7c93c04d4640861ab96e86b5534796f75d4d"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case000",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "dfa316847908e86f3fdfae1098677843a7288107",
+          "size": 196,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/dfa316847908e86f3fdfae1098677843a7288107"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case001",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case001",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "5957c3510ae993f229b8ea7b196af84291147465",
+          "size": 244,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/5957c3510ae993f229b8ea7b196af84291147465"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case001",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "d785a6fd382619a4efd4aa15128e7f7b5496a496",
+          "size": 234,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/d785a6fd382619a4efd4aa15128e7f7b5496a496"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case002",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case002",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "cae3218d2adc36a00d31c3bb83d2e0e7f5f06418",
+          "size": 197,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/cae3218d2adc36a00d31c3bb83d2e0e7f5f06418"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case002",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "6d8de299ab506231a3ebf4bcd944805a3536d283",
+          "size": 187,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/6d8de299ab506231a3ebf4bcd944805a3536d283"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case003",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case003",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "bd31d49d07bbc029c6b3a704b4f0cfaf65946e96",
+          "size": 244,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/bd31d49d07bbc029c6b3a704b4f0cfaf65946e96"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case003",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "2071074fe8898e4742feec8d9252be3b5a2c8e3f",
+          "size": 234,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/2071074fe8898e4742feec8d9252be3b5a2c8e3f"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case004",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case004",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "dad20d29cfbf42ec334a4270020f350d76c35b63",
+          "size": 219,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/dad20d29cfbf42ec334a4270020f350d76c35b63"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case004",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "c88d1e1fd53169dc5f57efe8172c9d48752e408d",
+          "size": 209,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/c88d1e1fd53169dc5f57efe8172c9d48752e408d"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case005",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case005",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "8c0fa0cc374b440ffd75a33226fa9eb95a8d2c9b",
+          "size": 218,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/8c0fa0cc374b440ffd75a33226fa9eb95a8d2c9b"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case005",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "bf4856baec6269d2d75cb37142bd1b8bb11ce597",
+          "size": 208,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/bf4856baec6269d2d75cb37142bd1b8bb11ce597"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case006",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case006",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "45d602fa3f55be05526cee18428b63a72ddac1bd",
+          "size": 232,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/45d602fa3f55be05526cee18428b63a72ddac1bd"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case006",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "f9f030d45ca1c5568d8329aaf0fb81cf80622ae7",
+          "size": 222,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/f9f030d45ca1c5568d8329aaf0fb81cf80622ae7"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case007",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case007",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "f88918d9929bb66cbf41b93ae6651f97d5096f37",
+          "size": 231,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/f88918d9929bb66cbf41b93ae6651f97d5096f37"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case007",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "aca836ea6e5578063c6d8fb666e8a6b4fa4e304a",
+          "size": 221,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/aca836ea6e5578063c6d8fb666e8a6b4fa4e304a"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case008",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case008",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "a40cb678ca29f67b41fbaf97fc2ef2ab71ba2491",
+          "size": 236,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/a40cb678ca29f67b41fbaf97fc2ef2ab71ba2491"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case008",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "1710e95213f63b1db4400d59e8132e818087bcff",
+          "size": 226,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/1710e95213f63b1db4400d59e8132e818087bcff"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case009",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case009",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "ec109a55a3ca07a639d4b079ccf44d608785c2f5",
+          "size": 196,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/ec109a55a3ca07a639d4b079ccf44d608785c2f5"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case009",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "22590fedc6b4775d6e62811e8c19ed8d25281d6d",
+          "size": 186,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/22590fedc6b4775d6e62811e8c19ed8d25281d6d"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case010",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case010",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "49ddca6b610a0870ceb0462a03b9e641aa53bd0b",
+          "size": 215,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/49ddca6b610a0870ceb0462a03b9e641aa53bd0b"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case010",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "8609aace89a6184a9b2a9d1c7ca79bc365fd4b00",
+          "size": 205,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/8609aace89a6184a9b2a9d1c7ca79bc365fd4b00"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case011",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case011",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "95faf590cce9a5b588746c2c9978e44196f92cc6",
+          "size": 232,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/95faf590cce9a5b588746c2c9978e44196f92cc6"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case011",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "2cf8911ba078fe4be01a3a10ad200c6aaad4ed23",
+          "size": 222,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/2cf8911ba078fe4be01a3a10ad200c6aaad4ed23"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case012",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case012",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "9326a7eaeaadf0b3cb228457490e7bb5431756ce",
+          "size": 238,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/9326a7eaeaadf0b3cb228457490e7bb5431756ce"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case012",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "280fa1972b7f988de1848ac9c37785500aae5c2a",
+          "size": 228,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/280fa1972b7f988de1848ac9c37785500aae5c2a"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case013",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case013",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "956587ea648433d1c16f3d5a07e1c4fc3d947619",
+          "size": 202,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/956587ea648433d1c16f3d5a07e1c4fc3d947619"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case013",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "50ee6dab0a6f36e4c7a905153001e1f5aabd2f4a",
+          "size": 192,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/50ee6dab0a6f36e4c7a905153001e1f5aabd2f4a"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case014",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case014",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "c50b0bd87a01706da8a51eda1a8272b11834fece",
+          "size": 256,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/c50b0bd87a01706da8a51eda1a8272b11834fece"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case014",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "d90bc8583115be5ed5ca3abcd3db9d102aee9a85",
+          "size": 246,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/d90bc8583115be5ed5ca3abcd3db9d102aee9a85"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case015",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case015",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "1ff6974e6dd33a67007e5e08ba86bfc15a897058",
+          "size": 209,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/1ff6974e6dd33a67007e5e08ba86bfc15a897058"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case015",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "6f818fa4ac125af82226146362817f6d24f3a12a",
+          "size": 199,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/6f818fa4ac125af82226146362817f6d24f3a12a"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case016",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case016",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "38124aa8bace924acee6614018e78594f48d280f",
+          "size": 253,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/38124aa8bace924acee6614018e78594f48d280f"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case016",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "7dd1681e75b5313e2177369c0e53f1210e40cfc0",
+          "size": 243,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/7dd1681e75b5313e2177369c0e53f1210e40cfc0"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case017",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case017",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "29c621d347aa656936c1752b52d3b612ee80fb2c",
+          "size": 261,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/29c621d347aa656936c1752b52d3b612ee80fb2c"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case017",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "6e646bc0325c44fff027efdffc45449beefe3b1d",
+          "size": 251,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/6e646bc0325c44fff027efdffc45449beefe3b1d"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case018",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case018",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "3dc72d0e50a5af77d523d097191deae377e34364",
+          "size": 231,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/3dc72d0e50a5af77d523d097191deae377e34364"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case018",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "63dc764bd5371c643195b00c519fa1e24acf2a19",
+          "size": 221,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/63dc764bd5371c643195b00c519fa1e24acf2a19"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case019",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case019",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "efc350e2aeeee9dcb40a0a4306f396711f302f93",
+          "size": 248,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/efc350e2aeeee9dcb40a0a4306f396711f302f93"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case019",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "c317682ca3c52bb679d1feb4ec5c4ce53a926504",
+          "size": 238,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/c317682ca3c52bb679d1feb4ec5c4ce53a926504"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case020",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case020",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "259a36e5e2f979bea275de11a8e340ef3fe1088f",
+          "size": 236,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/259a36e5e2f979bea275de11a8e340ef3fe1088f"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case020",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "e2e0814486c4226c1f086fa43c63b74ed7cfe626",
+          "size": 226,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/e2e0814486c4226c1f086fa43c63b74ed7cfe626"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case021",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case021",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "f72b3e3981d2aa4c768e1c9d629ed7ee51c70a34",
+          "size": 244,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/f72b3e3981d2aa4c768e1c9d629ed7ee51c70a34"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case021",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "7892ec805167f3623ca80c75536165cf2ef97aeb",
+          "size": 234,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/7892ec805167f3623ca80c75536165cf2ef97aeb"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case022",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case022",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "2f618d190e18d0b039c99c4fa431d2135b86689c",
+          "size": 199,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/2f618d190e18d0b039c99c4fa431d2135b86689c"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case022",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "560d7c4fe2d39d18036463dd040c5b738e2671d5",
+          "size": 189,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/560d7c4fe2d39d18036463dd040c5b738e2671d5"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case023",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case023",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "af5ca1d993f1b3ec143a0e43c9d3605834f4f16b",
+          "size": 232,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/af5ca1d993f1b3ec143a0e43c9d3605834f4f16b"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case023",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "17a2ae4c3da41809e86197053d59fdfdf9734e60",
+          "size": 222,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/17a2ae4c3da41809e86197053d59fdfdf9734e60"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case024",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case024",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "23cf5e350d9af73443bf53abe0a310c130c84ea3",
+          "size": 208,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/23cf5e350d9af73443bf53abe0a310c130c84ea3"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case024",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "c2f39b21d0d05f2765e8252425b30c41a0722dcb",
+          "size": 198,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/c2f39b21d0d05f2765e8252425b30c41a0722dcb"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case025",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case025",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "1d7943e31839f8b27a244a16d85d5edca325cb61",
+          "size": 209,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/1d7943e31839f8b27a244a16d85d5edca325cb61"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case025",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "4d384e6a57069f7ac1566eb7d71242e82e00a1bf",
+          "size": 199,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/4d384e6a57069f7ac1566eb7d71242e82e00a1bf"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case026",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case026",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "6f96b8f97e81cffdacc42340e51dfdfc1411fdcb",
+          "size": 243,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/6f96b8f97e81cffdacc42340e51dfdfc1411fdcb"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case026",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "53f5c1b3d283f83c168e5e5afb7ef2627ef8e60a",
+          "size": 233,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/53f5c1b3d283f83c168e5e5afb7ef2627ef8e60a"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case027",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case027",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "a499e84b7752776867bbfc4540072522e5deeb6f",
+          "size": 236,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/a499e84b7752776867bbfc4540072522e5deeb6f"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case027",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "28628a61ba6922cce65f828de7b0d573848cf603",
+          "size": 226,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/28628a61ba6922cce65f828de7b0d573848cf603"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case028",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case028",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "7711576011b1997bb63f31f0bfe97c6262479d7a",
+          "size": 232,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/7711576011b1997bb63f31f0bfe97c6262479d7a"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case028",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "631d48d3690e8f50503b06da90bf9f77fbe95da2",
+          "size": 222,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/631d48d3690e8f50503b06da90bf9f77fbe95da2"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case029",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case029",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "76511a7d03299b65ef015266a212329ef853c1a6",
+          "size": 251,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/76511a7d03299b65ef015266a212329ef853c1a6"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case029",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "5fc51b68854f6e0008d4ad70967c3433d27c8c2a",
+          "size": 241,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/5fc51b68854f6e0008d4ad70967c3433d27c8c2a"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case030",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case030",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "0797c92b611b3fedbb00fc24ba4286591a90e16f",
+          "size": 200,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/0797c92b611b3fedbb00fc24ba4286591a90e16f"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case030",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "7f4fdfd3a099d3315cdf671f68a00679d018aba2",
+          "size": 190,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/7f4fdfd3a099d3315cdf671f68a00679d018aba2"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case031",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case031",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "92355db792a64cb04280e2b63dd3320518004d14",
+          "size": 201,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/92355db792a64cb04280e2b63dd3320518004d14"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case031",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "92501dd8fc10862af3fb493d835017f0b2e485fc",
+          "size": 191,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/92501dd8fc10862af3fb493d835017f0b2e485fc"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case032",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case032",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "4565abb9da69f326d22ca5295ae534c713bcaae9",
+          "size": 217,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/4565abb9da69f326d22ca5295ae534c713bcaae9"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case032",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "cf76ed8777d8dd18559b3f7ddd149e3c7cb42e6d",
+          "size": 207,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/cf76ed8777d8dd18559b3f7ddd149e3c7cb42e6d"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case033",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case033",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "c0d5036e3bd418e87ae95634273ba9fc92bc8a3d",
+          "size": 246,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/c0d5036e3bd418e87ae95634273ba9fc92bc8a3d"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case033",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "edde4cc88dfb5efd81f88b94251d3b21dad584a3",
+          "size": 236,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/edde4cc88dfb5efd81f88b94251d3b21dad584a3"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case034",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case034",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "d71cb9ab8e337cda1e05eab74bb1a28188641058",
+          "size": 227,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/d71cb9ab8e337cda1e05eab74bb1a28188641058"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case034",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "1884ec82161d99080c4e25177d56743668fe058d",
+          "size": 217,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/1884ec82161d99080c4e25177d56743668fe058d"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case035",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case035",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "fb31423ccee44b1912e17dc46bf40e8d8deb4a2c",
+          "size": 250,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/fb31423ccee44b1912e17dc46bf40e8d8deb4a2c"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case035",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "cde230ba48753970a195f9670b5484a971a7bd1f",
+          "size": 240,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/cde230ba48753970a195f9670b5484a971a7bd1f"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case036",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case036",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "05fb0590b7618a95cba74a04b0acac972e28bd77",
+          "size": 232,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/05fb0590b7618a95cba74a04b0acac972e28bd77"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case036",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "37324b5504820f6c95b2941febaf24747895b8e3",
+          "size": 222,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/37324b5504820f6c95b2941febaf24747895b8e3"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case037",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case037",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "d65360aef8259c73d85db5af9078c60c45e2f4ca",
+          "size": 216,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/d65360aef8259c73d85db5af9078c60c45e2f4ca"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case037",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "9e41d60faa44a34883e84d38e1f51f56a608b63d",
+          "size": 206,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/9e41d60faa44a34883e84d38e1f51f56a608b63d"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case038",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case038",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "5cffb2186b1729f1a5565bf8409e73cadd8270a9",
+          "size": 225,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/5cffb2186b1729f1a5565bf8409e73cadd8270a9"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case038",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "ac0a39f6bac4db616b5b01881d5dc024577455c8",
+          "size": 215,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/ac0a39f6bac4db616b5b01881d5dc024577455c8"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case039",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case039",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "421cf281f9558be5b9a07cf572a966c07682358f",
+          "size": 204,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/421cf281f9558be5b9a07cf572a966c07682358f"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case039",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "483478c2f58b8ca7114fb4d08f8797d6d1bd2e34",
+          "size": 194,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/483478c2f58b8ca7114fb4d08f8797d6d1bd2e34"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case040",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case040",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "7215efee02770e442d602a8ff704a8c530ccb241",
+          "size": 213,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/7215efee02770e442d602a8ff704a8c530ccb241"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case040",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "18059e6caf06cec2968c8dc0ad79c3d01bd73c39",
+          "size": 203,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/18059e6caf06cec2968c8dc0ad79c3d01bd73c39"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case041",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case041",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "1d9657f4bb2adf08fa070b09639f622ae4043221",
+          "size": 190,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/1d9657f4bb2adf08fa070b09639f622ae4043221"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case041",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "95417e1e4dff34f8bfd154917961683d6adf4b89",
+          "size": 180,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/95417e1e4dff34f8bfd154917961683d6adf4b89"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case042",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case042",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "2ddd83f9ad4c111f5d3557968c40fd49f16d8672",
+          "size": 249,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/2ddd83f9ad4c111f5d3557968c40fd49f16d8672"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case042",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "bb48fd4fca7be1a4f177ffd5f3738850415ef8a7",
+          "size": 239,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/bb48fd4fca7be1a4f177ffd5f3738850415ef8a7"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case043",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case043",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "a738323dc712fc3724506c1725388b048b690007",
+          "size": 211,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/a738323dc712fc3724506c1725388b048b690007"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case043",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "cbae93700b157300321505b32965a4684087e46b",
+          "size": 201,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/cbae93700b157300321505b32965a4684087e46b"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case044",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case044",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "1d9657f4bb2adf08fa070b09639f622ae4043221",
+          "size": 190,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/1d9657f4bb2adf08fa070b09639f622ae4043221"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case044",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "95417e1e4dff34f8bfd154917961683d6adf4b89",
+          "size": 180,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/95417e1e4dff34f8bfd154917961683d6adf4b89"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case045",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case045",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "2ddd83f9ad4c111f5d3557968c40fd49f16d8672",
+          "size": 249,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/2ddd83f9ad4c111f5d3557968c40fd49f16d8672"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case045",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "bb48fd4fca7be1a4f177ffd5f3738850415ef8a7",
+          "size": 239,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/bb48fd4fca7be1a4f177ffd5f3738850415ef8a7"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case046",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case046",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "a738323dc712fc3724506c1725388b048b690007",
+          "size": 211,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/a738323dc712fc3724506c1725388b048b690007"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case046",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "cbae93700b157300321505b32965a4684087e46b",
+          "size": 201,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/cbae93700b157300321505b32965a4684087e46b"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case047",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case047",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "c7f4ee147c4749fce1fc9560636ec8cfcd9f5b35",
+          "size": 245,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/c7f4ee147c4749fce1fc9560636ec8cfcd9f5b35"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case047",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "0e282d66aa085b5e41f3e1b6bd6a7e6b73e5362a",
+          "size": 235,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/0e282d66aa085b5e41f3e1b6bd6a7e6b73e5362a"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case048",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case048",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "b62ace6c81f4ecc84249e09009a0a99dcb4aa747",
+          "size": 240,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/b62ace6c81f4ecc84249e09009a0a99dcb4aa747"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case048",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "3528b9c0b4aefe8d9601c5e2a4a795fb68e97765",
+          "size": 230,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/3528b9c0b4aefe8d9601c5e2a4a795fb68e97765"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case049",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case049",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "d65360aef8259c73d85db5af9078c60c45e2f4ca",
+          "size": 216,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/d65360aef8259c73d85db5af9078c60c45e2f4ca"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case049",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "9e41d60faa44a34883e84d38e1f51f56a608b63d",
+          "size": 206,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/9e41d60faa44a34883e84d38e1f51f56a608b63d"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case050",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case050",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "2a06292657ddcc8695b1941914b39d842ef72917",
+          "size": 229,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/2a06292657ddcc8695b1941914b39d842ef72917"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case050",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "5e6da5877e9c446c27c6010c106034bd8bfd118e",
+          "size": 219,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/5e6da5877e9c446c27c6010c106034bd8bfd118e"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case051",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case051",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "0e3d392f6ee68afffd84960c92030028a66905db",
+          "size": 226,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/0e3d392f6ee68afffd84960c92030028a66905db"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case051",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "86ec1361ccee77c611639c4aac51eb9e105800e8",
+          "size": 216,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/86ec1361ccee77c611639c4aac51eb9e105800e8"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case052",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case052",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "63841b0bde3b5fadce658e0450b940e1db750b7a",
+          "size": 233,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/63841b0bde3b5fadce658e0450b940e1db750b7a"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case052",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "581f46475d0e082085d4fae10efa368792a1e435",
+          "size": 223,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/581f46475d0e082085d4fae10efa368792a1e435"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case053",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case053",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "940e56053f9d2bb5f9a10ed93d2fb9bc0b2f25ba",
+          "size": 231,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/940e56053f9d2bb5f9a10ed93d2fb9bc0b2f25ba"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case053",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "eab7e202693d36c166f975aafd8687be670695a7",
+          "size": 221,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/eab7e202693d36c166f975aafd8687be670695a7"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case054",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case054",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "b8bbf3a823aeb1e8ed298a3e986dc602d2631299",
+          "size": 238,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/b8bbf3a823aeb1e8ed298a3e986dc602d2631299"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case054",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "2ed1ae5696441501e9cffc8b17158a7f12f7baf3",
+          "size": 228,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/2ed1ae5696441501e9cffc8b17158a7f12f7baf3"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case055",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case055",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "940e56053f9d2bb5f9a10ed93d2fb9bc0b2f25ba",
+          "size": 231,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/940e56053f9d2bb5f9a10ed93d2fb9bc0b2f25ba"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case055",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "eab7e202693d36c166f975aafd8687be670695a7",
+          "size": 221,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/eab7e202693d36c166f975aafd8687be670695a7"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case056",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case056",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "965924961cc34f86953e415832c3e10e82ca62ba",
+          "size": 219,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/965924961cc34f86953e415832c3e10e82ca62ba"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case056",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "3ffc8de49d6368a8a7b5878a2b3b82e705e2579c",
+          "size": 209,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/3ffc8de49d6368a8a7b5878a2b3b82e705e2579c"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case057",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case057",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "63841b0bde3b5fadce658e0450b940e1db750b7a",
+          "size": 233,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/63841b0bde3b5fadce658e0450b940e1db750b7a"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case057",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "581f46475d0e082085d4fae10efa368792a1e435",
+          "size": 223,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/581f46475d0e082085d4fae10efa368792a1e435"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case058",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case058",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "8e8ca3a0f542cb2742495ff5d062fd3c954330d8",
+          "size": 206,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/8e8ca3a0f542cb2742495ff5d062fd3c954330d8"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case058",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "05c7f14a24800f427e29e9491c050bf90d936fb7",
+          "size": 196,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/05c7f14a24800f427e29e9491c050bf90d936fb7"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case059",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case059",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "9f926b20beb8c474206fd28bf8a96d1d5000c405",
+          "size": 223,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/9f926b20beb8c474206fd28bf8a96d1d5000c405"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case059",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "e929e1090974557a8fae4eb157bdc7cb9ea5d2fb",
+          "size": 213,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/e929e1090974557a8fae4eb157bdc7cb9ea5d2fb"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case060",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case060",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "845601e064cd40f80c9c9e57723e54833d57c6f1",
+          "size": 244,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/845601e064cd40f80c9c9e57723e54833d57c6f1"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case060",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "85def3c1111c8f996d286c3e11c962fb472b19cd",
+          "size": 234,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/85def3c1111c8f996d286c3e11c962fb472b19cd"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case061",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case061",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "f32f714c3adbe68330fba57827893e2798f6c128",
+          "size": 241,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/f32f714c3adbe68330fba57827893e2798f6c128"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case061",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "2be9a29a7cc36de50ed33af8baead66676231609",
+          "size": 231,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/2be9a29a7cc36de50ed33af8baead66676231609"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case062",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case062",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "8992897a9932839dc2bed3b612db6e0eb258874e",
+          "size": 200,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/8992897a9932839dc2bed3b612db6e0eb258874e"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case062",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "ea951a2b8bcb5b1cae4aebd56318308bdc5f5fa0",
+          "size": 190,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/ea951a2b8bcb5b1cae4aebd56318308bdc5f5fa0"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case063",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case063",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "6b66b2191ad8716417d554c28e6f5d5a766df668",
+          "size": 222,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/6b66b2191ad8716417d554c28e6f5d5a766df668"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case063",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "60e26922b87820c9598e75ad9a2875d11d35d21e",
+          "size": 212,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/60e26922b87820c9598e75ad9a2875d11d35d21e"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case064",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case064",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "f3fb129e073a2a9629d2056cc2c6c119ade8f4c1",
+          "size": 186,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/f3fb129e073a2a9629d2056cc2c6c119ade8f4c1"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case064",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "46f1e2a11fbffcbf2a00c6ebd9f0671c1b1b66d1",
+          "size": 176,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/46f1e2a11fbffcbf2a00c6ebd9f0671c1b1b66d1"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case065",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case065",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "b62ace6c81f4ecc84249e09009a0a99dcb4aa747",
+          "size": 240,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/b62ace6c81f4ecc84249e09009a0a99dcb4aa747"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case065",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "3528b9c0b4aefe8d9601c5e2a4a795fb68e97765",
+          "size": 230,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/3528b9c0b4aefe8d9601c5e2a4a795fb68e97765"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case066",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case066",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "9b989792debfa694b1720856305e6f5b403e44ed",
+          "size": 212,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/9b989792debfa694b1720856305e6f5b403e44ed"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case066",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "6d34248e4603f8dd1dc9dc6f91997530d2c78daf",
+          "size": 202,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/6d34248e4603f8dd1dc9dc6f91997530d2c78daf"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case067",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case067",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "f3fb129e073a2a9629d2056cc2c6c119ade8f4c1",
+          "size": 186,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/f3fb129e073a2a9629d2056cc2c6c119ade8f4c1"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case067",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "46f1e2a11fbffcbf2a00c6ebd9f0671c1b1b66d1",
+          "size": 176,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/46f1e2a11fbffcbf2a00c6ebd9f0671c1b1b66d1"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case068",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case068",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "134bff87747ac670188625a8ea4cc7f37246ce96",
+          "size": 214,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/134bff87747ac670188625a8ea4cc7f37246ce96"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case068",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "9b3b6d9b26cf7127a95ae4568ea7511e661650d8",
+          "size": 204,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/9b3b6d9b26cf7127a95ae4568ea7511e661650d8"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case069",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case069",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "0e3d392f6ee68afffd84960c92030028a66905db",
+          "size": 226,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/0e3d392f6ee68afffd84960c92030028a66905db"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case069",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "86ec1361ccee77c611639c4aac51eb9e105800e8",
+          "size": 216,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/86ec1361ccee77c611639c4aac51eb9e105800e8"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case070",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case070",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "940e56053f9d2bb5f9a10ed93d2fb9bc0b2f25ba",
+          "size": 231,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/940e56053f9d2bb5f9a10ed93d2fb9bc0b2f25ba"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case070",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "eab7e202693d36c166f975aafd8687be670695a7",
+          "size": 221,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/eab7e202693d36c166f975aafd8687be670695a7"
+        }
+      },
+      {
+        "path": "test/common/http/http1/http1_connection_corpus/case071",
+        "upstream": {
+          "path": "test/common/http/http1/http1_connection_corpus/case071",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "1cef623d236a70d22f4950c9ee8931757877e678",
+          "size": 188,
+          "url": "https://api.github.com/repos/envoyproxy/envoy/git/blobs/1cef623d236a70d22f4950c9ee8931757877e678"
+        },
+        "mirror": {
+          "path": "test/common/http/http1/http1_connection_corpus/case071",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "befca89407f685269101cfeaad87379a81815add",
+          "size": 178,
+          "url": "https://api.github.com/repos/sg-evals/envoy--d7809ba2/git/blobs/befca89407f685269101cfeaad87379a81815add"
+        }
+      }
+    ],
+    "gitlinks": [],
+    "identity_note": "Full mirror commit and tree are pinned; upstream identity and every differing path are recorded. The complete mirror tree is used unchanged.",
+    "licenses": [
+      {
+        "path": "notices/envoy-d7809ba2/LICENSE",
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "source_path": "LICENSE",
+        "license": "Apache-2.0"
+      },
+      {
+        "path": "notices/envoy-d7809ba2/NOTICE",
+        "sha256": "329d90738f1ee3633da8e7439ea6f9624ec6274a9cbd72437aafa0e8df9de32e",
+        "source_path": "NOTICE",
+        "license": "Apache-2.0"
+      }
+    ],
+    "pin_evidence": {
+      "path": "provenance/envoy-d7809ba2-commit.json",
+      "sha256": "766707c77731a9938cc99f5feb39ec7b9d5e33018acb9a645cae3fa8269ba06c"
+    }
+  },
+  {
+    "id": "flipt-3d5a345f",
+    "mirror": "sg-evals/flipt--3d5a345f",
+    "upstream": "flipt-io/flipt",
+    "commit": "3d5a345f94c2adc8a0eaa102c189c08ad4c0f8e8",
+    "upstream_commit": "3d5a345f94c2adc8a0eaa102c189c08ad4c0f8e8",
+    "tree": "732d865c2efa3ddd9d01f244b95fa227cd82192b",
+    "upstream_tree": "732d865c2efa3ddd9d01f244b95fa227cd82192b",
+    "path_count": 997,
+    "source_bytes": 12352278,
+    "truncated": false,
+    "mirror_difference": [],
+    "gitlinks": [],
+    "identity_note": "Full mirror commit and tree are pinned; upstream identity and every differing path are recorded. The complete mirror tree is used unchanged.",
+    "licenses": [
+      {
+        "path": "notices/flipt-3d5a345f/LICENSE",
+        "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+        "source_path": "LICENSE",
+        "license": "GPL-3.0"
+      }
+    ],
+    "pin_evidence": {
+      "path": "provenance/flipt-3d5a345f-commit.json",
+      "sha256": "ebdee0ca3578dc4c5985ba4866722c6ef0d24010d4dd94d922016acf57311d2a"
+    }
+  },
+  {
+    "id": "numpy-v2.2.2",
+    "mirror": "sg-evals/numpy--v2.2.2",
+    "upstream": "numpy/numpy",
+    "commit": "9ca88bff35bf60de74f9f95e6f90e6b4e0913e78",
+    "upstream_commit": "fd8a68e4978defd094cffa23c71d7de7fb213e3f",
+    "tree": "449d6b3570b4d33b9297c06ff16b227714e222de",
+    "upstream_tree": "7312b0e5c8625b4b167a8a90f1e5d6896a11ab44",
+    "path_count": 2211,
+    "source_bytes": 34990979,
+    "truncated": false,
+    "mirror_difference": [
+      {
+        "path": "doc/source/_static/scipy-mathjax",
+        "upstream": {
+          "path": "doc/source/_static/scipy-mathjax",
+          "mode": "160000",
+          "type": "commit",
+          "sha": "36f4c898f2255e0c98eb6949cd67381552d5ffea"
+        },
+        "mirror": null
+      },
+      {
+        "path": "numpy/_core/src/common/pythoncapi-compat",
+        "upstream": {
+          "path": "numpy/_core/src/common/pythoncapi-compat",
+          "mode": "160000",
+          "type": "commit",
+          "sha": "0f1d42a10a3f594ad48894912396df31b2c2d55d"
+        },
+        "mirror": null
+      },
+      {
+        "path": "numpy/_core/src/highway",
+        "upstream": {
+          "path": "numpy/_core/src/highway",
+          "mode": "160000",
+          "type": "commit",
+          "sha": "68b0fdebffb14f3b8473fed1c33ce368efc431e7"
+        },
+        "mirror": null
+      },
+      {
+        "path": "numpy/_core/src/npysort/x86-simd-sort",
+        "upstream": {
+          "path": "numpy/_core/src/npysort/x86-simd-sort",
+          "mode": "160000",
+          "type": "commit",
+          "sha": "9a1b616d5cd4eaf49f7664fb86ccc1d18bad2b8d"
+        },
+        "mirror": null
+      },
+      {
+        "path": "numpy/_core/src/umath/svml",
+        "upstream": {
+          "path": "numpy/_core/src/umath/svml",
+          "mode": "160000",
+          "type": "commit",
+          "sha": "32bf2a98420762a63ab418aaa0a7d6e17eb9627a"
+        },
+        "mirror": null
+      },
+      {
+        "path": "numpy/fft/pocketfft",
+        "upstream": {
+          "path": "numpy/fft/pocketfft",
+          "mode": "160000",
+          "type": "commit",
+          "sha": "33ae5dc94c9cdc7f1c78346504a85de87cadaa12"
+        },
+        "mirror": null
+      },
+      {
+        "path": "numpy/linalg/lapack_lite/f2c_blas.c.patch",
+        "upstream": {
+          "path": "numpy/linalg/lapack_lite/f2c_blas.c.patch",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "18b694c967232d432f9808b1351ae80a37018f43",
+          "size": 18395,
+          "url": "https://api.github.com/repos/numpy/numpy/git/blobs/18b694c967232d432f9808b1351ae80a37018f43"
+        },
+        "mirror": null
+      },
+      {
+        "path": "numpy/linalg/lapack_lite/f2c_c_lapack.c.patch",
+        "upstream": {
+          "path": "numpy/linalg/lapack_lite/f2c_c_lapack.c.patch",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "28b9a42c785967d0d6e861926ca3b907c55db190",
+          "size": 139432,
+          "url": "https://api.github.com/repos/numpy/numpy/git/blobs/28b9a42c785967d0d6e861926ca3b907c55db190"
+        },
+        "mirror": null
+      },
+      {
+        "path": "numpy/linalg/lapack_lite/f2c_c_lapack.f.patch",
+        "upstream": {
+          "path": "numpy/linalg/lapack_lite/f2c_c_lapack.f.patch",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "bcf7507baa7c6dddc3dd48bd9f8ef8b165c6f185",
+          "size": 1332,
+          "url": "https://api.github.com/repos/numpy/numpy/git/blobs/bcf7507baa7c6dddc3dd48bd9f8ef8b165c6f185"
+        },
+        "mirror": null
+      },
+      {
+        "path": "numpy/linalg/lapack_lite/f2c_config.c.patch",
+        "upstream": {
+          "path": "numpy/linalg/lapack_lite/f2c_config.c.patch",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "4c43f8aa2a5f20b9b19af91723571f574934d22b",
+          "size": 328,
+          "url": "https://api.github.com/repos/numpy/numpy/git/blobs/4c43f8aa2a5f20b9b19af91723571f574934d22b"
+        },
+        "mirror": null
+      },
+      {
+        "path": "numpy/linalg/lapack_lite/f2c_d_lapack.f.patch",
+        "upstream": {
+          "path": "numpy/linalg/lapack_lite/f2c_d_lapack.f.patch",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "cd750cec096d00a153febdb479c33fafbc1caf62",
+          "size": 1332,
+          "url": "https://api.github.com/repos/numpy/numpy/git/blobs/cd750cec096d00a153febdb479c33fafbc1caf62"
+        },
+        "mirror": null
+      },
+      {
+        "path": "numpy/linalg/lapack_lite/f2c_lapack.c.patch",
+        "upstream": {
+          "path": "numpy/linalg/lapack_lite/f2c_lapack.c.patch",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "191113b928396707a3b52d7c01841d043f8f7c98",
+          "size": 914,
+          "url": "https://api.github.com/repos/numpy/numpy/git/blobs/191113b928396707a3b52d7c01841d043f8f7c98"
+        },
+        "mirror": null
+      },
+      {
+        "path": "numpy/linalg/lapack_lite/f2c_lapack.f.patch",
+        "upstream": {
+          "path": "numpy/linalg/lapack_lite/f2c_lapack.f.patch",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "c743c1f627c776e122497daca6319a09f596edbc",
+          "size": 1420,
+          "url": "https://api.github.com/repos/numpy/numpy/git/blobs/c743c1f627c776e122497daca6319a09f596edbc"
+        },
+        "mirror": null
+      },
+      {
+        "path": "numpy/linalg/lapack_lite/f2c_s_lapack.f.patch",
+        "upstream": {
+          "path": "numpy/linalg/lapack_lite/f2c_s_lapack.f.patch",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "2e82d986e62ee8bda983de5f8172d86cb7cdbd18",
+          "size": 1332,
+          "url": "https://api.github.com/repos/numpy/numpy/git/blobs/2e82d986e62ee8bda983de5f8172d86cb7cdbd18"
+        },
+        "mirror": null
+      },
+      {
+        "path": "numpy/linalg/lapack_lite/f2c_z_lapack.f.patch",
+        "upstream": {
+          "path": "numpy/linalg/lapack_lite/f2c_z_lapack.f.patch",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "1e6fc8c07075696763e116f8f2c0f3955e840c1a",
+          "size": 1332,
+          "url": "https://api.github.com/repos/numpy/numpy/git/blobs/1e6fc8c07075696763e116f8f2c0f3955e840c1a"
+        },
+        "mirror": null
+      },
+      {
+        "path": "numpy/random/tests/data/generator_pcg64_np121.pkl.gz",
+        "upstream": {
+          "path": "numpy/random/tests/data/generator_pcg64_np121.pkl.gz",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "b7ad03d8e63b9a7f024952f35db2827a7393592b",
+          "size": 203,
+          "url": "https://api.github.com/repos/numpy/numpy/git/blobs/b7ad03d8e63b9a7f024952f35db2827a7393592b"
+        },
+        "mirror": null
+      },
+      {
+        "path": "numpy/random/tests/data/generator_pcg64_np126.pkl.gz",
+        "upstream": {
+          "path": "numpy/random/tests/data/generator_pcg64_np126.pkl.gz",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "6c5130b5e745834aced5179ec99207a59fd5c86b",
+          "size": 208,
+          "url": "https://api.github.com/repos/numpy/numpy/git/blobs/6c5130b5e745834aced5179ec99207a59fd5c86b"
+        },
+        "mirror": null
+      },
+      {
+        "path": "numpy/random/tests/data/sfc64_np126.pkl.gz",
+        "upstream": {
+          "path": "numpy/random/tests/data/sfc64_np126.pkl.gz",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "94fbceb38f929d3062dc8285ce21648f82b7a367",
+          "size": 290,
+          "url": "https://api.github.com/repos/numpy/numpy/git/blobs/94fbceb38f929d3062dc8285ce21648f82b7a367"
+        },
+        "mirror": null
+      },
+      {
+        "path": "vendored-meson/meson",
+        "upstream": {
+          "path": "vendored-meson/meson",
+          "mode": "160000",
+          "type": "commit",
+          "sha": "0d93515fb826440d19707eee47fd92655fe2f166"
+        },
+        "mirror": null
+      }
+    ],
+    "gitlinks": [],
+    "identity_note": "Full mirror commit and tree are pinned; upstream identity and every differing path are recorded. The complete mirror tree is used unchanged.",
+    "licenses": [
+      {
+        "path": "notices/numpy-v2.2.2/LICENSE.txt",
+        "sha256": "01fb016849aa427edb1bbbbd55f91c26ca6cadb32a5b20e7f000655dd05b0760",
+        "source_path": "LICENSE.txt",
+        "license": "BSD-3-Clause"
+      },
+      {
+        "path": "notices/numpy-v2.2.2/LICENSES_bundled.txt",
+        "sha256": "7fe52683ce840a3103e9cc82fe92252b2c533061ca4f9b8d6f3d4d835f7c32f9",
+        "source_path": "LICENSES_bundled.txt",
+        "license": "BSD-3-Clause"
+      }
+    ],
+    "pin_evidence": {
+      "path": "provenance/numpy-v2.2.2-commit.json",
+      "sha256": "7af7ad0f650a246ba9b69173394cbf64880fbd13254e0a96a801ed8de378e63c"
+    }
+  },
+  {
+    "id": "pandas-41968da5",
+    "mirror": "sg-evals/pandas--41968da5",
+    "upstream": "pandas-dev/pandas",
+    "commit": "41968da5f87873dd49b2cff1da853c90181f7f89",
+    "upstream_commit": "41968da5f87873dd49b2cff1da853c90181f7f89",
+    "tree": "e94e0954d8c2b5a5bc5610ee9d767a7eb01fb8e3",
+    "upstream_tree": "e94e0954d8c2b5a5bc5610ee9d767a7eb01fb8e3",
+    "path_count": 2629,
+    "source_bytes": 52845599,
+    "truncated": false,
+    "mirror_difference": [],
+    "gitlinks": [],
+    "identity_note": "Full mirror commit and tree are pinned; upstream identity and every differing path are recorded. The complete mirror tree is used unchanged.",
+    "licenses": [
+      {
+        "path": "notices/pandas-41968da5/AUTHORS.md",
+        "sha256": "1f705bb2dcaf64f50ace724a0a1f0c02b8cf66e65f683203384fbea7249dbfd9",
+        "source_path": "AUTHORS.md",
+        "license": "BSD-3-Clause"
+      },
+      {
+        "path": "notices/pandas-41968da5/LICENSE",
+        "sha256": "9850f6b5bdef7346503065807b878deb8058b976c5c329f4c4d23bf4796ce9ae",
+        "source_path": "LICENSE",
+        "license": "BSD-3-Clause"
+      }
+    ],
+    "pin_evidence": {
+      "path": "provenance/pandas-41968da5-commit.json",
+      "sha256": "b72221a5cb62eec4e043830c08a396dfb4c9514fb272d888e1e7b1524f4e1ef8"
+    }
+  },
+  {
+    "id": "scikit-learn-cb7e82dd",
+    "mirror": "sg-evals/scikit-learn--cb7e82dd",
+    "upstream": "scikit-learn/scikit-learn",
+    "commit": "72904752e88f414cbc543dac5945b6c8dd7b34fa",
+    "upstream_commit": "cb7e82dd443aa1eb24bb70a3188b067536320a40",
+    "tree": "8b84e7d34512295802d6ba26feb5422cb3ea9d02",
+    "upstream_tree": "1348b98f5b1c27eb83decc74179d3a67d6a6f96e",
+    "path_count": 1748,
+    "source_bytes": 23330273,
+    "truncated": false,
+    "mirror_difference": [
+      {
+        "path": ".github/workflows/cuda-ci.yml",
+        "upstream": {
+          "path": ".github/workflows/cuda-ci.yml",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "f67b774ecbe7cb6558904292b36cde8d79ecd154",
+          "size": 2218,
+          "url": "https://api.github.com/repos/scikit-learn/scikit-learn/git/blobs/f67b774ecbe7cb6558904292b36cde8d79ecd154"
+        },
+        "mirror": {
+          "path": ".github/workflows/cuda-ci.yml",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "76d00417639098f03f4ac79b3b03ef3e244a6b7b",
+          "size": 2218,
+          "url": "https://api.github.com/repos/sg-evals/scikit-learn--cb7e82dd/git/blobs/76d00417639098f03f4ac79b3b03ef3e244a6b7b"
+        }
+      },
+      {
+        "path": ".github/workflows/emscripten.yml",
+        "upstream": {
+          "path": ".github/workflows/emscripten.yml",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "590aed14afcde859ae8d82682a45f9b8612aa2aa",
+          "size": 3191,
+          "url": "https://api.github.com/repos/scikit-learn/scikit-learn/git/blobs/590aed14afcde859ae8d82682a45f9b8612aa2aa"
+        },
+        "mirror": {
+          "path": ".github/workflows/emscripten.yml",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "dc1a7a08f2a0a2d12843295f0c893083929afbc8",
+          "size": 3191,
+          "url": "https://api.github.com/repos/sg-evals/scikit-learn--cb7e82dd/git/blobs/dc1a7a08f2a0a2d12843295f0c893083929afbc8"
+        }
+      }
+    ],
+    "gitlinks": [],
+    "identity_note": "Full mirror commit and tree are pinned; upstream identity and every differing path are recorded. The complete mirror tree is used unchanged.",
+    "licenses": [
+      {
+        "path": "notices/scikit-learn-cb7e82dd/COPYING",
+        "sha256": "50d6a9d340f19ab355609917993114daf5f47e3161067bcf34955bbd05cd9cb0",
+        "source_path": "COPYING",
+        "license": "BSD-3-Clause"
+      }
+    ],
+    "pin_evidence": {
+      "path": "provenance/scikit-learn-cb7e82dd-commit.json",
+      "sha256": "cf30ee94222af50a9cae2bde8a2b98a31260c9de80b537304cf32372a850f9ef"
+    }
+  },
+  {
+    "id": "vscode-138f619c",
+    "mirror": "sg-evals/vscode--138f619c",
+    "upstream": "microsoft/vscode",
+    "commit": "7344a1807afca4c7dbac122b9a8952fd73001f85",
+    "upstream_commit": "138f619c86f1199955d53b4166bef66ef252935c",
+    "tree": "6f0a85492df00580caf3572b5d8cd1f5383d8436",
+    "upstream_tree": "6f0a85492df00580caf3572b5d8cd1f5383d8436",
+    "path_count": 7795,
+    "source_bytes": 127352560,
+    "truncated": false,
+    "mirror_difference": [],
+    "gitlinks": [],
+    "identity_note": "Full mirror commit and tree are pinned; upstream identity and every differing path are recorded. The complete mirror tree is used unchanged.",
+    "licenses": [
+      {
+        "path": "notices/vscode-138f619c/LICENSE.txt",
+        "sha256": "9480271317925265e806a9a196aaa33410a962fa9d4d1e248a4a5187bc8c9df9",
+        "source_path": "LICENSE.txt",
+        "license": "MIT"
+      },
+      {
+        "path": "notices/vscode-138f619c/ThirdPartyNotices.txt",
+        "sha256": "f535cbbbb957f5bdec5afb41ac4c20ab316c369db7a5279420eb2939ff0b98f1",
+        "source_path": "ThirdPartyNotices.txt",
+        "license": "MIT"
+      },
+      {
+        "path": "notices/vscode-138f619c/cglicenses.json",
+        "sha256": "0df9a97b2a2aac84317aaecee3a25c982b6d9efe73ee60483d383e277eac50c6",
+        "source_path": "cglicenses.json",
+        "license": "MIT"
+      }
+    ],
+    "pin_evidence": {
+      "path": "provenance/vscode-138f619c-commit.json",
+      "sha256": "7ea4b3556237c04ddcd25bb6f1dba3a17359de3ba212c19bf5b4e65dc994c185"
+    }
+  },
+  {
+    "id": "vscode-17baf841",
+    "mirror": "sg-evals/vscode--17baf841",
+    "upstream": "microsoft/vscode",
+    "commit": "ed42c2c6dbfaa324107c2dc719bc2bccbf1d8271",
+    "upstream_commit": "17baf841131aa23349f217ca7c570c76ee87b957",
+    "tree": "bf523f8da33060f2be8eea627d3b8c0aac91722e",
+    "upstream_tree": "7a637a03eedc8fe1b380e7ac95f64710e678058e",
+    "path_count": 8177,
+    "source_bytes": 123976327,
+    "truncated": false,
+    "mirror_difference": [
+      {
+        "path": ".config/1espt/PipelineAutobaseliningConfig.yml",
+        "upstream": {
+          "path": ".config/1espt/PipelineAutobaseliningConfig.yml",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "0ad187981e37f824bf740c5c2e020da3f286bb8e",
+          "size": 623,
+          "url": "https://api.github.com/repos/microsoft/vscode/git/blobs/0ad187981e37f824bf740c5c2e020da3f286bb8e"
+        },
+        "mirror": {
+          "path": ".config/1espt/PipelineAutobaseliningConfig.yml",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "68328e72329395379f9f1760b097b38a4b38a040",
+          "size": 621,
+          "url": "https://api.github.com/repos/sg-evals/vscode--17baf841/git/blobs/68328e72329395379f9f1760b097b38a4b38a040"
+        }
+      }
+    ],
+    "gitlinks": [],
+    "identity_note": "Full mirror commit and tree are pinned; upstream identity and every differing path are recorded. The complete mirror tree is used unchanged.",
+    "licenses": [
+      {
+        "path": "notices/vscode-17baf841/LICENSE.txt",
+        "sha256": "9480271317925265e806a9a196aaa33410a962fa9d4d1e248a4a5187bc8c9df9",
+        "source_path": "LICENSE.txt",
+        "license": "MIT"
+      },
+      {
+        "path": "notices/vscode-17baf841/ThirdPartyNotices.txt",
+        "sha256": "66e814728aeb94c271127411622529d204d0d3e77b491382fb103adc412b677d",
+        "source_path": "ThirdPartyNotices.txt",
+        "license": "MIT"
+      },
+      {
+        "path": "notices/vscode-17baf841/cglicenses.json",
+        "sha256": "0df9a97b2a2aac84317aaecee3a25c982b6d9efe73ee60483d383e277eac50c6",
+        "source_path": "cglicenses.json",
+        "license": "MIT"
+      }
+    ],
+    "pin_evidence": {
+      "path": "provenance/vscode-17baf841-commit.json",
+      "sha256": "6285139f2d37a2254078e3e75d97b09afd17895833c87580d86967065aae643e"
+    }
+  },
+  {
+    "id": "eshop-b4a40872",
+    "mirror": null,
+    "upstream": "dotnet/eShop",
+    "commit": "b4a40872005d4bb29e5b1fa1ff7e244143d39215",
+    "upstream_commit": "b4a40872005d4bb29e5b1fa1ff7e244143d39215",
+    "tree": "d58447ef5b7695e99395065f51da2c69fb96b6a2",
+    "upstream_tree": "d58447ef5b7695e99395065f51da2c69fb96b6a2",
+    "path_count": 1144,
+    "source_bytes": 18179447,
+    "truncated": false,
+    "mirror_difference": [],
+    "gitlinks": [],
+    "identity_note": "Full upstream commit and tree are pinned.",
+    "licenses": [
+      {
+        "path": "notices/eshop-b4a40872/LICENSE",
+        "sha256": "baebca0309090f4eca1b7a82c836cc91e48b2b92139c2280fb0ff69af922c2ae",
+        "source_path": "LICENSE",
+        "license": "MIT"
+      }
+    ],
+    "pin_evidence": {
+      "path": "provenance/eshop-b4a40872-commit.json",
+      "sha256": "1e8f55d7300fb70cfea6c63e98f8ff67490c987829ef2665ed8cb3feea9584f3"
+    }
+  }
+]

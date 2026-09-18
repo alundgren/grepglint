@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "client_version": "codex-cli 0.154.0",
+  "source_tag": "rust-v0.154.0",
+  "source_commit": "6b9826e3aa83b1a5947db50f4332cb9c65f1b340",
+  "checked_date": "2026-09-17",
+  "official_documentation": {
+    "url": "https://learn.chatgpt.com/docs/app-server.md",
+    "sha256": "a72a5c88ab05ab9737ec28b432708f2776f696be48eae09ee39c02dd2f9480e0",
+    "scope": "Protocol usage only; versioned source and locally generated experimental schemas govern this diagnostic."
+  },
+  "sources": [
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/thread.rs",
+      "url": "https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/app-server-protocol/src/protocol/v2/thread.rs",
+      "sha256": "ffc2f432bc7d0dadf9ae10db832035c8b75d7b709462bfed3c83d33ea89c526a",
+      "relevance": "Experimental empty environments and dynamicTools are independent thread fields."
+    },
+    {
+      "path": "codex-rs/core/src/tools/spec_plan.rs",
+      "url": "https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/core/src/tools/spec_plan.rs",
+      "sha256": "451622e76c45dd1585318c200fdee9a00d7aaf785d4a540facca1010146307b7",
+      "relevance": "Environment access gates shell and patch; dynamic and other tool registrations are separate."
+    },
+    {
+      "path": "codex-rs/core/src/tools/tool_namespaces_info.rs",
+      "url": "https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/core/src/tools/tool_namespaces_info.rs",
+      "sha256": "8c8bca4bcc32bdcbca5a89034f7b22461f65c85246e8ad994b2b68aafca1d1bd",
+      "relevance": "Runtime metadata retains tools with direct, deferred or Code Mode access and excludes hidden entries."
+    },
+    {
+      "path": "codex-rs/core/src/tools/code_mode/execute_spec.rs",
+      "url": "https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/core/src/tools/code_mode/execute_spec.rs",
+      "sha256": "f9a083fa1766e5381eacd47055b71cbf954be7f78926fa472482aae6fc5f2b44",
+      "relevance": "Code Mode description is built from enabled and deferred definitions."
+    },
+    {
+      "path": "codex-rs/codex-home/src/instructions/mod.rs",
+      "url": "https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/codex-home/src/instructions/mod.rs",
+      "sha256": "fad349ac9be95dfcbf5401d814f35a8cb118ab6cdfe3cf48ae89fda8b39e4614",
+      "relevance": "Global instructions are loaded from the selected Codex home independently of project document limits."
+    },
+    {
+      "path": "codex-rs/core/config.schema.json",
+      "url": "https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/core/config.schema.json",
+      "sha256": "2e1fcf1cbb20f255c3baca2e174b4a3c954cef577a130587b8935e2d12c8ade6",
+      "relevance": "Provider retries, instruction settings, feature switches and tool metadata settings are configurable."
+    },
+    {
+      "path": "codex-rs/model-provider-info/src/lib.rs",
+      "url": "https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/model-provider-info/src/lib.rs",
+      "sha256": "03ba8ea303b9763f7c5e25a468b7f6675c9970dfb91109205beb6d0509f574d1",
+      "relevance": "ChatGPT authentication selects a different default provider endpoint than API authentication."
+    },
+    {
+      "path": "codex-rs/model-provider/src/provider.rs",
+      "url": "https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/model-provider/src/provider.rs",
+      "sha256": "b76d1837802ef08b12cada67de9080a1361a7b43ba45155e452c930180fe874a",
+      "relevance": "Provider capabilities and model catalogs differ by provider."
+    },
+    {
+      "path": "codex-rs/hooks/src/engine/discovery.rs",
+      "url": "https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/hooks/src/engine/discovery.rs",
+      "sha256": "fd05ee932079df2b5128f170beaf0d8e5c8630a56eadbcf9de9f25806e772b04",
+      "relevance": "Fixture hook trust is checked against its current hash before execution."
+    }
+  ],
+  "generated_schemas": [
+    {
+      "file": "v2/ThreadStartParams.json",
+      "sha256": "25f490368ec6df52a2a3b82a5469d2413307eb93439121b309f415b5648eee7a",
+      "generation": "codex app-server generate-json-schema --experimental --out <private-directory>"
+    },
+    {
+      "file": "v2/TurnStartParams.json",
+      "sha256": "b36fb37326b1cf69f75c8b306f1f886d53a57c4b1b985e08e298e2407ea2ad02",
+      "generation": "codex app-server generate-json-schema --experimental --out <private-directory>"
+    }
+  ],
+  "proposed_chatgpt_configuration": {
+    "model": "gpt-5.6-luna",
+    "effort": "high",
+    "thread_environments": [],
+    "dynamic_tools": "Same definitions as local capture; Grepglint is the sole treatment addition.",
+    "status": "unverified",
+    "unresolved": [
+      "Account model catalog, model instructions and effort support were not queried.",
+      "OpenAI/ChatGPT provider capabilities, transport and server-side tool behavior were not exercised.",
+      "Authentication credentials must never be copied into the local-provider probe.",
+      "OS source confinement is unproven; empty environments and private configuration do not establish it."
+    ]
+  }
+}

@@ -1,0 +1,3248 @@
+{
+  "version": 1,
+  "suite": {
+    "repository": "sourcegraph/CodeScaleBench",
+    "commit": "8d5f3c876c28a5033634facf42c21da9ebc6fcd6",
+    "id": "csb-v2-full-validated",
+    "artifact": {
+      "path": "provenance/csb-v2-full-validated.json",
+      "sha256": "18c2307e832e48123f0da56604a847525aa56ee016fe6f21846a25f280af97fe"
+    },
+    "license": {
+      "path": "notices/codescalebench-LICENSE",
+      "sha256": "d04085288d6e16839566e8b18f793625c1bb642f0bfdc0d2f086f91075aa5ff6"
+    },
+    "derived_description_notice": {
+      "path": "notices/repoqa-LICENSE",
+      "sha256": "fcc1f77fe5443b21bfc4dfcc3d66f7654f599b91582df771850e5e876986a103",
+      "git_blob": "97b358ff02b6d6dd385db5157b070dc607ca6e45",
+      "license": "Apache-2.0"
+    }
+  },
+  "partition": {
+    "rule": "Sort duplicate clusters by SHA256(corpus-v1: + cluster). In that order use first-reached subset sums to choose exactly six published and two authored development tasks. All other tasks are held out. Calibration is the development published ID with the smallest SHA256(calibration-v1: + ID).",
+    "frozen_before_trials": true,
+    "model_trials_run": 0,
+    "calibration_task": "ccx-crossorg-217"
+  },
+  "tasks": [
+    {
+      "id": "django-pre-validate-signal-design-001",
+      "source": "django-674eda1c",
+      "group": "identifier",
+      "question": "Locate Model.full_clean and the pre_save signal. Explain the validation order and where pre_save is dispatched, without adding a signal.",
+      "duplicate_cluster": "django-pre-validate-signal-design-001",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "Model.full_clean runs clean_fields, clean, optional uniqueness checks and optional constraint checks, collecting ValidationError details.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "save_base sends pre_save for models that are not auto-created before its database save work.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/db/models/base.py",
+              "start": 1690,
+              "end": 1735,
+              "excerpt_sha256": "17332af104dfb4151753853b3d1eac53457fe9375c9e3f7c6b5745f3ed5a824a",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/db/models/base.py#L1690-L1735"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/db/models/base.py",
+              "start": 959,
+              "end": 974,
+              "excerpt_sha256": "3e6f2e50e58a2ba8566f89a6b82838f43ce31631fdc6503504c708176587d905",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/db/models/base.py#L959-L974"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "django-pre-validate-signal-design-001",
+        "suite": "csb_sdlc_design",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_sdlc_design/django-pre-validate-signal-design-001/instruction.md",
+        "original_wording": "originals/django-pre-validate-signal-design-001/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/django-pre-validate-signal-design-001/environment/Dockerfile",
+            "sha256": "91ea6b94fdf844aec2220e9822d908311a7dd902c8eec8b8252caf1398751c2a"
+          },
+          {
+            "path": "originals/django-pre-validate-signal-design-001/instruction.md",
+            "sha256": "84bc522a7eac213d71a4c0d11971a151c0d257c9b49ec2c35c46396aaab3d4e1"
+          },
+          {
+            "path": "originals/django-pre-validate-signal-design-001/task.toml",
+            "sha256": "1153b4bdefa10eb1dd6cb6a1fd1119771b449cee8a671b83c00e339c66a8e246"
+          },
+          {
+            "path": "originals/django-pre-validate-signal-design-001/tests/ground_truth.json",
+            "sha256": "13596b0b24b56c74c38740eddf9785c4387eb580d341de04697f54c3a2df7697"
+          }
+        ]
+      },
+      "language": "Python",
+      "reference_answer": "Model.full_clean runs clean_fields, clean, optional uniqueness checks and optional constraint checks, collecting ValidationError details. save_base sends pre_save for models that are not auto-created before its database save work.",
+      "split": "held_out"
+    },
+    {
+      "id": "django-rate-limit-design-001",
+      "source": "django-674eda1c",
+      "group": "behavior",
+      "question": "How can existing synchronous middleware return a response before the view runs, and what happens to the response hook? Explain the existing calling convention.",
+      "duplicate_cluster": "django-middleware",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "MiddlewareMixin calls process_request when present, uses its truthy response instead of get_response, and then invokes process_response when present.",
+          "evidence_groups": [
+            "g1"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/utils/deprecation.py",
+              "start": 302,
+              "end": 312,
+              "excerpt_sha256": "337be048dd62e01485fd5afaf5b79c473287430ccf369ff9dd80bb8f84fa569f",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/utils/deprecation.py#L302-L312"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "django-rate-limit-design-001",
+        "suite": "csb_sdlc_design",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_sdlc_design/django-rate-limit-design-001/instruction.md",
+        "original_wording": "originals/django-rate-limit-design-001/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/django-rate-limit-design-001/environment/Dockerfile",
+            "sha256": "91ea6b94fdf844aec2220e9822d908311a7dd902c8eec8b8252caf1398751c2a"
+          },
+          {
+            "path": "originals/django-rate-limit-design-001/instruction.md",
+            "sha256": "e579df85138ee618a1d718292085f20da918c04ef4255fd744ae3018d71fe92c"
+          },
+          {
+            "path": "originals/django-rate-limit-design-001/task.toml",
+            "sha256": "a297651c01e45ee1016960ca03533c670ad6ed2d8ba6b5a65b0598fbbfd8301f"
+          },
+          {
+            "path": "originals/django-rate-limit-design-001/tests/ground_truth.json",
+            "sha256": "1c0445e6f0ac87914e801c73d85dafb4affa09fddc9c7798221d14b6f49240c4"
+          }
+        ]
+      },
+      "language": "Python",
+      "reference_answer": "MiddlewareMixin calls process_request when present, uses its truthy response instead of get_response, and then invokes process_response when present.",
+      "split": "development"
+    },
+    {
+      "id": "django-rate-limit-middleware-feat-001",
+      "source": "django-674eda1c",
+      "group": "identifier",
+      "question": "Locate django.core.cache.cache and explain how the default cache backend is selected. How does MiddlewareMixin allow a request hook to return a rejection response?",
+      "duplicate_cluster": "django-middleware",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "cache is a ConnectionProxy for the default alias; CacheHandler imports the configured BACKEND and instantiates it with LOCATION and remaining parameters.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "MiddlewareMixin uses a truthy process_request response without invoking get_response, then applies a response hook if present.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/core/cache/__init__.py",
+              "start": 36,
+              "end": 58,
+              "excerpt_sha256": "b872b6037cdbd6596482d8adb9bd55899ad3b603824e09fa26c959f7aaec5fcf",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/core/cache/__init__.py#L36-L58"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/utils/deprecation.py",
+              "start": 302,
+              "end": 312,
+              "excerpt_sha256": "337be048dd62e01485fd5afaf5b79c473287430ccf369ff9dd80bb8f84fa569f",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/utils/deprecation.py#L302-L312"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "django-rate-limit-middleware-feat-001",
+        "suite": "csb_sdlc_feature",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_sdlc_feature/django-rate-limit-middleware-feat-001/instruction.md",
+        "original_wording": "originals/django-rate-limit-middleware-feat-001/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/django-rate-limit-middleware-feat-001/environment/Dockerfile",
+            "sha256": "77f7b011e15b10074318869d6e7785c2599f89d83950f0297849a5ada3b3e475"
+          },
+          {
+            "path": "originals/django-rate-limit-middleware-feat-001/instruction.md",
+            "sha256": "96ed698e98c49779a6231df2a5b260fb375789363821b992f6f7d31ca62b8c4c"
+          },
+          {
+            "path": "originals/django-rate-limit-middleware-feat-001/task.toml",
+            "sha256": "cd44c7e0b3be3cf48f7df4a7579387605ef5866bd028ae83693c9cf514fa1265"
+          },
+          {
+            "path": "originals/django-rate-limit-middleware-feat-001/tests/ground_truth.json",
+            "sha256": "a4cc0c7cf2672fbb050e616506aee4cbab056767a9948432e71e45358a133e8d"
+          }
+        ]
+      },
+      "language": "Python",
+      "reference_answer": "cache is a ConnectionProxy for the default alias; CacheHandler imports the configured BACKEND and instantiates it with LOCATION and remaining parameters. MiddlewareMixin uses a truthy process_request response without invoking get_response, then applies a response hook if present.",
+      "split": "development"
+    },
+    {
+      "id": "django-modelchoice-fk-fix-001",
+      "source": "django-674eda1c",
+      "group": "identifier",
+      "question": "How does ModelChoiceField use to_field_name when preparing a model value and resolving a submitted value?",
+      "duplicate_cluster": "django-modelchoice-fk-fix-001",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "prepare_value serializes to_field_name when configured, otherwise uses the model primary key.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "to_python returns None for empty values. Otherwise it looks up the queryset using to_field_name or pk; the listed conversion and validation errors within that lookup block, including a nonexistent matching object, become invalid_choice.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/forms/models.py",
+              "start": 1572,
+              "end": 1578,
+              "excerpt_sha256": "69d3a40e2a4bcac010080c28d000aaab75fa6b269ec452bbd8aa68d4d5cc14c5",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/forms/models.py#L1572-L1578"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/forms/models.py",
+              "start": 1580,
+              "end": 1600,
+              "excerpt_sha256": "b0230288adaf195eb9ca835515404895f0a4933cc27f4be3189b47580d0ca41b",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/forms/models.py#L1580-L1600"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "django-modelchoice-fk-fix-001",
+        "suite": "csb_sdlc_fix",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_sdlc_fix/django-modelchoice-fk-fix-001/instruction.md",
+        "original_wording": "originals/django-modelchoice-fk-fix-001/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/django-modelchoice-fk-fix-001/environment/Dockerfile",
+            "sha256": "91ea6b94fdf844aec2220e9822d908311a7dd902c8eec8b8252caf1398751c2a"
+          },
+          {
+            "path": "originals/django-modelchoice-fk-fix-001/instruction.md",
+            "sha256": "96e06e0229e7bab0ebb5906fc164d77a0ee96cbec14c9ba61fabcf4c445ab0b9"
+          },
+          {
+            "path": "originals/django-modelchoice-fk-fix-001/task.toml",
+            "sha256": "d1fff60c738e97901989967eaa1bfd9b043a5c0784628d1297f474cb2288b948"
+          },
+          {
+            "path": "originals/django-modelchoice-fk-fix-001/tests/ground_truth.json",
+            "sha256": "cc1e8efcc1b07fc8ea35d562f53917286b73c648de6a5f94658da56ed99082e9"
+          }
+        ]
+      },
+      "language": "Python",
+      "reference_answer": "prepare_value serializes to_field_name when configured, otherwise uses the model primary key. to_python returns None for empty values. Otherwise it looks up the queryset using to_field_name or pk; the listed conversion and validation errors within that lookup block, including a nonexistent matching object, become invalid_choice.",
+      "split": "held_out"
+    },
+    {
+      "id": "django-request-factory-refac-001",
+      "source": "django-674eda1c",
+      "group": "identifier",
+      "question": "Locate RequestFactory and its public export. Explain how generic builds an HTTP request, including secure requests and nonempty bodies.",
+      "duplicate_cluster": "django-request-factory-refac-001",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "RequestFactory is publicly imported and exported by django.test.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "generic constructs request metadata with HTTP method, path, secure port/scheme and body content length, type and FakePayload.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/test/__init__.py",
+              "start": 1,
+              "end": 25,
+              "excerpt_sha256": "52cb5b1a3799af4c533dd5cdd1d039d11870f276d043f0a6a64be3e11691b6d9",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/test/__init__.py#L1-L25"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/test/client.py",
+              "start": 633,
+              "end": 660,
+              "excerpt_sha256": "ce833885843bf80cf73b2aa1107466e2fef7d43bb747ec5c0cc727a05550eb94",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/test/client.py#L633-L660"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "django-request-factory-refac-001",
+        "suite": "csb_sdlc_refactor",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_sdlc_refactor/django-request-factory-refac-001/instruction.md",
+        "original_wording": "originals/django-request-factory-refac-001/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/django-request-factory-refac-001/environment/Dockerfile",
+            "sha256": "cd789188428fc0d746332b2d95225c0fff922cd94c80068f12f49b01f32c4f0f"
+          },
+          {
+            "path": "originals/django-request-factory-refac-001/instruction.md",
+            "sha256": "f662b212d32e5de60228ac079c0c2c8648e92aae72e9ddfd4900e5792759659b"
+          },
+          {
+            "path": "originals/django-request-factory-refac-001/task.toml",
+            "sha256": "a64554a01d54ba4f29268fa0910da3bcfcf16395f4c2e3540aa9ad5a236d524b"
+          },
+          {
+            "path": "originals/django-request-factory-refac-001/tests/ground_truth.json",
+            "sha256": "644604656cec3163356c36868706708114d7ce3b2969b9a388ba58b1cd5364cc"
+          }
+        ]
+      },
+      "language": "Python",
+      "reference_answer": "RequestFactory is publicly imported and exported by django.test. generic constructs request metadata with HTTP method, path, secure port/scheme and body content length, type and FakePayload.",
+      "split": "held_out"
+    },
+    {
+      "id": "django-audit-trail-implement-001",
+      "source": "django-674eda1c",
+      "group": "cross_file",
+      "question": "Explain how an include with isolated context avoids inheriting the parent template variables. Trace the include operation into the context implementation.",
+      "duplicate_cluster": "django-template",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "IncludeNode resolves explicit extra values and renders with context.new(values) when isolated_context is set.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "BaseContext.new copies context properties and resets the dictionary stack to the supplied values; reset starts with template builtins.",
+          "evidence_groups": [
+            "g2"
+          ]
+        },
+        {
+          "id": "c3",
+          "text": "new invokes _reset_dicts rather than keeping the parent variable dictionaries.",
+          "evidence_groups": [
+            "g3"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/template/loader_tags.py",
+              "start": 202,
+              "end": 211,
+              "excerpt_sha256": "dec972d07dbd96c364e518db514adc8b05b67e41e891e4bbef267b308842a66b",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/template/loader_tags.py#L202-L211"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/template/context.py",
+              "start": 28,
+              "end": 38,
+              "excerpt_sha256": "74c596b76edceaffd903c314cca452255e649cd82eefbbaa45fad0c75beaa18b",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/template/context.py#L28-L38"
+            }
+          ]
+        },
+        {
+          "id": "g3",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/template/context.py",
+              "start": 113,
+              "end": 120,
+              "excerpt_sha256": "91fa3da73756e2275d77cd91cc83f297895d7f3a7fb7c839ffc646dc768f042b",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/template/context.py#L113-L120"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "django-audit-trail-implement-001",
+        "suite": "csb_sdlc_secure",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_sdlc_secure/django-audit-trail-implement-001/instruction.md",
+        "original_wording": "originals/django-audit-trail-implement-001/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/django-audit-trail-implement-001/environment/Dockerfile",
+            "sha256": "91ea6b94fdf844aec2220e9822d908311a7dd902c8eec8b8252caf1398751c2a"
+          },
+          {
+            "path": "originals/django-audit-trail-implement-001/instruction.md",
+            "sha256": "3c5d9cf56a2ddc2be14b91074c80882e4eead6df9d9b8f617c6c4d920c81d007"
+          },
+          {
+            "path": "originals/django-audit-trail-implement-001/task.toml",
+            "sha256": "8534d52796c4fbb2ba0e6b3f818b21b447279f575c30f5c70690201adc1510e8"
+          },
+          {
+            "path": "originals/django-audit-trail-implement-001/tests/ground_truth.json",
+            "sha256": "c78a52b4323bd7cdfe4d1fd0e1438a02b2e451655f69a0840ec8691b95bd65a7"
+          }
+        ]
+      },
+      "language": "Python",
+      "reference_answer": "IncludeNode resolves explicit extra values and renders with context.new(values) when isolated_context is set. BaseContext.new copies context properties and resets the dictionary stack to the supplied values; reset starts with template builtins. new invokes _reset_dicts rather than keeping the parent variable dictionaries.",
+      "split": "held_out"
+    },
+    {
+      "id": "django-cross-team-boundary-001",
+      "source": "django-674eda1c",
+      "group": "cross_file",
+      "question": "Trace synchronous login when the session has no authenticated user key. How does key rotation retain existing anonymous session data?",
+      "duplicate_cluster": "django-cross-team-boundary-001",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "login calls cycle_key when SESSION_KEY is absent, then stores the authenticated user ID, backend and authentication hash.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "cycle_key saves the current session data and old key, creates a new key, restores the cached data and deletes the old key when present.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/contrib/auth/__init__.py",
+              "start": 159,
+              "end": 177,
+              "excerpt_sha256": "e07f38ea1c671ab2dcfb2ecdc6d5df0b5b4d29dc68ed55dedc403e6450792638",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/contrib/auth/__init__.py#L159-L177"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/contrib/sessions/backends/base.py",
+              "start": 428,
+              "end": 437,
+              "excerpt_sha256": "008cf3475d39eeedfbf7a63f025ef377717e9a74dc1b8e43fe2fe95da7c2a8c7",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/contrib/sessions/backends/base.py#L428-L437"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "django-cross-team-boundary-001",
+        "suite": "csb_sdlc_secure",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_sdlc_secure/django-cross-team-boundary-001/instruction.md",
+        "original_wording": "originals/django-cross-team-boundary-001/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/django-cross-team-boundary-001/environment/Dockerfile",
+            "sha256": "91ea6b94fdf844aec2220e9822d908311a7dd902c8eec8b8252caf1398751c2a"
+          },
+          {
+            "path": "originals/django-cross-team-boundary-001/instruction.md",
+            "sha256": "5ddebdfa6fad09875986f9fc5a76ed1a05cc644fdd583987e577d2e071e410ab"
+          },
+          {
+            "path": "originals/django-cross-team-boundary-001/task.toml",
+            "sha256": "c14fcafb1b57315bc60689c345fa3a43c4b7c931999a7c9e449e407d2032f253"
+          },
+          {
+            "path": "originals/django-cross-team-boundary-001/tests/ground_truth.json",
+            "sha256": "8b4c6e6847493efae0dc4e746257736456b8a69a5e321ffefd84caf84ceb5ef2"
+          }
+        ]
+      },
+      "language": "Python",
+      "reference_answer": "login calls cycle_key when SESSION_KEY is absent, then stores the authenticated user ID, backend and authentication hash. cycle_key saves the current session data and old key, creates a new key, restores the cached data and deletes the old key when present.",
+      "split": "held_out"
+    },
+    {
+      "id": "django-legacy-dep-vuln-001",
+      "source": "django-674eda1c",
+      "group": "cross_file",
+      "question": "Identify the existing utilities for decoding bytes with a selected encoding and for HTML escaping. Explain protected values and why the conversion order matters.",
+      "duplicate_cluster": "django-legacy-dep-vuln-001",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "force_str decodes bytes using encoding/errors, but strings_only preserves protected values such as int, float, Decimal and date/time values.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "escape converts its input with str and HTML-escapes ampersands, quotes and angle brackets, returning SafeString. Decode bytes first when an explicit source encoding is needed.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/utils/encoding.py",
+              "start": 33,
+              "end": 72,
+              "excerpt_sha256": "216d1f8b2aa99fb95cf04ea154a644a10b78b42fa80222f832147d62aa9cba29",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/utils/encoding.py#L33-L72"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/utils/html.py",
+              "start": 52,
+              "end": 62,
+              "excerpt_sha256": "5d4441d1bf544f0b018dcd82ebb5640cb7881dc55e3245002af67cf9a9c7f2b8",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/utils/html.py#L52-L62"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "django-legacy-dep-vuln-001",
+        "suite": "csb_sdlc_secure",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_sdlc_secure/django-legacy-dep-vuln-001/instruction.md",
+        "original_wording": "originals/django-legacy-dep-vuln-001/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/django-legacy-dep-vuln-001/environment/Dockerfile",
+            "sha256": "91ea6b94fdf844aec2220e9822d908311a7dd902c8eec8b8252caf1398751c2a"
+          },
+          {
+            "path": "originals/django-legacy-dep-vuln-001/instruction.md",
+            "sha256": "b1e69ced35fe0bcc13e25c149a50d5494ca274a0f64085d40a20db9ce24d3771"
+          },
+          {
+            "path": "originals/django-legacy-dep-vuln-001/task.toml",
+            "sha256": "8a64086e7dbfd2ab4f6f0b26a1b3f33da8c4179d93c53ee4ba51322e46207396"
+          },
+          {
+            "path": "originals/django-legacy-dep-vuln-001/tests/ground_truth.json",
+            "sha256": "89485eb40bee8a5c6ee3777b6e3dff5ccbddc8066923f396a0fac94a8d298c34"
+          }
+        ]
+      },
+      "language": "Python",
+      "reference_answer": "force_str decodes bytes using encoding/errors, but strings_only preserves protected values such as int, float, Decimal and date/time values. escape converts its input with str and HTML-escapes ampersands, quotes and angle brackets, returning SafeString. Decode bytes first when an explicit source encoding is needed.",
+      "split": "held_out"
+    },
+    {
+      "id": "django-repo-scoped-access-001",
+      "source": "django-674eda1c",
+      "group": "behavior",
+      "question": "When does the admin display a related-object filter with few available choices? Explain how nullable or many-to-many relationships affect that decision.",
+      "duplicate_cluster": "django-repo-scoped-access-001",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "RelatedFieldListFilter includes an empty choice for nullable fields or many-to-many relationships.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "has_output returns true only when the number of lookup choices plus the optional empty choice is greater than one.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/contrib/admin/filters.py",
+              "start": 240,
+              "end": 246,
+              "excerpt_sha256": "3b80c93aacde0fc3698cf61927983d8b1906a25af4e83b7d294d959cd4032510",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/contrib/admin/filters.py#L240-L246"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/contrib/admin/filters.py",
+              "start": 248,
+              "end": 253,
+              "excerpt_sha256": "b399fb2649c5b668a2dc7c28d97c1b98031c79e959578b6a37a04cdb6dd6585a",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/contrib/admin/filters.py#L248-L253"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "django-repo-scoped-access-001",
+        "suite": "csb_sdlc_secure",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_sdlc_secure/django-repo-scoped-access-001/instruction.md",
+        "original_wording": "originals/django-repo-scoped-access-001/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/django-repo-scoped-access-001/environment/Dockerfile",
+            "sha256": "91ea6b94fdf844aec2220e9822d908311a7dd902c8eec8b8252caf1398751c2a"
+          },
+          {
+            "path": "originals/django-repo-scoped-access-001/instruction.md",
+            "sha256": "9e2525c1294f9379c8d7fc337d4ffa76fa68740083e448eb253ad7790a36e8f2"
+          },
+          {
+            "path": "originals/django-repo-scoped-access-001/task.toml",
+            "sha256": "ce16c487fb615b40592a628457d79746ffebea2284de185f72f998c3cd285522"
+          },
+          {
+            "path": "originals/django-repo-scoped-access-001/tests/ground_truth.json",
+            "sha256": "c90b59c0bafee15d47f3fe24431a346839a6aca2c316400dc31f10784f2bdabf"
+          }
+        ]
+      },
+      "language": "Python",
+      "reference_answer": "RelatedFieldListFilter includes an empty choice for nullable fields or many-to-many relationships. has_output returns true only when the number of lookup choices plus the optional empty choice is greater than one.",
+      "split": "held_out"
+    },
+    {
+      "id": "django-role-based-access-001",
+      "source": "django-674eda1c",
+      "group": "cross_file",
+      "question": "Trace how a widget combines its stored attributes with attributes passed to rendering, and how ordinary attribute values reach the HTML template.",
+      "duplicate_cluster": "django-role-based-access-001",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "Widget.get_context calls build_attrs with stored and extra attributes; build_attrs lets extra values override base values.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "The attrs template omits False values, emits True values without a value string, and renders other values through a template variable with stringformat.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/forms/widgets.py",
+              "start": 316,
+              "end": 340,
+              "excerpt_sha256": "4ba72805c9b82f259dc72a72184bf3438738dfac37480baf9f078a447d099334",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/forms/widgets.py#L316-L340"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/forms/templates/django/forms/widgets/attrs.html",
+              "start": 1,
+              "end": 1,
+              "excerpt_sha256": "f729483efe44660fabc76a8f2e0a1b464c3a66afd625233c92dd74e8fa5261ad",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/forms/templates/django/forms/widgets/attrs.html#L1-L1"
+            }
+          ]
+        }
+      ],
+      "adaptation": "The original asks for an escaping fix in a modified environment. Ask instead for the existing merge/render route in the unchanged source. Do not assert that the published bug exists or that build_attrs itself escapes HTML.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "django-role-based-access-001",
+        "suite": "csb_sdlc_secure",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_sdlc_secure/django-role-based-access-001/instruction.md",
+        "original_wording": "originals/django-role-based-access-001/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/django-role-based-access-001/environment/Dockerfile",
+            "sha256": "91ea6b94fdf844aec2220e9822d908311a7dd902c8eec8b8252caf1398751c2a"
+          },
+          {
+            "path": "originals/django-role-based-access-001/instruction.md",
+            "sha256": "16b8ad18a864816824cf68546ed3e8694ca8bc33919581d511e22fc88c115d52"
+          },
+          {
+            "path": "originals/django-role-based-access-001/task.toml",
+            "sha256": "2ec6d5043a8cd1c7174020e18cad9962196bbf6d0c1847b294763b0ccf5ebdb1"
+          },
+          {
+            "path": "originals/django-role-based-access-001/tests/ground_truth.json",
+            "sha256": "09756d5b10cba6cdd69803506cd3a37c93c085f1c98b14767ae61b7ddcd7ac4d"
+          }
+        ]
+      },
+      "language": "Python",
+      "reference_answer": "Widget.get_context calls build_attrs with stored and extra attributes; build_attrs lets extra values override base values. The attrs template omits False values, emits True values without a value string, and renders other values through a template variable with stringformat.",
+      "split": "held_out"
+    },
+    {
+      "id": "django-sensitive-file-exclusion-001",
+      "source": "django-674eda1c",
+      "group": "behavior",
+      "question": "How does a persistent database connection avoid age-based closure, and what other conditions can still close it?",
+      "duplicate_cluster": "django-sensitive-file-exclusion-001",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "Connection setup assigns close_at=None when CONN_MAX_AGE is None; otherwise it sets a monotonic expiration time.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "close_if_unusable_or_obsolete closes on unexpected autocommit, failed usability after errors, or an elapsed non-None close_at deadline.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/db/backends/base/base.py",
+              "start": 246,
+              "end": 253,
+              "excerpt_sha256": "bc9bfdd0b2edfc1ebd5100f343c09a103c7f3b6f1ec7ab8a4d417879c4a93ebb",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/db/backends/base/base.py#L246-L253"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/db/backends/base/base.py",
+              "start": 591,
+              "end": 616,
+              "excerpt_sha256": "6b6ae12ebd80c4bdd00b54247e47cc185b9777763950fb9d86a56b309327001c",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/db/backends/base/base.py#L591-L616"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "django-sensitive-file-exclusion-001",
+        "suite": "csb_sdlc_secure",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_sdlc_secure/django-sensitive-file-exclusion-001/instruction.md",
+        "original_wording": "originals/django-sensitive-file-exclusion-001/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/django-sensitive-file-exclusion-001/environment/Dockerfile",
+            "sha256": "91ea6b94fdf844aec2220e9822d908311a7dd902c8eec8b8252caf1398751c2a"
+          },
+          {
+            "path": "originals/django-sensitive-file-exclusion-001/instruction.md",
+            "sha256": "bae4ab756b3b3b0e61ab1aec5f8fde11eab7db22d2f514c94388510fa2ccc8ca"
+          },
+          {
+            "path": "originals/django-sensitive-file-exclusion-001/task.toml",
+            "sha256": "9806c06fed80a7a352d47ac61fd8c59009464ca8f7774b16dc153fd157fda8f9"
+          },
+          {
+            "path": "originals/django-sensitive-file-exclusion-001/tests/ground_truth.json",
+            "sha256": "ce85bfb101f98283f2e2c6599c7f7fde03526bd7e4b07b2c9c225523da60d0aa"
+          }
+        ]
+      },
+      "language": "Python",
+      "reference_answer": "Connection setup assigns close_at=None when CONN_MAX_AGE is None; otherwise it sets a monotonic expiration time. close_if_unusable_or_obsolete closes on unexpected autocommit, failed usability after errors, or an elapsed non-None close_at deadline.",
+      "split": "held_out"
+    },
+    {
+      "id": "django-composite-field-recover-001",
+      "source": "django-674eda1c",
+      "group": "identifier",
+      "question": "Explain the BaseForm.full_clean sequence and where cross-field validation errors from clean are attached.",
+      "duplicate_cluster": "django-composite-field-recover-001",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "full_clean returns early for unbound forms, or when empty_permitted is true and has_changed() is false. Otherwise it runs field cleaning, form cleaning and post-cleaning in that order.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "_clean_form invokes clean and routes ValidationError to add_error(None, error); clean documents form-wide errors under __all__.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/forms/forms.py",
+              "start": 324,
+              "end": 350,
+              "excerpt_sha256": "376537236edd4292ca3661c64ff54fcbd22ce5491e24a7b410713d8c38307ea5",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/forms/forms.py#L324-L350"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/forms/forms.py",
+              "start": 352,
+              "end": 375,
+              "excerpt_sha256": "68e8161763506407783a6eb8fe4122880b8b8b56ff93fab0220906f40464bb24",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/forms/forms.py#L352-L375"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "django-composite-field-recover-001",
+        "suite": "csb_sdlc_understand",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_sdlc_understand/django-composite-field-recover-001/instruction.md",
+        "original_wording": "originals/django-composite-field-recover-001/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/django-composite-field-recover-001/environment/Dockerfile",
+            "sha256": "91ea6b94fdf844aec2220e9822d908311a7dd902c8eec8b8252caf1398751c2a"
+          },
+          {
+            "path": "originals/django-composite-field-recover-001/instruction.md",
+            "sha256": "d4ae905e68574f8bfb0e2bd3dc81fd319e33e4b33237af48caaaea1cd3591432"
+          },
+          {
+            "path": "originals/django-composite-field-recover-001/task.toml",
+            "sha256": "f3e341abe2a6dc55e17941308c2500a989b78136f11c58ef7d3c1e7a9bbf4d8b"
+          },
+          {
+            "path": "originals/django-composite-field-recover-001/tests/ground_truth.json",
+            "sha256": "053b214ceb6c1b14a44367a254671faf4925e0b4722376975080da728d78a81c"
+          }
+        ]
+      },
+      "language": "Python",
+      "reference_answer": "full_clean returns early for unbound forms, or when empty_permitted is true and has_changed() is false. Otherwise it runs field cleaning, form cleaning and post-cleaning in that order. _clean_form invokes clean and routes ValidationError to add_error(None, error); clean documents form-wide errors under __all__.",
+      "split": "held_out"
+    },
+    {
+      "id": "django-template-inherit-recall-001",
+      "source": "django-674eda1c",
+      "group": "behavior",
+      "question": "Explain how template inheritance chooses the child block and restores the block queue after rendering. Describe the existing behavior without assuming a regression.",
+      "duplicate_cluster": "django-template",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "BlockContext.add_blocks inserts each block at the front, while pop removes from the end, preserving earlier child blocks as parents are added.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "BlockNode.render pops the selected block, renders a fresh instance and pushes the popped block back after rendering.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/template/loader_tags.py",
+              "start": 14,
+              "end": 33,
+              "excerpt_sha256": "f99f389813653d6b9e6796f5b7929a77940460331e022e4e54980b4a223b3f80",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/template/loader_tags.py#L14-L33"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/template/loader_tags.py",
+              "start": 51,
+              "end": 69,
+              "excerpt_sha256": "dee80addcedb3eec371229a61b823098bb806fc1181cb8e21d1d8edfaadcbefe",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/template/loader_tags.py#L51-L69"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "django-template-inherit-recall-001",
+        "suite": "csb_sdlc_understand",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_sdlc_understand/django-template-inherit-recall-001/instruction.md",
+        "original_wording": "originals/django-template-inherit-recall-001/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/django-template-inherit-recall-001/environment/Dockerfile",
+            "sha256": "91ea6b94fdf844aec2220e9822d908311a7dd902c8eec8b8252caf1398751c2a"
+          },
+          {
+            "path": "originals/django-template-inherit-recall-001/instruction.md",
+            "sha256": "7d99af35639294110606f4c8b6caaa13928c505544213cff16f9549c596f45f6"
+          },
+          {
+            "path": "originals/django-template-inherit-recall-001/task.toml",
+            "sha256": "42e59555a00e3598c7124fd593ef51ef76c79292057e22eed893f09f14607b7a"
+          },
+          {
+            "path": "originals/django-template-inherit-recall-001/tests/ground_truth.json",
+            "sha256": "8ef04f8ef77ff03d2fdf7d08c4301afd2f1057e0e7446b8f9afb0196f7d8b0c0"
+          }
+        ]
+      },
+      "language": "Python",
+      "reference_answer": "BlockContext.add_blocks inserts each block at the front, while pop removes from the end, preserving earlier child blocks as parents are added. BlockNode.render pops the selected block, renders a fresh instance and pushes the popped block back after rendering.",
+      "split": "held_out"
+    },
+    {
+      "id": "ccx-crossorg-217",
+      "source": "django-674eda1c",
+      "group": "cross_file",
+      "question": "Explain how the MIDDLEWARE setting becomes a callable request chain, and how synchronous legacy request and response hooks run within it.",
+      "duplicate_cluster": "django-middleware",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "BaseHandler.load_middleware iterates MIDDLEWARE in reverse and wraps the current handler with each middleware instance.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "Each wrapper becomes the next handler and the fully constructed callable is assigned to _middleware_chain.",
+          "evidence_groups": [
+            "g2"
+          ]
+        },
+        {
+          "id": "c3",
+          "text": "MiddlewareMixin runs its request hook before the inner handler and its response hook afterward, giving nested request order and reverse response order.",
+          "evidence_groups": [
+            "g3"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/core/handlers/base.py",
+              "start": 38,
+              "end": 63,
+              "excerpt_sha256": "30426cd67024c918797e843f7e76fd1f2a2fcf60cd6ef089fa7bb19f21ad52d8",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/core/handlers/base.py#L38-L63"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/core/handlers/base.py",
+              "start": 97,
+              "end": 104,
+              "excerpt_sha256": "412c44f96b572db378183aee1065dada72f5b30904f3abf03e1fbd001572a9d8",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/core/handlers/base.py#L97-L104"
+            }
+          ]
+        },
+        {
+          "id": "g3",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/utils/deprecation.py",
+              "start": 302,
+              "end": 312,
+              "excerpt_sha256": "337be048dd62e01485fd5afaf5b79c473287430ccf369ff9dd80bb8f84fa569f",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/utils/deprecation.py#L302-L312"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Narrow the published all-files question to chain construction and synchronous legacy hooks. Resolve the conflicting task_spec middleware file list and ground_truth core-handler list against BaseHandler and MiddlewareMixin. Unrelated concrete middleware implementations are not mandatory evidence.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "ccx-crossorg-217",
+        "suite": "csb_org_crossorg",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_org_crossorg/ccx-crossorg-217/instruction.md",
+        "original_wording": "originals/ccx-crossorg-217/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/ccx-crossorg-217/environment/Dockerfile",
+            "sha256": "45e8c0302bc007e9add87acc382791bad75f2fef68c80993bdfa5bed8f57b01b"
+          },
+          {
+            "path": "originals/ccx-crossorg-217/instruction.md",
+            "sha256": "889ecdf7dd98bb01b661279870ece3c2a41eb3903985986aa2bba78c734831bb"
+          },
+          {
+            "path": "originals/ccx-crossorg-217/task.toml",
+            "sha256": "2314062607b0125c9033be8c8fdd37560160c6a687471399c70efe5933a7d59e"
+          },
+          {
+            "path": "originals/ccx-crossorg-217/tests/ground_truth.json",
+            "sha256": "72a64e41f1aa61687ebd1261e8c3a5ebe46488f8693f49ac02c9e5401e8ce4dc"
+          },
+          {
+            "path": "originals/ccx-crossorg-217/tests/oracle_answer.json",
+            "sha256": "9f5f9128d171fd2f8fa905c898061a156389dc4e04e360f00ebbde998a2e0674"
+          },
+          {
+            "path": "originals/ccx-crossorg-217/tests/task_spec.json",
+            "sha256": "06633db552080c9f93fb6304de5a44cf864172d1f958f04e8831fb0e54987f4c"
+          }
+        ]
+      },
+      "language": "Python",
+      "reference_answer": "BaseHandler.load_middleware iterates MIDDLEWARE in reverse and wraps the current handler with each middleware instance. Each wrapper becomes the next handler and the fully constructed callable is assigned to _middleware_chain. MiddlewareMixin runs its request hook before the inner handler and its response hook afterward, giving nested request order and reverse response order.",
+      "split": "development"
+    },
+    {
+      "id": "ccx-migration-203",
+      "source": "django-674eda1c",
+      "group": "identifier",
+      "question": "Locate include and path. Explain how an included URL configuration differs from a callable view when a route is constructed.",
+      "duplicate_cluster": "ccx-migration-203",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "include imports a string URLconf and uses its urlpatterns and app_name metadata.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "_path constructs URLResolver for included pattern tuples and URLPattern for callable views; path selects RoutePattern.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/urls/conf.py",
+              "start": 17,
+              "end": 42,
+              "excerpt_sha256": "4d1a778ff63f9ed4f4effdbd07d8ede097bd5ad44d8a2343e2f9a72421e26bb5",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/urls/conf.py#L17-L42"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/urls/conf.py",
+              "start": 62,
+              "end": 96,
+              "excerpt_sha256": "389f86f994c8485969de37f153126d7dc40e3a00fd417bb47594b15c1692fb0c",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/urls/conf.py#L62-L96"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Remove the obsolete pre-1.10 patterns() requirement and ask a separately scoped discovery question about APIs present in the pinned tree. The oracle is rebuilt from include and _path, not copied from upstream file lists.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "ccx-migration-203",
+        "suite": "csb_org_migration",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_org_migration/ccx-migration-203/instruction.md",
+        "original_wording": "originals/ccx-migration-203/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/ccx-migration-203/environment/Dockerfile",
+            "sha256": "45e8c0302bc007e9add87acc382791bad75f2fef68c80993bdfa5bed8f57b01b"
+          },
+          {
+            "path": "originals/ccx-migration-203/instruction.md",
+            "sha256": "2829f95efc01d8251231dc1ba385661ae5d0a4a2854e66a12d2465b327886309"
+          },
+          {
+            "path": "originals/ccx-migration-203/task.toml",
+            "sha256": "538af49077af310bdd82172613755642d155bcf9aedf768caaab7ffb624bc8fa"
+          },
+          {
+            "path": "originals/ccx-migration-203/tests/ground_truth.json",
+            "sha256": "14053d6767469f13c160110bb1d1f1ac37ce0bfe7cbd73afd222b05448e49831"
+          },
+          {
+            "path": "originals/ccx-migration-203/tests/oracle_answer.json",
+            "sha256": "ee18e61ee9b04ccf9f437684cbc7c403f438ca01fa7faf86fff956ac577188fe"
+          },
+          {
+            "path": "originals/ccx-migration-203/tests/task_spec.json",
+            "sha256": "4db5429ff881ccf44d5bd732f7df317f871c7c11da1a2623f3e1686558d73c9e"
+          }
+        ]
+      },
+      "language": "Python",
+      "reference_answer": "include imports a string URLconf and uses its urlpatterns and app_name metadata. _path constructs URLResolver for included pattern tuples and URLPattern for callable views; path selects RoutePattern.",
+      "split": "held_out"
+    },
+    {
+      "id": "ccx-migration-204",
+      "source": "django-674eda1c",
+      "group": "cross_file",
+      "question": "Explain how CharField max_length reaches both model validation and generated form validation, including the HTML widget limit.",
+      "duplicate_cluster": "ccx-migration-204",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "Model CharField adds a MaxLengthValidator when a maximum is present.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "The model formfield method passes max_length to the generated form field.",
+          "evidence_groups": [
+            "g2"
+          ]
+        },
+        {
+          "id": "c3",
+          "text": "Form CharField adds its own MaxLengthValidator and provides maxlength for a non-hidden widget.",
+          "evidence_groups": [
+            "g3"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/db/models/fields/__init__.py",
+              "start": 1204,
+              "end": 1209,
+              "excerpt_sha256": "1efece70ac211c215018af10039ff1545e803a99009cc9ac3faa79eee907b1d6",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/db/models/fields/__init__.py#L1204-L1209"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/db/models/fields/__init__.py",
+              "start": 1300,
+              "end": 1309,
+              "excerpt_sha256": "52e7bdb6842a84b5da0f1cf59f9ef8ca6dc4efbe83f248f8cdc86466ddc497c0",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/db/models/fields/__init__.py#L1300-L1309"
+            }
+          ]
+        },
+        {
+          "id": "g3",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "django/forms/fields.py",
+              "start": 275,
+              "end": 304,
+              "excerpt_sha256": "38727027adbc66f4493627f3c0c511731ab2a6c7c5d00face135f6569091a332",
+              "source_url": "https://github.com/sg-evals/django--674eda1c/blob/674eda1c03a3187905f48afee0f15226aa62fdf3/django/forms/fields.py#L275-L304"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Narrow the published request to model, form and widget validation. Do not treat backend database constraints or unspecified custom overrides as mandatory evidence.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "ccx-migration-204",
+        "suite": "csb_org_migration",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_org_migration/ccx-migration-204/instruction.md",
+        "original_wording": "originals/ccx-migration-204/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/ccx-migration-204/environment/Dockerfile",
+            "sha256": "45e8c0302bc007e9add87acc382791bad75f2fef68c80993bdfa5bed8f57b01b"
+          },
+          {
+            "path": "originals/ccx-migration-204/instruction.md",
+            "sha256": "eb7c9c4394bf8ba71693892edcd8ed31a695eb71e8896d262bc1a7ec07a76863"
+          },
+          {
+            "path": "originals/ccx-migration-204/task.toml",
+            "sha256": "e8c8e54f37a0992fc41f45c498372b87790569d19bb1b8d58be755f57ac5101b"
+          },
+          {
+            "path": "originals/ccx-migration-204/tests/ground_truth.json",
+            "sha256": "adf2a7a4944e3e10e8b7275abe5e197067c969dfc9aa3c0311f5a6225eb20c7f"
+          },
+          {
+            "path": "originals/ccx-migration-204/tests/oracle_answer.json",
+            "sha256": "76df32ccfec585e46682eb8f448706269d572a51765f1c72405c860ff4461c9d"
+          },
+          {
+            "path": "originals/ccx-migration-204/tests/task_spec.json",
+            "sha256": "a63a3c1530f6884d450b1fec520fd19cc62e5ad965a28265c03aaf906155604a"
+          }
+        ]
+      },
+      "language": "Python",
+      "reference_answer": "Model CharField adds a MaxLengthValidator when a maximum is present. The model formfield method passes max_length to the generated form field. Form CharField adds its own MaxLengthValidator and provides maxlength for a non-hidden widget.",
+      "split": "held_out"
+    },
+    {
+      "id": "flipt-dep-refactor-001",
+      "source": "flipt-3d5a345f",
+      "group": "cross_file",
+      "question": "Locate storage.NewResource and trace the flag service caller. What identity and revision inputs does it carry, and where is context passed?",
+      "duplicate_cluster": "flipt-dep-refactor-001",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "NewResource accepts namespace, key and optional reference options, constructs a ResourceRequest and applies options; its signature has no context argument.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "Server.GetFlag passes ctx separately to the store and supplies namespace, key and WithReference to NewResource.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "internal/storage/storage.go",
+              "start": 410,
+              "end": 430,
+              "excerpt_sha256": "a5616154cb12ee8e6a604f06918470fe36241dde891717e7dd4803f2354b8f11",
+              "source_url": "https://github.com/sg-evals/flipt--3d5a345f/blob/3d5a345f94c2adc8a0eaa102c189c08ad4c0f8e8/internal/storage/storage.go#L410-L430"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "internal/server/flag.go",
+              "start": 15,
+              "end": 35,
+              "excerpt_sha256": "6aa5130e5ee698fc9e9a224b228a37cf6afd9f2335519ee3c7ca5eb7a08af684",
+              "source_url": "https://github.com/sg-evals/flipt--3d5a345f/blob/3d5a345f94c2adc8a0eaa102c189c08ad4c0f8e8/internal/server/flag.go#L15-L35"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "flipt-dep-refactor-001",
+        "suite": "csb_sdlc_refactor",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_sdlc_refactor/flipt-dep-refactor-001/instruction.md",
+        "original_wording": "originals/flipt-dep-refactor-001/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/flipt-dep-refactor-001/environment/Dockerfile",
+            "sha256": "63dca80976e825cf57871a5e99aa2a0d8345bf7d21d4cf4a30839d77f0ddd947"
+          },
+          {
+            "path": "originals/flipt-dep-refactor-001/instruction.md",
+            "sha256": "29b4a6acf7b3f1949853b357e333d344bae61f5f4b159dc357671ebaef5c982e"
+          },
+          {
+            "path": "originals/flipt-dep-refactor-001/task.toml",
+            "sha256": "f5e4b403dbbf25c91519ff4c14a07a8522619da3249f056a2a0f77150cff53b1"
+          },
+          {
+            "path": "originals/flipt-dep-refactor-001/tests/ground_truth.json",
+            "sha256": "79f8d4af2bf12db95164d0ba17a25d6fa700189c0328df26fe06af69b282d067"
+          }
+        ]
+      },
+      "language": "Go",
+      "reference_answer": "NewResource accepts namespace, key and optional reference options, constructs a ResourceRequest and applies options; its signature has no context argument. Server.GetFlag passes ctx separately to the store and supplies namespace, key and WithReference to NewResource.",
+      "split": "held_out"
+    },
+    {
+      "id": "flipt-flagexists-refactor-001",
+      "source": "flipt-3d5a345f",
+      "group": "cross_file",
+      "question": "Locate ReadOnlyFlagStore and explain how the filesystem snapshot and SQL backend distinguish a missing flag from other errors.",
+      "duplicate_cluster": "flipt-flagexists-refactor-001",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "ReadOnlyFlagStore declares GetFlag, ListFlags and CountFlags.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "The snapshot resolves the namespace and returns ErrNotFoundf when the flag key is absent.",
+          "evidence_groups": [
+            "g2"
+          ]
+        },
+        {
+          "id": "c3",
+          "text": "The SQL backend maps sql.ErrNoRows to ErrNotFoundf and returns other query errors unchanged.",
+          "evidence_groups": [
+            "g3"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "internal/storage/storage.go",
+              "start": 212,
+              "end": 217,
+              "excerpt_sha256": "cc259f78495922b05a6907b16e71f563e651e12a8bd8343d19ae477825df30ba",
+              "source_url": "https://github.com/sg-evals/flipt--3d5a345f/blob/3d5a345f94c2adc8a0eaa102c189c08ad4c0f8e8/internal/storage/storage.go#L212-L217"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "internal/storage/fs/snapshot.go",
+              "start": 664,
+              "end": 676,
+              "excerpt_sha256": "c6943ed605568b8580ac845b1c48c468718dd530daa5d9ffce1aeaa090f7930f",
+              "source_url": "https://github.com/sg-evals/flipt--3d5a345f/blob/3d5a345f94c2adc8a0eaa102c189c08ad4c0f8e8/internal/storage/fs/snapshot.go#L664-L676"
+            }
+          ]
+        },
+        {
+          "id": "g3",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "internal/storage/sql/common/flag.go",
+              "start": 36,
+              "end": 65,
+              "excerpt_sha256": "6610ca515d284d3353d0da677bd3a9890946740ecdd6383c75e8eda4af71afc7",
+              "source_url": "https://github.com/sg-evals/flipt--3d5a345f/blob/3d5a345f94c2adc8a0eaa102c189c08ad4c0f8e8/internal/storage/sql/common/flag.go#L36-L65"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "flipt-flagexists-refactor-001",
+        "suite": "csb_sdlc_refactor",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_sdlc_refactor/flipt-flagexists-refactor-001/instruction.md",
+        "original_wording": "originals/flipt-flagexists-refactor-001/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/flipt-flagexists-refactor-001/environment/Dockerfile",
+            "sha256": "63dca80976e825cf57871a5e99aa2a0d8345bf7d21d4cf4a30839d77f0ddd947"
+          },
+          {
+            "path": "originals/flipt-flagexists-refactor-001/instruction.md",
+            "sha256": "465efc68ecbca15408c3c751274893c54a050df35b78c1d07b61967aa7857bc0"
+          },
+          {
+            "path": "originals/flipt-flagexists-refactor-001/task.toml",
+            "sha256": "9658f084a327caa93d7b338cde88e4ec35e573237a30de80d48191819175a0ec"
+          },
+          {
+            "path": "originals/flipt-flagexists-refactor-001/tests/ground_truth.json",
+            "sha256": "83e6d54d77a5956c6fec448a1b0d8d1f3ce503253ea038d74a318a8e98958ae5"
+          }
+        ]
+      },
+      "language": "Go",
+      "reference_answer": "ReadOnlyFlagStore declares GetFlag, ListFlags and CountFlags. The snapshot resolves the namespace and returns ErrNotFoundf when the flag key is absent. The SQL backend maps sql.ErrNoRows to ErrNotFoundf and returns other query errors unchanged.",
+      "split": "held_out"
+    },
+    {
+      "id": "flipt-degraded-context-fix-001",
+      "source": "flipt-3d5a345f",
+      "group": "cross_file",
+      "question": "Trace error handling when boolean evaluation cannot load rollouts and when legacy variant evaluation cannot load rules. What response, if any, accompanies each error?",
+      "duplicate_cluster": "flipt-evaluation",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "The boolean helper returns nil and the storage error when GetEvaluationRollouts fails.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "The legacy evaluator sets ERROR_EVALUATION_REASON on its response and returns that response with the GetEvaluationRules error.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "internal/server/evaluation/evaluation.go",
+              "start": 131,
+              "end": 135,
+              "excerpt_sha256": "489a4a228224aac0c8d567927dedebf1ea6a5e791a1e350971543d2f6abfa668",
+              "source_url": "https://github.com/sg-evals/flipt--3d5a345f/blob/3d5a345f94c2adc8a0eaa102c189c08ad4c0f8e8/internal/server/evaluation/evaluation.go#L131-L135"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "internal/server/evaluation/legacy_evaluator.go",
+              "start": 100,
+              "end": 104,
+              "excerpt_sha256": "277205340ae151eb7018317c8204557d09de417df31b0109137ec0679a043b1b",
+              "source_url": "https://github.com/sg-evals/flipt--3d5a345f/blob/3d5a345f94c2adc8a0eaa102c189c08ad4c0f8e8/internal/server/evaluation/legacy_evaluator.go#L100-L104"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "flipt-degraded-context-fix-001",
+        "suite": "csb_sdlc_secure",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_sdlc_secure/flipt-degraded-context-fix-001/instruction.md",
+        "original_wording": "originals/flipt-degraded-context-fix-001/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/flipt-degraded-context-fix-001/environment/Dockerfile",
+            "sha256": "ceee6a36ec58f12d06b93abb28d89193a403b8b4c5721d02122c5c49cf2facd0"
+          },
+          {
+            "path": "originals/flipt-degraded-context-fix-001/instruction.md",
+            "sha256": "6089978503aca28460ed3240a1259bd38623290bb941e8ff535ff878dd2fe10b"
+          },
+          {
+            "path": "originals/flipt-degraded-context-fix-001/task.toml",
+            "sha256": "a0cdea45cd3ad5b2d9962a1de68f149807bedab369256bae64c518c333dcc48c"
+          },
+          {
+            "path": "originals/flipt-degraded-context-fix-001/tests/ground_truth.json",
+            "sha256": "d63257d6da5a51243b677ee96f050427b6a25f11d7a2b40bfc57423a7dd93172"
+          }
+        ]
+      },
+      "language": "Go",
+      "reference_answer": "The boolean helper returns nil and the storage error when GetEvaluationRollouts fails. The legacy evaluator sets ERROR_EVALUATION_REASON on its response and returns that response with the GetEvaluationRules error.",
+      "split": "development"
+    },
+    {
+      "id": "flipt-protobuf-metadata-design-001",
+      "source": "flipt-3d5a345f",
+      "group": "cross_file",
+      "question": "Explain OR versus AND segment matching in legacy variant evaluation and how matched segment keys reach VariantEvaluationResponse.",
+      "duplicate_cluster": "flipt-evaluation",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "OR requires at least one matching segment; AND requires the match count to equal the segment count. Matched keys are stored in SegmentKeys, with the first also placed in the legacy SegmentKey.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "The v2 response copies legacy Match, value/attachment and flag key, then copies nonempty SegmentKeys.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "internal/server/evaluation/legacy_evaluator.go",
+              "start": 139,
+              "end": 159,
+              "excerpt_sha256": "bfcb168258043c761b37b7af51a5b58f723dada3e04034935f49b77b95bf6c32",
+              "source_url": "https://github.com/sg-evals/flipt--3d5a345f/blob/3d5a345f94c2adc8a0eaa102c189c08ad4c0f8e8/internal/server/evaluation/legacy_evaluator.go#L139-L159"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "internal/server/evaluation/evaluation.go",
+              "start": 77,
+              "end": 90,
+              "excerpt_sha256": "24f9db0134b73ed82ddad1fcc5d2eb3187cdb8c4ebc6364fd14750463cbcd88b",
+              "source_url": "https://github.com/sg-evals/flipt--3d5a345f/blob/3d5a345f94c2adc8a0eaa102c189c08ad4c0f8e8/internal/server/evaluation/evaluation.go#L77-L90"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "flipt-protobuf-metadata-design-001",
+        "suite": "csb_sdlc_design",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_sdlc_design/flipt-protobuf-metadata-design-001/instruction.md",
+        "original_wording": "originals/flipt-protobuf-metadata-design-001/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/flipt-protobuf-metadata-design-001/environment/Dockerfile",
+            "sha256": "097e0bde4619c308f702dc093f0e23a7b8118b3ce08f97ce6c1fb0ae799d34fc"
+          },
+          {
+            "path": "originals/flipt-protobuf-metadata-design-001/instruction.md",
+            "sha256": "a0ae8c51fc49a49d8887395ddf7d5ea3406af39ecc3763a85fbbc45fd7741a09"
+          },
+          {
+            "path": "originals/flipt-protobuf-metadata-design-001/task.toml",
+            "sha256": "6643aeefbad870ae00d06cdc933a13914fac034f207f24f0e386e5e3ce1923cb"
+          },
+          {
+            "path": "originals/flipt-protobuf-metadata-design-001/tests/ground_truth.json",
+            "sha256": "6686213d4d84b55b1f126b334a4cd59ff7e820009ffbd3f2a12747d03f46badb"
+          }
+        ]
+      },
+      "language": "Go",
+      "reference_answer": "OR requires at least one matching segment; AND requires the match count to equal the segment count. Matched keys are stored in SegmentKeys, with the first also placed in the legacy SegmentKey. The v2 response copies legacy Match, value/attachment and flag key, then copies nonempty SegmentKeys.",
+      "split": "development"
+    },
+    {
+      "id": "flipt-repo-scoped-access-001",
+      "source": "flipt-3d5a345f",
+      "group": "identifier",
+      "question": "Explain Server.Batch behavior for a missing flag, other storage errors and boolean versus variant requests. Identify the existing paths where outcome counters would need to observe results, without adding counters.",
+      "duplicate_cluster": "flipt-evaluation",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "Batch adds an ERROR response for a not-found flag and continues; another storage error stops the batch with nil and the error.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "Batch calls the boolean or variant helper according to flag type, appends typed responses and stops on helper errors or an unknown type.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "internal/server/evaluation/evaluation.go",
+              "start": 254,
+              "end": 281,
+              "excerpt_sha256": "ae16f5ba8047ef70e173ae95e7563b35e27e07f4ee1c09baa84f204cb2e45f6a",
+              "source_url": "https://github.com/sg-evals/flipt--3d5a345f/blob/3d5a345f94c2adc8a0eaa102c189c08ad4c0f8e8/internal/server/evaluation/evaluation.go#L254-L281"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "internal/server/evaluation/evaluation.go",
+              "start": 283,
+              "end": 316,
+              "excerpt_sha256": "023cdfd428292de4000bd82b6d8b701d6c68abfa80d3aecc01dd766d3460376e",
+              "source_url": "https://github.com/sg-evals/flipt--3d5a345f/blob/3d5a345f94c2adc8a0eaa102c189c08ad4c0f8e8/internal/server/evaluation/evaluation.go#L283-L316"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "flipt-repo-scoped-access-001",
+        "suite": "csb_sdlc_secure",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_sdlc_secure/flipt-repo-scoped-access-001/instruction.md",
+        "original_wording": "originals/flipt-repo-scoped-access-001/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/flipt-repo-scoped-access-001/environment/Dockerfile",
+            "sha256": "097e0bde4619c308f702dc093f0e23a7b8118b3ce08f97ce6c1fb0ae799d34fc"
+          },
+          {
+            "path": "originals/flipt-repo-scoped-access-001/instruction.md",
+            "sha256": "11e55cb09565d4989169cc3056057bfad8eceacbe645c6172cf9a3abae31ec08"
+          },
+          {
+            "path": "originals/flipt-repo-scoped-access-001/task.toml",
+            "sha256": "89c576f157c16e5c1f9e440f0dd999395ab152da9c24c73c5e994c8281d94076"
+          },
+          {
+            "path": "originals/flipt-repo-scoped-access-001/tests/ground_truth.json",
+            "sha256": "be4737779aeaf7bdb0502a157ac50cb1d2c2e2093cebab7c17071a7747818ae3"
+          }
+        ]
+      },
+      "language": "Go",
+      "reference_answer": "Batch adds an ERROR response for a not-found flag and continues; another storage error stops the batch with nil and the error. Batch calls the boolean or variant helper according to flag type, appends typed responses and stops on helper errors or an unknown type.",
+      "split": "development"
+    },
+    {
+      "id": "numpy-array-dispatch-refac-001",
+      "source": "numpy-v2.2.2",
+      "group": "cross_file",
+      "question": "Locate array_function_dispatch and a median dispatcher use. Explain what the dispatcher returns and how the decorator wraps the implementation.",
+      "duplicate_cluster": "numpy-median",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "array_function_dispatch validates signatures when enabled, constructs _ArrayFunctionDispatcher, preserves wrapper metadata and records the public API.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "_median_dispatcher returns a and out, and median is decorated with array_function_dispatch using that dispatcher.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "numpy/_core/overrides.py",
+              "start": 142,
+              "end": 170,
+              "excerpt_sha256": "d84df2ce4f9937f157023026ea1eaacae99517f355ef3b23ca773358df5ec5d8",
+              "source_url": "https://github.com/sg-evals/numpy--v2.2.2/blob/9ca88bff35bf60de74f9f95e6f90e6b4e0913e78/numpy/_core/overrides.py#L142-L170"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "numpy/lib/_function_base_impl.py",
+              "start": 3911,
+              "end": 3917,
+              "excerpt_sha256": "2293eb22b1c06b56775b796504469a5908bc3167e947a8d561be24d5a1e2f8ba",
+              "source_url": "https://github.com/sg-evals/numpy--v2.2.2/blob/9ca88bff35bf60de74f9f95e6f90e6b4e0913e78/numpy/lib/_function_base_impl.py#L3911-L3917"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "numpy-array-dispatch-refac-001",
+        "suite": "csb_sdlc_refactor",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_sdlc_refactor/numpy-array-dispatch-refac-001/instruction.md",
+        "original_wording": "originals/numpy-array-dispatch-refac-001/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/numpy-array-dispatch-refac-001/environment/Dockerfile",
+            "sha256": "14fc463785d0dec137260bf774c4f38c3a738ceb9d7ecc90bcc2f4a7096ce1b4"
+          },
+          {
+            "path": "originals/numpy-array-dispatch-refac-001/instruction.md",
+            "sha256": "5e52755f3e1b74fbcd60477d5737c0bf67f737d610f41d8f5c9b1c65a44107a2"
+          },
+          {
+            "path": "originals/numpy-array-dispatch-refac-001/task.toml",
+            "sha256": "08cb9e77863823fb76fdf364ba06669bb3aef2a338bd7050b4229465955a046d"
+          },
+          {
+            "path": "originals/numpy-array-dispatch-refac-001/tests/ground_truth.json",
+            "sha256": "2c2587ef34e03aa22c55e1a1d177c0aa86139e98f66027baf1383e817c2521c4"
+          }
+        ]
+      },
+      "language": "Python",
+      "reference_answer": "array_function_dispatch validates signatures when enabled, constructs _ArrayFunctionDispatcher, preserves wrapper metadata and records the public API. _median_dispatcher returns a and out, and median is decorated with array_function_dispatch using that dispatcher.",
+      "split": "held_out"
+    },
+    {
+      "id": "numpy-rolling-median-feat-001",
+      "source": "numpy-v2.2.2",
+      "group": "behavior",
+      "question": "Before adding a rolling reduction, explain how the existing median reduction selects the middle values and how allowing input overwrite changes its work.",
+      "duplicate_cluster": "numpy-median",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "The median implementation chooses the two middle partition indexes for even lengths and one middle index for odd lengths.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "With overwrite_input it partitions a directly when an axis is supplied, or partitions the result of a.ravel() when axis is None; otherwise it obtains a partitioned result. It averages the middle selection, except a scalar partition result is returned with item().",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "numpy/lib/_function_base_impl.py",
+              "start": 4005,
+              "end": 4019,
+              "excerpt_sha256": "493ff199d8bf348e437f34aeec3848251370e42e558a8488f4f73b44102fb17a",
+              "source_url": "https://github.com/sg-evals/numpy--v2.2.2/blob/9ca88bff35bf60de74f9f95e6f90e6b4e0913e78/numpy/lib/_function_base_impl.py#L4005-L4019"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "numpy/lib/_function_base_impl.py",
+              "start": 4026,
+              "end": 4053,
+              "excerpt_sha256": "2b63460c31faf756490ed7c497e9423ea349de4df04e7590bfb80bf6f42ba30a",
+              "source_url": "https://github.com/sg-evals/numpy--v2.2.2/blob/9ca88bff35bf60de74f9f95e6f90e6b4e0913e78/numpy/lib/_function_base_impl.py#L4026-L4053"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "numpy-rolling-median-feat-001",
+        "suite": "csb_sdlc_feature",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_sdlc_feature/numpy-rolling-median-feat-001/instruction.md",
+        "original_wording": "originals/numpy-rolling-median-feat-001/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/numpy-rolling-median-feat-001/environment/Dockerfile",
+            "sha256": "6c8a8f511a25223645960a846989c8b6a95a7302f439ebae205d8a7215cb552e"
+          },
+          {
+            "path": "originals/numpy-rolling-median-feat-001/instruction.md",
+            "sha256": "ded2a91eec9875557ee5bf31e525799d81ab79030c8d920477c9ceb809783c58"
+          },
+          {
+            "path": "originals/numpy-rolling-median-feat-001/task.toml",
+            "sha256": "2c8dc52ea782fcd18c004312259673f2b60cdcb0e655498a32d4c8c6737a55a5"
+          },
+          {
+            "path": "originals/numpy-rolling-median-feat-001/tests/ground_truth.json",
+            "sha256": "abf0a848eb1235573c101775fd4fe556037790d8a313e53cb978a9ecd3278e2b"
+          }
+        ]
+      },
+      "language": "Python",
+      "reference_answer": "The median implementation chooses the two middle partition indexes for even lengths and one middle index for odd lengths. With overwrite_input it partitions a directly when an axis is supplied, or partitions the result of a.ravel() when axis is None; otherwise it obtains a partitioned result. It averages the middle selection, except a scalar partition result is returned with item().",
+      "split": "held_out"
+    },
+    {
+      "id": "vscode-custom-fold-region-feat-001",
+      "source": "vscode-138f619c",
+      "group": "cross_file",
+      "question": "Locate the provider folding-range collector and FoldingRegions. Explain how collected ranges become stored line indexes and how the storage validates their sizes.",
+      "duplicate_cluster": "vscode-custom-fold-region-feat-001",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "RangesCollector stores start/end indexes, type and nesting level; when within the folding limit it builds typed arrays and creates FoldingRegions.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "FoldingRegions rejects unequal start/end lengths or more than MAX_FOLDING_REGIONS and stores the indexes, types and separate state bit fields.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/vs/editor/contrib/folding/browser/syntaxRangeProvider.ts",
+              "start": 107,
+              "end": 133,
+              "excerpt_sha256": "97ada71d22c4c4c6014228fa4cd7e5cf9889325fa9e2d6d5fd053f2cc3d62304",
+              "source_url": "https://github.com/sg-evals/vscode--138f619c/blob/7344a1807afca4c7dbac122b9a8952fd73001f85/src/vs/editor/contrib/folding/browser/syntaxRangeProvider.ts#L107-L133"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/vs/editor/contrib/folding/browser/foldingRanges.ts",
+              "start": 63,
+              "end": 84,
+              "excerpt_sha256": "610348d7e23a53278c71abbd7c41325e67c42d8824134cf28825a08ba94c2608",
+              "source_url": "https://github.com/sg-evals/vscode--138f619c/blob/7344a1807afca4c7dbac122b9a8952fd73001f85/src/vs/editor/contrib/folding/browser/foldingRanges.ts#L63-L84"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "vscode-custom-fold-region-feat-001",
+        "suite": "csb_sdlc_feature",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_sdlc_feature/vscode-custom-fold-region-feat-001/instruction.md",
+        "original_wording": "originals/vscode-custom-fold-region-feat-001/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/vscode-custom-fold-region-feat-001/environment/Dockerfile",
+            "sha256": "96f3609404d4d24928754a47f82df4467a34a172ca73a28d1a6c270ca80c5566"
+          },
+          {
+            "path": "originals/vscode-custom-fold-region-feat-001/instruction.md",
+            "sha256": "e2286c2a04b63bbc7ba8dcb2ded3cde82d0adb22f7a471fb367f643c248d19d1"
+          },
+          {
+            "path": "originals/vscode-custom-fold-region-feat-001/task.toml",
+            "sha256": "9ad9b75e016c48a8d568cf2a9dfdbebdb5f2f60694eff62be078b715f9f07dbd"
+          },
+          {
+            "path": "originals/vscode-custom-fold-region-feat-001/tests/ground_truth.json",
+            "sha256": "b566d7d5ab3b84e9eaddbb38f7954cdde58c341a61199b3ef7e4fce3252e07d5"
+          }
+        ]
+      },
+      "language": "TypeScript",
+      "reference_answer": "RangesCollector stores start/end indexes, type and nesting level; when within the folding limit it builds typed arrays and creates FoldingRegions. FoldingRegions rejects unequal start/end lengths or more than MAX_FOLDING_REGIONS and stores the indexes, types and separate state bit fields.",
+      "split": "held_out"
+    },
+    {
+      "id": "vscode-stale-diagnostics-feat-001",
+      "source": "vscode-138f619c",
+      "group": "cross_file",
+      "question": "Trace diagnostic updates from the extension host into the main-thread marker service. Explain how per-file overflow and clearing an owner are represented.",
+      "duplicate_cluster": "vscode-stale-diagnostics-feat-001",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "The extension host prioritizes diagnostic severities up to the per-file limit, adds an informational omitted-diagnostics marker, and sends entries through $changeMany.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "MainThreadDiagnostics revives and canonicalizes resource URIs and calls changeOne for the owner; $clear removes all owner markers through changeAll.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/vs/workbench/api/common/extHostDiagnostics.ts",
+              "start": 127,
+              "end": 171,
+              "excerpt_sha256": "7467f11e8df581b6d7f10edb9bd028de3def418dc85c7caef4bd5d6c5fa847db",
+              "source_url": "https://github.com/sg-evals/vscode--138f619c/blob/7344a1807afca4c7dbac122b9a8952fd73001f85/src/vs/workbench/api/common/extHostDiagnostics.ts#L127-L171"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/vs/workbench/api/browser/mainThreadDiagnostics.ts",
+              "start": 55,
+              "end": 77,
+              "excerpt_sha256": "0a20fd13b199df1d5d1a3a41665f99c90eff185dc8b22a62b4b5f7c3469a374b",
+              "source_url": "https://github.com/sg-evals/vscode--138f619c/blob/7344a1807afca4c7dbac122b9a8952fd73001f85/src/vs/workbench/api/browser/mainThreadDiagnostics.ts#L55-L77"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Replace implementation, patch, file-output and artificial incident requirements with the separately stated read-only question and source-grounded reference claims. Use the complete locked source without Dockerfile mutations. No code-edit score is retained.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "vscode-stale-diagnostics-feat-001",
+        "suite": "csb_sdlc_feature",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_sdlc_feature/vscode-stale-diagnostics-feat-001/instruction.md",
+        "original_wording": "originals/vscode-stale-diagnostics-feat-001/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/vscode-stale-diagnostics-feat-001/environment/Dockerfile",
+            "sha256": "a42fb1aeb221b313568f8b5d86fa10d2e6e785f0be5a0fe038b1348f080dc940"
+          },
+          {
+            "path": "originals/vscode-stale-diagnostics-feat-001/instruction.md",
+            "sha256": "465122341d20ac65251491a7ea5564ce8e9b02062339bbec8a2d29c7ff0cd099"
+          },
+          {
+            "path": "originals/vscode-stale-diagnostics-feat-001/task.toml",
+            "sha256": "b9e7c44d0c3a4001976f12696a980847651dd39f450021e05aad9229b4635134"
+          },
+          {
+            "path": "originals/vscode-stale-diagnostics-feat-001/tests/ground_truth.json",
+            "sha256": "d3f71d2a85cf47801eb56fcd7d65312172d6816752dbeb7a677adf76bef89765"
+          }
+        ]
+      },
+      "language": "TypeScript",
+      "reference_answer": "The extension host prioritizes diagnostic severities up to the per-file limit, adds an informational omitted-diagnostics marker, and sends entries through $changeMany. MainThreadDiagnostics revives and canonicalizes resource URIs and calls changeOne for the owner; $clear removes all owner markers through changeAll.",
+      "split": "held_out"
+    },
+    {
+      "id": "ccx-onboard-search-213",
+      "source": "vscode-17baf841",
+      "group": "behavior",
+      "question": "Find the three-way configuration comparison routine that receives added, removed and updated key sets for local, remote and base versions. Explain deletion/update conflicts and when remote additions or updates are accepted.",
+      "duplicate_cluster": "ccx-onboard-search-213",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "computeMergeResult in keybindingsMerge records conflicts when one side removes a key and the other updates it, otherwise accepting remote removals.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "Divergent concurrent additions or updates conflict; additions or updates made only remotely enter the corresponding result sets.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/vs/platform/userDataSync/common/keybindingsMerge.ts",
+              "start": 108,
+              "end": 134,
+              "excerpt_sha256": "a1116aad5261724b623e4f21074338d07bd6330023adcbaa5f0e4b1e7e095a43",
+              "source_url": "https://github.com/sg-evals/vscode--17baf841/blob/ed42c2c6dbfaa324107c2dc719bc2bccbf1d8271/src/vs/platform/userDataSync/common/keybindingsMerge.ts#L108-L134"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/vs/platform/userDataSync/common/keybindingsMerge.ts",
+              "start": 136,
+              "end": 197,
+              "excerpt_sha256": "d0dd17904df94de2be7f0089e273c311a059e0cf8adf0866f1bc82ec51a554f1",
+              "source_url": "https://github.com/sg-evals/vscode--17baf841/blob/ed42c2c6dbfaa324107c2dc719bc2bccbf1d8271/src/vs/platform/userDataSync/common/keybindingsMerge.ts#L136-L197"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Keep the behavioral discovery task and replace the answer-file protocol with the corpus contract. The published oracle chunk 1-50 does not contain computeMergeResult; correct it to the verified ranges. The relevant routine is in keybindingsMerge.ts, not the adjacent settingsMerge.ts.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "ccx-onboard-search-213",
+        "suite": "csb_org_onboarding",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_org_onboarding/ccx-onboard-search-213/instruction.md",
+        "original_wording": "originals/ccx-onboard-search-213/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/ccx-onboard-search-213/environment/Dockerfile",
+            "sha256": "2765d816795a0d20bc2014d2b68d2bb17b2c8ef7ad116a8304a700da97630632"
+          },
+          {
+            "path": "originals/ccx-onboard-search-213/instruction.md",
+            "sha256": "6bfd68ad2d54bb26beab111ec1b60bb96dfad56bbaf7e6594fede960c024ea86"
+          },
+          {
+            "path": "originals/ccx-onboard-search-213/task.toml",
+            "sha256": "54aa0d76a98b69153af452a179adc2a214fd2024e3517be2b3dd98f21b9ff9ff"
+          },
+          {
+            "path": "originals/ccx-onboard-search-213/tests/ground_truth.json",
+            "sha256": "e3f8f26c04d2b0774fa81ef2f69771e60025744bf956056523ced2bdc67c91f9"
+          },
+          {
+            "path": "originals/ccx-onboard-search-213/tests/oracle_answer.json",
+            "sha256": "b9b5c4c5a7012fdf230ca8f20928d290566fed11f394d477e330109e2239123b"
+          }
+        ]
+      },
+      "language": "TypeScript",
+      "reference_answer": "computeMergeResult in keybindingsMerge records conflicts when one side removes a key and the other updates it, otherwise accepting remote removals. Divergent concurrent additions or updates conflict; additions or updates made only remotely enter the corresponding result sets.",
+      "split": "held_out"
+    },
+    {
+      "id": "ccx-onboard-search-211",
+      "source": "scikit-learn-cb7e82dd",
+      "group": "behavior",
+      "question": "Find the ICA fitting routine that optionally whitens observations and dispatches parallel or deflation fitting. Explain its fitted attributes and the interaction between source computation and unit-variance whitening.",
+      "duplicate_cluster": "ccx-onboard-search-211",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "FastICA._fit_transform validates and transposes observations, optionally centers and whitens them, and dispatches to _ica_par or _ica_def.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "It records components, mixing and unmixing matrices. compute_sources=False initially sets S=None, but unit-variance whitening computes S for normalization even in that case.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "sklearn/decomposition/_fastica.py",
+              "start": 550,
+              "end": 670,
+              "excerpt_sha256": "948ae9c5b119daad00b915d7fea06eb451a1d419ee865a5934dda11d2bfeceac",
+              "source_url": "https://github.com/sg-evals/scikit-learn--cb7e82dd/blob/72904752e88f414cbc543dac5945b6c8dd7b34fa/sklearn/decomposition/_fastica.py#L550-L670"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "sklearn/decomposition/_fastica.py",
+              "start": 673,
+              "end": 700,
+              "excerpt_sha256": "a5cbafe7acfb7153d2b6e67e0f220063509be6ee736569487aaaac9b3126747e",
+              "source_url": "https://github.com/sg-evals/scikit-learn--cb7e82dd/blob/72904752e88f414cbc543dac5945b6c8dd7b34fa/sklearn/decomposition/_fastica.py#L673-L700"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Keep behavioral discovery, correct placeholder oracle lines 1-50, and correct the published claim that compute_sources=False always returns None: the unit-variance branch computes and returns S.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "ccx-onboard-search-211",
+        "suite": "csb_org_onboarding",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_org_onboarding/ccx-onboard-search-211/instruction.md",
+        "original_wording": "originals/ccx-onboard-search-211/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/ccx-onboard-search-211/environment/Dockerfile",
+            "sha256": "fc7b3f44e994f49d289f21ae826334438a8a20288d4487da2aabaf3a31c4849b"
+          },
+          {
+            "path": "originals/ccx-onboard-search-211/instruction.md",
+            "sha256": "be63383291471cfb6c1c62e750ff69a92dca9f163b7dd77c6fa4d2f109cf0e1f"
+          },
+          {
+            "path": "originals/ccx-onboard-search-211/task.toml",
+            "sha256": "d7a7024f383c1283bff481305dd74766214449a202347398917d66a5f63c55d6"
+          },
+          {
+            "path": "originals/ccx-onboard-search-211/tests/ground_truth.json",
+            "sha256": "3d4d04fb6e2a9184fa9a2c1427095e01407d885a657d7ab5ae98f7448dfb548e"
+          },
+          {
+            "path": "originals/ccx-onboard-search-211/tests/oracle_answer.json",
+            "sha256": "3e41791cd90929137919f58c65be3f1e431b8ea3422c9b96534cab3a22b3647a"
+          }
+        ]
+      },
+      "language": "Python",
+      "reference_answer": "FastICA._fit_transform validates and transposes observations, optionally centers and whitens them, and dispatches to _ica_par or _ica_def. It records components, mixing and unmixing matrices. compute_sources=False initially sets S=None, but unit-variance whitening computes S for normalization even in that case.",
+      "split": "held_out"
+    },
+    {
+      "id": "ccx-crossorg-218",
+      "source": "scikit-learn-cb7e82dd",
+      "group": "cross_file",
+      "question": "Locate ConvergenceWarning and check_is_fitted. Explain whether the latter warns or raises when a required fitted state is absent.",
+      "duplicate_cluster": "ccx-crossorg-218",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "ConvergenceWarning is a UserWarning subclass for convergence problems.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "check_is_fitted returns for estimators that do not require fitting when no attributes are requested, otherwise raises NotFittedError if the fitted-state test fails.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "sklearn/exceptions.py",
+              "start": 68,
+              "end": 73,
+              "excerpt_sha256": "2d36e3664bdfd0921c560b85d9571ffa70f1f89859bd69fb74d612b36ee4887e",
+              "source_url": "https://github.com/sg-evals/scikit-learn--cb7e82dd/blob/72904752e88f414cbc543dac5945b6c8dd7b34fa/sklearn/exceptions.py#L68-L73"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "sklearn/utils/validation.py",
+              "start": 1690,
+              "end": 1705,
+              "excerpt_sha256": "c2db5ba189cae6b2f9f00bca2422589971f5f81836f6751e9c9e63a9fdc74f4f",
+              "source_url": "https://github.com/sg-evals/scikit-learn--cb7e82dd/blob/72904752e88f414cbc543dac5945b6c8dd7b34fa/sklearn/utils/validation.py#L1690-L1705"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Narrow the broad logging/warning inventory to two existing contracts. Correct the prompt description of check_is_fitted as a warning: the source raises NotFittedError. Rebuild mandatory evidence instead of adopting inconsistent upstream file lists.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "ccx-crossorg-218",
+        "suite": "csb_org_crossorg",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_org_crossorg/ccx-crossorg-218/instruction.md",
+        "original_wording": "originals/ccx-crossorg-218/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/ccx-crossorg-218/environment/Dockerfile",
+            "sha256": "fc1789a599503a8a4bd6fe592c4b35e67c447e44d87666e129c0ff8482631389"
+          },
+          {
+            "path": "originals/ccx-crossorg-218/instruction.md",
+            "sha256": "fe8fddbb048e51672de66f07e6d9b141f222e4481c7961b8b9046226305857e1"
+          },
+          {
+            "path": "originals/ccx-crossorg-218/task.toml",
+            "sha256": "d57ff4a6a6c7218f0fddc3a65ff924772a0dffa936687379040f3035dfe96ef3"
+          },
+          {
+            "path": "originals/ccx-crossorg-218/tests/ground_truth.json",
+            "sha256": "a9ad023a96ff16bfe8e272ce50df2b7e881fc95b375613015042d566335482ff"
+          },
+          {
+            "path": "originals/ccx-crossorg-218/tests/oracle_answer.json",
+            "sha256": "607ae09f0cfb4291fecafb06fe7de29c3b2cfb779efa99f30880a34572e92ec6"
+          },
+          {
+            "path": "originals/ccx-crossorg-218/tests/task_spec.json",
+            "sha256": "77fbcfd8cd216b7a2ba5b71142d88a732ef3b7f5598b3de89fb4e98ad9039b16"
+          }
+        ]
+      },
+      "language": "Python",
+      "reference_answer": "ConvergenceWarning is a UserWarning subclass for convergence problems. check_is_fitted returns for estimators that do not require fitting when no attributes are requested, otherwise raises NotFittedError if the fitted-state test fails.",
+      "split": "held_out"
+    },
+    {
+      "id": "ccx-onboard-search-212",
+      "source": "pandas-41968da5",
+      "group": "behavior",
+      "question": "Find the internal single-aggregation pivot-table routine. Explain how it groups and aggregates values, turns column grouping levels into columns, fills gaps and handles requested totals.",
+      "duplicate_cluster": "ccx-onboard-search-212",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "__internal_pivot_table validates requested value columns and groups data by index plus column keys, then applies the aggregation.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "It unstacks column levels, handles missing combinations and fill values, sorts columns when requested and invokes _add_margins for requested totals.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "pandas/core/reshape/pivot.py",
+              "start": 284,
+              "end": 344,
+              "excerpt_sha256": "75941315158b456e7ecb5c5e16c35504ee118eecfec03fdf7b30b7b60f1086ab",
+              "source_url": "https://github.com/sg-evals/pandas--41968da5/blob/41968da5f87873dd49b2cff1da853c90181f7f89/pandas/core/reshape/pivot.py#L284-L344"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "pandas/core/reshape/pivot.py",
+              "start": 351,
+              "end": 400,
+              "excerpt_sha256": "f31244d18d1990d9993e5b2eb75b72cb9eac6b7558db5de8cb283e82c4ae2f32",
+              "source_url": "https://github.com/sg-evals/pandas--41968da5/blob/41968da5f87873dd49b2cff1da853c90181f7f89/pandas/core/reshape/pivot.py#L351-L400"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Keep behavioral discovery and change output to the corpus contract. Replace upstream placeholder oracle lines 1-50 with the actual helper ranges.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "ccx-onboard-search-212",
+        "suite": "csb_org_onboarding",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_org_onboarding/ccx-onboard-search-212/instruction.md",
+        "original_wording": "originals/ccx-onboard-search-212/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/ccx-onboard-search-212/environment/Dockerfile",
+            "sha256": "876f6332ffef46fdb9b474b6796f1392f8131dd9d65700e4222c35d9137478ad"
+          },
+          {
+            "path": "originals/ccx-onboard-search-212/instruction.md",
+            "sha256": "e575fd0c0abc90eb77a411677c45258ca0da70289bf1dca86b45097f95c3fe9d"
+          },
+          {
+            "path": "originals/ccx-onboard-search-212/task.toml",
+            "sha256": "ab065cd5d5b0126c88c4acb40bf8e0fdddbcff59be6fb9e0efde5907254014a0"
+          },
+          {
+            "path": "originals/ccx-onboard-search-212/tests/ground_truth.json",
+            "sha256": "4ead93591b1b1f9ec28693e6d904f1ba00f4d4b60a00e268d0efb548254ab682"
+          },
+          {
+            "path": "originals/ccx-onboard-search-212/tests/oracle_answer.json",
+            "sha256": "feda95e9fb29b446039ed97e0a98d72b6b7b474e0e3c94a90a707b826b811a28"
+          }
+        ]
+      },
+      "language": "Python",
+      "reference_answer": "__internal_pivot_table validates requested value columns and groups data by index plus column keys, then applies the aggregation. It unstacks column levels, handles missing combinations and fill values, sorts columns when requested and invokes _add_margins for requested totals.",
+      "split": "held_out"
+    },
+    {
+      "id": "ccx-onboard-search-210",
+      "source": "envoy-d7809ba2",
+      "group": "behavior",
+      "question": "Find the routine that takes an upstream connection after the pool succeeds, configures the downstream account and protocol state, sets request timeouts and optional host rewriting, then notifies connection callbacks.",
+      "duplicate_cluster": "ccx-onboard-search-210",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "UpstreamRequest::onPoolReady takes ownership of the upstream, installs the downstream account, reports connection success and records protocol state.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "It starts or defers the per-try timeout, registers watermark callbacks, starts a nonzero maximum-duration timer, conditionally rewrites authority and invokes upstream-established callbacks.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "source/common/router/upstream_request.cc",
+              "start": 584,
+              "end": 607,
+              "excerpt_sha256": "23aa342633010542e82cd291d63018f585b2471ab8780ad09e4d1dbac506f20d",
+              "source_url": "https://github.com/sg-evals/envoy--d7809ba2/blob/449050ec9ea290303692f0ec2b09fceb31308b9a/source/common/router/upstream_request.cc#L584-L607"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "source/common/router/upstream_request.cc",
+              "start": 651,
+              "end": 696,
+              "excerpt_sha256": "7768e5fc856c0660a909f43b062a476f31fe0f773e1714734dc4c36fbaafb55c",
+              "source_url": "https://github.com/sg-evals/envoy--d7809ba2/blob/449050ec9ea290303692f0ec2b09fceb31308b9a/source/common/router/upstream_request.cc#L651-L696"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Keep behavioral discovery and change output to the corpus contract. Replace upstream placeholder oracle lines 1-50 with the actual onPoolReady ranges.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "published",
+        "task_id": "ccx-onboard-search-210",
+        "suite": "csb_org_onboarding",
+        "source_url": "https://github.com/sourcegraph/CodeScaleBench/blob/8d5f3c876c28a5033634facf42c21da9ebc6fcd6/benchmarks/csb_org_onboarding/ccx-onboard-search-210/instruction.md",
+        "original_wording": "originals/ccx-onboard-search-210/instruction.md",
+        "original_files": [
+          {
+            "path": "originals/ccx-onboard-search-210/environment/Dockerfile",
+            "sha256": "7ef4695ab48913fdcbd49b16203b9d0042f0073b3ee7403ad1651e4b3920f707"
+          },
+          {
+            "path": "originals/ccx-onboard-search-210/instruction.md",
+            "sha256": "7c6fe1f8252d5e5ed623eaa6f089cfe551d8b5764ca11b3287f172170109d038"
+          },
+          {
+            "path": "originals/ccx-onboard-search-210/task.toml",
+            "sha256": "ce4c01a173862c8d1b9b1cca194917bfadcd365fdc40c486f7516daa6773e4cb"
+          },
+          {
+            "path": "originals/ccx-onboard-search-210/tests/ground_truth.json",
+            "sha256": "da0241ac5a96568c877c5bf5213998a49df36e3dfa364e750d674b86b7d3c9d5"
+          },
+          {
+            "path": "originals/ccx-onboard-search-210/tests/oracle_answer.json",
+            "sha256": "3a51a71ad47485e1bb82b5236f648fcafbf0ac4abfe71db5fb2ad9d2cc28a38f"
+          }
+        ]
+      },
+      "language": "C++",
+      "reference_answer": "UpstreamRequest::onPoolReady takes ownership of the upstream, installs the downstream account, reports connection success and records protocol state. It starts or defers the per-try timeout, registers watermark callbacks, starts a nonzero maximum-duration timer, conditionally rewrites authority and invokes upstream-established callbacks.",
+      "split": "held_out"
+    },
+    {
+      "id": "eshop-basket-identity",
+      "source": "eshop-b4a40872",
+      "group": "identifier",
+      "question": "Locate GetUserIdentity and trace how BasketService uses it for reads and updates when the caller has no identity.",
+      "duplicate_cluster": "eshop-basket-identity",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "GetUserIdentity reads the authenticated HTTP user sub claim.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "GetBasket returns an empty response for missing identity; UpdateBasket invokes ThrowNotAuthenticated and otherwise builds and saves a basket using the caller ID.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/Basket.API/Extensions/ServerCallContextIdentityExtensions.cs",
+              "start": 5,
+              "end": 8,
+              "excerpt_sha256": "f7ce5740704bc14b19f5004f8fd6caa35dd1686b3f0ea867f692eeb653099f64",
+              "source_url": "https://github.com/dotnet/eShop/blob/b4a40872005d4bb29e5b1fa1ff7e244143d39215/src/Basket.API/Extensions/ServerCallContextIdentityExtensions.cs#L5-L8"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/Basket.API/Grpc/BasketService.cs",
+              "start": 13,
+              "end": 57,
+              "excerpt_sha256": "1d85db7af1f4c224aadce27e9d1668514122cd743d28d9d99dcd40be44322568",
+              "source_url": "https://github.com/dotnet/eShop/blob/b4a40872005d4bb29e5b1fa1ff7e244143d39215/src/Basket.API/Grpc/BasketService.cs#L13-L57"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Authored for the exact eShop source revision. The stated reference claims describe the checked-in behavior, including failure cases; no application or dependency code was executed.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "authored",
+        "source_url": "https://github.com/dotnet/eShop/tree/b4a40872005d4bb29e5b1fa1ff7e244143d39215"
+      },
+      "language": "C#",
+      "reference_answer": "GetUserIdentity reads the authenticated HTTP user sub claim. GetBasket returns an empty response for missing identity; UpdateBasket invokes ThrowNotAuthenticated and otherwise builds and saves a basket using the caller ID.",
+      "split": "held_out"
+    },
+    {
+      "id": "eshop-basket-storage",
+      "source": "eshop-b4a40872",
+      "group": "identifier",
+      "question": "Locate RedisBasketRepository. Explain its key format, stored representation and behavior for missing reads, failed writes and deletion.",
+      "duplicate_cluster": "eshop-basket-storage",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "Basket keys append the user ID to /basket/ and deletion uses KeyDeleteAsync.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "Reads return null for missing or empty data and otherwise deserialize the stored JSON; updates serialize UTF-8 JSON, return null on a failed set and reread the basket after a successful set.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/Basket.API/Repositories/RedisBasketRepository.cs",
+              "start": 12,
+              "end": 20,
+              "excerpt_sha256": "eb54c67e29967fd2c0232614c69a04c43c4c71c4d1535a3a1f3aaa001ecc644d",
+              "source_url": "https://github.com/dotnet/eShop/blob/b4a40872005d4bb29e5b1fa1ff7e244143d39215/src/Basket.API/Repositories/RedisBasketRepository.cs#L12-L20"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/Basket.API/Repositories/RedisBasketRepository.cs",
+              "start": 23,
+              "end": 47,
+              "excerpt_sha256": "d6a9627cfcaa11b5781647b14b34e3c3c2ecc0c116325d794514114323a138b1",
+              "source_url": "https://github.com/dotnet/eShop/blob/b4a40872005d4bb29e5b1fa1ff7e244143d39215/src/Basket.API/Repositories/RedisBasketRepository.cs#L23-L47"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Authored for the exact eShop source revision. The stated reference claims describe the checked-in behavior, including failure cases; no application or dependency code was executed.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "authored",
+        "source_url": "https://github.com/dotnet/eShop/tree/b4a40872005d4bb29e5b1fa1ff7e244143d39215"
+      },
+      "language": "C#",
+      "reference_answer": "Basket keys append the user ID to /basket/ and deletion uses KeyDeleteAsync. Reads return null for missing or empty data and otherwise deserialize the stored JSON; updates serialize UTF-8 JSON, return null on a failed set and reread the basket after a successful set.",
+      "split": "held_out"
+    },
+    {
+      "id": "eshop-catalog-price-event",
+      "source": "eshop-b4a40872",
+      "group": "cross_file",
+      "question": "Trace an existing catalog item update when its price changes. What prices enter the event, and how does saving differ when the price is unchanged?",
+      "duplicate_cluster": "eshop-catalog-price-event",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "UpdateItem checks Price.IsModified, constructs a price-change event using the new price and OriginalValue, saves catalog changes with the event log, then publishes. Without a changed price it saves the catalog context directly.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "ProductPriceChangedIntegrationEvent carries ProductId, NewPrice and OldPrice.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/Catalog.API/Apis/CatalogApi.cs",
+              "start": 384,
+              "end": 405,
+              "excerpt_sha256": "7bc894e9f04cf3354feeee6f064e181ad2e79e059418e6cb2025a068ee0217c4",
+              "source_url": "https://github.com/dotnet/eShop/blob/b4a40872005d4bb29e5b1fa1ff7e244143d39215/src/Catalog.API/Apis/CatalogApi.cs#L384-L405"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/Catalog.API/IntegrationEvents/Events/ProductPriceChangedIntegrationEvent.cs",
+              "start": 1,
+              "end": 6,
+              "excerpt_sha256": "df29358902f3484f2674e213990dffc397fcf6ac0917ab00bffb44cfdea432cf",
+              "source_url": "https://github.com/dotnet/eShop/blob/b4a40872005d4bb29e5b1fa1ff7e244143d39215/src/Catalog.API/IntegrationEvents/Events/ProductPriceChangedIntegrationEvent.cs#L1-L6"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Authored for the exact eShop source revision. The stated reference claims describe the checked-in behavior, including failure cases; no application or dependency code was executed.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "authored",
+        "source_url": "https://github.com/dotnet/eShop/tree/b4a40872005d4bb29e5b1fa1ff7e244143d39215"
+      },
+      "language": "C#",
+      "reference_answer": "UpdateItem checks Price.IsModified, constructs a price-change event using the new price and OriginalValue, saves catalog changes with the event log, then publishes. Without a changed price it saves the catalog context directly. ProductPriceChangedIntegrationEvent carries ProductId, NewPrice and OldPrice.",
+      "split": "held_out"
+    },
+    {
+      "id": "eshop-order-add-product",
+      "source": "eshop-b4a40872",
+      "group": "cross_file",
+      "question": "What happens when the same product is added to an order again? Compare quantity and discount checks for a new item and for changes to an existing item.",
+      "duplicate_cluster": "eshop-order-add-product",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "Order.AddOrderItem finds an existing item by product ID, raises its discount only when the new discount is higher and adds units; otherwise it constructs a new OrderItem.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "The constructor rejects units at or below zero and discounts above unitPrice times units. It does not perform the separate negative-discount check used by SetNewDiscount.",
+          "evidence_groups": [
+            "g2"
+          ]
+        },
+        {
+          "id": "c3",
+          "text": "SetNewDiscount rejects negative discounts; AddUnits rejects negative increments but permits zero.",
+          "evidence_groups": [
+            "g3"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/Ordering.Domain/AggregatesModel/OrderAggregate/Order.cs",
+              "start": 71,
+              "end": 91,
+              "excerpt_sha256": "9e1c0463ae4653bf9497b30f3d7da070dcfd5b48d5b45fef777147acc05269c4",
+              "source_url": "https://github.com/dotnet/eShop/blob/b4a40872005d4bb29e5b1fa1ff7e244143d39215/src/Ordering.Domain/AggregatesModel/OrderAggregate/Order.cs#L71-L91"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/Ordering.Domain/AggregatesModel/OrderAggregate/OrderItem.cs",
+              "start": 23,
+              "end": 42,
+              "excerpt_sha256": "f0ef3e391c1dfa8e9a7bbdeb8f2bc814c391a39e61b826cefdefad682e59d678",
+              "source_url": "https://github.com/dotnet/eShop/blob/b4a40872005d4bb29e5b1fa1ff7e244143d39215/src/Ordering.Domain/AggregatesModel/OrderAggregate/OrderItem.cs#L23-L42"
+            }
+          ]
+        },
+        {
+          "id": "g3",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/Ordering.Domain/AggregatesModel/OrderAggregate/OrderItem.cs",
+              "start": 44,
+              "end": 62,
+              "excerpt_sha256": "46012037e61ac7ea83224b4ffa96c31c05fc64f3035e74d494694e0d84c3d6d0",
+              "source_url": "https://github.com/dotnet/eShop/blob/b4a40872005d4bb29e5b1fa1ff7e244143d39215/src/Ordering.Domain/AggregatesModel/OrderAggregate/OrderItem.cs#L44-L62"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Authored for the exact eShop source revision. The stated reference claims describe the checked-in behavior, including failure cases; no application or dependency code was executed.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "authored",
+        "source_url": "https://github.com/dotnet/eShop/tree/b4a40872005d4bb29e5b1fa1ff7e244143d39215"
+      },
+      "language": "C#",
+      "reference_answer": "Order.AddOrderItem finds an existing item by product ID, raises its discount only when the new discount is higher and adds units; otherwise it constructs a new OrderItem. The constructor rejects units at or below zero and discounts above unitPrice times units. It does not perform the separate negative-discount check used by SetNewDiscount. SetNewDiscount rejects negative discounts; AddUnits rejects negative increments but permits zero.",
+      "split": "held_out"
+    },
+    {
+      "id": "eshop-order-paid",
+      "source": "eshop-b4a40872",
+      "group": "identifier",
+      "question": "Locate Order.SetPaidStatus. Which prior status permits a transition, and what state and domain event does the method produce?",
+      "duplicate_cluster": "eshop-order-status",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "SetPaidStatus acts only when the order is StockConfirmed, adds OrderStatusChangedToPaidDomainEvent, assigns Paid and a payment description. Other statuses leave this method without a change.",
+          "evidence_groups": [
+            "g1"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/Ordering.Domain/AggregatesModel/OrderAggregate/Order.cs",
+              "start": 119,
+              "end": 128,
+              "excerpt_sha256": "256c50469fe1fa7142c2fd58a5970f35ce931e7ecb15cb1ece77cb088c294403",
+              "source_url": "https://github.com/dotnet/eShop/blob/b4a40872005d4bb29e5b1fa1ff7e244143d39215/src/Ordering.Domain/AggregatesModel/OrderAggregate/Order.cs#L119-L128"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Authored for the exact eShop source revision. The stated reference claims describe the checked-in behavior, including failure cases; no application or dependency code was executed.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "authored",
+        "source_url": "https://github.com/dotnet/eShop/tree/b4a40872005d4bb29e5b1fa1ff7e244143d39215"
+      },
+      "language": "C#",
+      "reference_answer": "SetPaidStatus acts only when the order is StockConfirmed, adds OrderStatusChangedToPaidDomainEvent, assigns Paid and a payment description. Other statuses leave this method without a change.",
+      "split": "held_out"
+    },
+    {
+      "id": "eshop-order-cancellation",
+      "source": "eshop-b4a40872",
+      "group": "behavior",
+      "question": "Which orders cannot be cancelled through the general cancellation operation? Contrast that with cancellation after stock rejection.",
+      "duplicate_cluster": "eshop-order-status",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "SetCancelledStatus rejects Paid and Shipped orders; otherwise it sets Cancelled, records a description and adds OrderCancelledDomainEvent.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "The stock-rejection method acts only in AwaitingValidation, sets Cancelled and records the names of rejected products in its description.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/Ordering.Domain/AggregatesModel/OrderAggregate/Order.cs",
+              "start": 142,
+              "end": 153,
+              "excerpt_sha256": "e2eb2fc1d5abc9d9accc372e3c628b09d9006c9108aee2abefa751e9a7746088",
+              "source_url": "https://github.com/dotnet/eShop/blob/b4a40872005d4bb29e5b1fa1ff7e244143d39215/src/Ordering.Domain/AggregatesModel/OrderAggregate/Order.cs#L142-L153"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/Ordering.Domain/AggregatesModel/OrderAggregate/Order.cs",
+              "start": 155,
+              "end": 168,
+              "excerpt_sha256": "6f3715b226de53a473c2463f949bd64dc5add680385148f496802c4fd0f81409",
+              "source_url": "https://github.com/dotnet/eShop/blob/b4a40872005d4bb29e5b1fa1ff7e244143d39215/src/Ordering.Domain/AggregatesModel/OrderAggregate/Order.cs#L155-L168"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Authored for the exact eShop source revision. The stated reference claims describe the checked-in behavior, including failure cases; no application or dependency code was executed.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "authored",
+        "source_url": "https://github.com/dotnet/eShop/tree/b4a40872005d4bb29e5b1fa1ff7e244143d39215"
+      },
+      "language": "C#",
+      "reference_answer": "SetCancelledStatus rejects Paid and Shipped orders; otherwise it sets Cancelled, records a description and adds OrderCancelledDomainEvent. The stock-rejection method acts only in AwaitingValidation, sets Cancelled and records the names of rejected products in its description.",
+      "split": "held_out"
+    },
+    {
+      "id": "eshop-stock-check-and-removal",
+      "source": "eshop-b4a40872",
+      "group": "cross_file",
+      "question": "Trace stock checking for an order awaiting validation and the later removal of stock. What happens to a requested product that the catalog lookup cannot find during validation?",
+      "duplicate_cluster": "eshop-stock-check-and-removal",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "The validation handler checks AvailableStock against requested units only for found catalog products. Missing products add no confirmation record. It rejects when any recorded product lacks stock and otherwise confirms.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "The paid-order handler removes units from found catalog items and then saves the catalog context; the earlier check does not reserve stock.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/Catalog.API/IntegrationEvents/EventHandling/OrderStatusChangedToAwaitingValidationIntegrationEventHandler.cs",
+              "start": 13,
+              "end": 32,
+              "excerpt_sha256": "7fc37362f2bab42462c98822dd02ef644969ace3f8b642025a953594b3b40242",
+              "source_url": "https://github.com/dotnet/eShop/blob/b4a40872005d4bb29e5b1fa1ff7e244143d39215/src/Catalog.API/IntegrationEvents/EventHandling/OrderStatusChangedToAwaitingValidationIntegrationEventHandler.cs#L13-L32"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/Catalog.API/IntegrationEvents/EventHandling/OrderStatusChangedToPaidIntegrationEventHandler.cs",
+              "start": 8,
+              "end": 20,
+              "excerpt_sha256": "952a5c45d258a2e68d7b01afb604a6a17a8d745a9eb27fdd8cf2a0677428a529",
+              "source_url": "https://github.com/dotnet/eShop/blob/b4a40872005d4bb29e5b1fa1ff7e244143d39215/src/Catalog.API/IntegrationEvents/EventHandling/OrderStatusChangedToPaidIntegrationEventHandler.cs#L8-L20"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Authored for the exact eShop source revision. The stated reference claims describe the checked-in behavior, including failure cases; no application or dependency code was executed.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "authored",
+        "source_url": "https://github.com/dotnet/eShop/tree/b4a40872005d4bb29e5b1fa1ff7e244143d39215"
+      },
+      "language": "C#",
+      "reference_answer": "The validation handler checks AvailableStock against requested units only for found catalog products. Missing products add no confirmation record. It rejects when any recorded product lacks stock and otherwise confirms. The paid-order handler removes units from found catalog items and then saves the catalog context; the earlier check does not reserve stock.",
+      "split": "development"
+    },
+    {
+      "id": "eshop-grace-period",
+      "source": "eshop-b4a40872",
+      "group": "cross_file",
+      "question": "Trace how the order processor chooses orders whose grace period has elapsed and what it publishes. How does a database query error affect the batch?",
+      "duplicate_cluster": "eshop-grace-period",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "The repository selects Submitted orders whose age is at least the supplied grace period. An NpgsqlException is logged and produces an empty ID list.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "The manager converts configured grace-period minutes to TimeSpan and publishes a GracePeriodConfirmedIntegrationEvent for each returned order ID.",
+          "evidence_groups": [
+            "g2"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/OrderProcessor/Services/GracePeriodOrdersRepository.cs",
+              "start": 16,
+              "end": 45,
+              "excerpt_sha256": "f41860b6f2faccd85faaf530f546aae8083b96a68015c0e47317e01a22f3c4f3",
+              "source_url": "https://github.com/dotnet/eShop/blob/b4a40872005d4bb29e5b1fa1ff7e244143d39215/src/OrderProcessor/Services/GracePeriodOrdersRepository.cs#L16-L45"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/OrderProcessor/Services/GracePeriodManagerService.cs",
+              "start": 43,
+              "end": 62,
+              "excerpt_sha256": "890999393ff6bdb5a030a1a897f4b4a26a8becc35c5beb4ae0eef6ccc6e2125b",
+              "source_url": "https://github.com/dotnet/eShop/blob/b4a40872005d4bb29e5b1fa1ff7e244143d39215/src/OrderProcessor/Services/GracePeriodManagerService.cs#L43-L62"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Authored for the exact eShop source revision. The stated reference claims describe the checked-in behavior, including failure cases; no application or dependency code was executed.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "authored",
+        "source_url": "https://github.com/dotnet/eShop/tree/b4a40872005d4bb29e5b1fa1ff7e244143d39215"
+      },
+      "language": "C#",
+      "reference_answer": "The repository selects Submitted orders whose age is at least the supplied grace period. An NpgsqlException is logged and produces an empty ID list. The manager converts configured grace-period minutes to TimeSpan and publishes a GracePeriodConfirmedIntegrationEvent for each returned order ID.",
+      "split": "held_out"
+    },
+    {
+      "id": "eshop-payment-choice",
+      "source": "eshop-b4a40872",
+      "group": "behavior",
+      "question": "How does the payment processor choose a successful or failed payment outcome after stock confirmation? Is this decision based on a payment gateway response?",
+      "duplicate_cluster": "eshop-payment-choice",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "The stock-confirmation handler reads the current PaymentSucceeded option to choose OrderPaymentSucceededIntegrationEvent or OrderPaymentFailedIntegrationEvent and publishes it. The code simulates payment rather than calling a gateway.",
+          "evidence_groups": [
+            "g1"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/PaymentProcessor/IntegrationEvents/EventHandling/OrderStatusChangedToStockConfirmedIntegrationEventHandler.cs",
+              "start": 9,
+              "end": 32,
+              "excerpt_sha256": "44717c1c45863aba5634eea941892de81ad4d8a9396d1f080ae1f8c08b3661bf",
+              "source_url": "https://github.com/dotnet/eShop/blob/b4a40872005d4bb29e5b1fa1ff7e244143d39215/src/PaymentProcessor/IntegrationEvents/EventHandling/OrderStatusChangedToStockConfirmedIntegrationEventHandler.cs#L9-L32"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Authored for the exact eShop source revision. The stated reference claims describe the checked-in behavior, including failure cases; no application or dependency code was executed.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "authored",
+        "source_url": "https://github.com/dotnet/eShop/tree/b4a40872005d4bb29e5b1fa1ff7e244143d39215"
+      },
+      "language": "C#",
+      "reference_answer": "The stock-confirmation handler reads the current PaymentSucceeded option to choose OrderPaymentSucceededIntegrationEvent or OrderPaymentFailedIntegrationEvent and publishes it. The code simulates payment rather than calling a gateway.",
+      "split": "development"
+    },
+    {
+      "id": "eshop-event-transaction",
+      "source": "eshop-b4a40872",
+      "group": "cross_file",
+      "question": "Trace the ordering command transaction and integration-event publication. When are pending events published relative to commit, and how are publication failures recorded?",
+      "duplicate_cluster": "eshop-event-transaction",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "TransactionBehavior runs the handler in a transaction, commits it, then publishes pending integration events for that transaction ID.",
+          "evidence_groups": [
+            "g1"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "OrderingIntegrationEventService marks each pending event in progress, publishes it, then marks it published; exceptions cause it to mark the event failed.",
+          "evidence_groups": [
+            "g2"
+          ]
+        },
+        {
+          "id": "c3",
+          "text": "New integration events are saved against the ordering context current transaction.",
+          "evidence_groups": [
+            "g3"
+          ]
+        }
+      ],
+      "evidence_groups": [
+        {
+          "id": "g1",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/Ordering.API/Application/Behaviors/TransactionBehavior.cs",
+              "start": 32,
+              "end": 53,
+              "excerpt_sha256": "57793897e80441b0e833f2ce4f4e3f57e61ccbb8565b6199e2b97a79e1db3b67",
+              "source_url": "https://github.com/dotnet/eShop/blob/b4a40872005d4bb29e5b1fa1ff7e244143d39215/src/Ordering.API/Application/Behaviors/TransactionBehavior.cs#L32-L53"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/Ordering.API/Application/IntegrationEvents/OrderingIntegrationEventService.cs",
+              "start": 13,
+              "end": 32,
+              "excerpt_sha256": "4010de3b0133fb5a54ff1ff82c67f1f494a61640406cca71511e5e35bceadd72",
+              "source_url": "https://github.com/dotnet/eShop/blob/b4a40872005d4bb29e5b1fa1ff7e244143d39215/src/Ordering.API/Application/IntegrationEvents/OrderingIntegrationEventService.cs#L13-L32"
+            }
+          ]
+        },
+        {
+          "id": "g3",
+          "required": true,
+          "alternatives": [
+            {
+              "path": "src/Ordering.API/Application/IntegrationEvents/OrderingIntegrationEventService.cs",
+              "start": 36,
+              "end": 41,
+              "excerpt_sha256": "1d237cbd0146acd3c59bb65c78d216e4c1537c5a12a24ab49a54250e864c1a69",
+              "source_url": "https://github.com/dotnet/eShop/blob/b4a40872005d4bb29e5b1fa1ff7e244143d39215/src/Ordering.API/Application/IntegrationEvents/OrderingIntegrationEventService.cs#L36-L41"
+            }
+          ]
+        }
+      ],
+      "adaptation": "Authored for the exact eShop source revision. The stated reference claims describe the checked-in behavior, including failure cases; no application or dependency code was executed.",
+      "review": {
+        "status": "accepted"
+      },
+      "origin": {
+        "kind": "authored",
+        "source_url": "https://github.com/dotnet/eShop/tree/b4a40872005d4bb29e5b1fa1ff7e244143d39215"
+      },
+      "language": "C#",
+      "reference_answer": "TransactionBehavior runs the handler in a transaction, commits it, then publishes pending integration events for that transaction ID. OrderingIntegrationEventService marks each pending event in progress, publishes it, then marks it published; exceptions cause it to mark the event failed. New integration events are saved against the ordering context current transaction.",
+      "split": "held_out"
+    }
+  ]
+}

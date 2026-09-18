@@ -1,0 +1,1243 @@
+[
+  {
+    "source": "django-674eda1c",
+    "task_evidence": [
+      {
+        "task": "django-pre-validate-signal-design-001",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/db/models/base.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/db/models/base.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "django-rate-limit-design-001",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/utils/deprecation.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "django-rate-limit-middleware-feat-001",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/core/cache/__init__.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/utils/deprecation.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "django-modelchoice-fk-fix-001",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/forms/models.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/forms/models.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "django-request-factory-refac-001",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/test/__init__.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/test/client.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "django-audit-trail-implement-001",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/template/loader_tags.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/template/context.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          },
+          {
+            "id": "g3",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/template/context.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "django-cross-team-boundary-001",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/contrib/auth/__init__.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/contrib/sessions/backends/base.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "django-legacy-dep-vuln-001",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/utils/encoding.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/utils/html.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "django-repo-scoped-access-001",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/contrib/admin/filters.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/contrib/admin/filters.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "django-role-based-access-001",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/forms/widgets.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/forms/templates/django/forms/widgets/attrs.html",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "django-sensitive-file-exclusion-001",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/db/backends/base/base.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/db/backends/base/base.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "django-composite-field-recover-001",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/forms/forms.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/forms/forms.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "django-template-inherit-recall-001",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/template/loader_tags.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/template/loader_tags.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "ccx-crossorg-217",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/core/handlers/base.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/core/handlers/base.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          },
+          {
+            "id": "g3",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/utils/deprecation.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "ccx-migration-203",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/urls/conf.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/urls/conf.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "ccx-migration-204",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/db/models/fields/__init__.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/db/models/fields/__init__.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          },
+          {
+            "id": "g3",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "django/forms/fields.py",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "envoy-d7809ba2",
+    "task_evidence": [
+      {
+        "task": "ccx-onboard-search-210",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "source/common/router/upstream_request.cc",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "source/common/router/upstream_request.cc",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "flipt-3d5a345f",
+    "task_evidence": [
+      {
+        "task": "flipt-dep-refactor-001",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "internal/storage/storage.go",
+                "static_skip": null,
+                "indexed_chunks": 9
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "internal/server/flag.go",
+                "static_skip": null,
+                "indexed_chunks": 2
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "flipt-flagexists-refactor-001",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "internal/storage/storage.go",
+                "static_skip": null,
+                "indexed_chunks": 9
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "internal/storage/fs/snapshot.go",
+                "static_skip": null,
+                "indexed_chunks": 16
+              }
+            ]
+          },
+          {
+            "id": "g3",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "internal/storage/sql/common/flag.go",
+                "static_skip": null,
+                "indexed_chunks": 10
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "flipt-degraded-context-fix-001",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "internal/server/evaluation/evaluation.go",
+                "static_skip": null,
+                "indexed_chunks": 6
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "internal/server/evaluation/legacy_evaluator.go",
+                "static_skip": null,
+                "indexed_chunks": 10
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "flipt-protobuf-metadata-design-001",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "internal/server/evaluation/legacy_evaluator.go",
+                "static_skip": null,
+                "indexed_chunks": 10
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "internal/server/evaluation/evaluation.go",
+                "static_skip": null,
+                "indexed_chunks": 6
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "flipt-repo-scoped-access-001",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "internal/server/evaluation/evaluation.go",
+                "static_skip": null,
+                "indexed_chunks": 6
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "internal/server/evaluation/evaluation.go",
+                "static_skip": null,
+                "indexed_chunks": 6
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "numpy-v2.2.2",
+    "task_evidence": [
+      {
+        "task": "numpy-array-dispatch-refac-001",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "numpy/_core/overrides.py",
+                "static_skip": null,
+                "indexed_chunks": 4
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "numpy/lib/_function_base_impl.py",
+                "static_skip": null,
+                "indexed_chunks": 108
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "numpy-rolling-median-feat-001",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "numpy/lib/_function_base_impl.py",
+                "static_skip": null,
+                "indexed_chunks": 108
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "numpy/lib/_function_base_impl.py",
+                "static_skip": null,
+                "indexed_chunks": 108
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "pandas-41968da5",
+    "task_evidence": [
+      {
+        "task": "ccx-onboard-search-212",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "pandas/core/reshape/pivot.py",
+                "static_skip": null,
+                "indexed_chunks": 24
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "pandas/core/reshape/pivot.py",
+                "static_skip": null,
+                "indexed_chunks": 24
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "scikit-learn-cb7e82dd",
+    "task_evidence": [
+      {
+        "task": "ccx-onboard-search-211",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "sklearn/decomposition/_fastica.py",
+                "static_skip": null,
+                "indexed_chunks": 15
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "sklearn/decomposition/_fastica.py",
+                "static_skip": null,
+                "indexed_chunks": 15
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "ccx-crossorg-218",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "sklearn/exceptions.py",
+                "static_skip": null,
+                "indexed_chunks": 5
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "sklearn/utils/validation.py",
+                "static_skip": null,
+                "indexed_chunks": 55
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "vscode-138f619c",
+    "task_evidence": [
+      {
+        "task": "vscode-custom-fold-region-feat-001",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "src/vs/editor/contrib/folding/browser/syntaxRangeProvider.ts",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "src/vs/editor/contrib/folding/browser/foldingRanges.ts",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "vscode-stale-diagnostics-feat-001",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "src/vs/workbench/api/common/extHostDiagnostics.ts",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "src/vs/workbench/api/browser/mainThreadDiagnostics.ts",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "vscode-17baf841",
+    "task_evidence": [
+      {
+        "task": "ccx-onboard-search-213",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "src/vs/platform/userDataSync/common/keybindingsMerge.ts",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": false,
+            "alternatives": [
+              {
+                "path": "src/vs/platform/userDataSync/common/keybindingsMerge.ts",
+                "static_skip": null,
+                "indexed_chunks": 0
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "eshop-b4a40872",
+    "task_evidence": [
+      {
+        "task": "eshop-basket-identity",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "src/Basket.API/Extensions/ServerCallContextIdentityExtensions.cs",
+                "static_skip": null,
+                "indexed_chunks": 1
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "src/Basket.API/Grpc/BasketService.cs",
+                "static_skip": null,
+                "indexed_chunks": 2
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "eshop-basket-storage",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "src/Basket.API/Repositories/RedisBasketRepository.cs",
+                "static_skip": null,
+                "indexed_chunks": 1
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "src/Basket.API/Repositories/RedisBasketRepository.cs",
+                "static_skip": null,
+                "indexed_chunks": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "eshop-catalog-price-event",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "src/Catalog.API/Apis/CatalogApi.cs",
+                "static_skip": null,
+                "indexed_chunks": 9
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "src/Catalog.API/IntegrationEvents/Events/ProductPriceChangedIntegrationEvent.cs",
+                "static_skip": null,
+                "indexed_chunks": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "eshop-order-add-product",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "src/Ordering.Domain/AggregatesModel/OrderAggregate/Order.cs",
+                "static_skip": null,
+                "indexed_chunks": 4
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "src/Ordering.Domain/AggregatesModel/OrderAggregate/OrderItem.cs",
+                "static_skip": null,
+                "indexed_chunks": 2
+              }
+            ]
+          },
+          {
+            "id": "g3",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "src/Ordering.Domain/AggregatesModel/OrderAggregate/OrderItem.cs",
+                "static_skip": null,
+                "indexed_chunks": 2
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "eshop-order-paid",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "src/Ordering.Domain/AggregatesModel/OrderAggregate/Order.cs",
+                "static_skip": null,
+                "indexed_chunks": 4
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "eshop-order-cancellation",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "src/Ordering.Domain/AggregatesModel/OrderAggregate/Order.cs",
+                "static_skip": null,
+                "indexed_chunks": 4
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "src/Ordering.Domain/AggregatesModel/OrderAggregate/Order.cs",
+                "static_skip": null,
+                "indexed_chunks": 4
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "eshop-stock-check-and-removal",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "src/Catalog.API/IntegrationEvents/EventHandling/OrderStatusChangedToAwaitingValidationIntegrationEventHandler.cs",
+                "static_skip": null,
+                "indexed_chunks": 1
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "src/Catalog.API/IntegrationEvents/EventHandling/OrderStatusChangedToPaidIntegrationEventHandler.cs",
+                "static_skip": null,
+                "indexed_chunks": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "eshop-grace-period",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "src/OrderProcessor/Services/GracePeriodOrdersRepository.cs",
+                "static_skip": null,
+                "indexed_chunks": 1
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "src/OrderProcessor/Services/GracePeriodManagerService.cs",
+                "static_skip": null,
+                "indexed_chunks": 2
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "eshop-payment-choice",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "src/PaymentProcessor/IntegrationEvents/EventHandling/OrderStatusChangedToStockConfirmedIntegrationEventHandler.cs",
+                "static_skip": null,
+                "indexed_chunks": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "task": "eshop-event-transaction",
+        "groups": [
+          {
+            "id": "g1",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "src/Ordering.API/Application/Behaviors/TransactionBehavior.cs",
+                "static_skip": null,
+                "indexed_chunks": 2
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "src/Ordering.API/Application/IntegrationEvents/OrderingIntegrationEventService.cs",
+                "static_skip": null,
+                "indexed_chunks": 1
+              }
+            ]
+          },
+          {
+            "id": "g3",
+            "required": true,
+            "any_file_indexed": true,
+            "alternatives": [
+              {
+                "path": "src/Ordering.API/Application/IntegrationEvents/OrderingIntegrationEventService.cs",
+                "static_skip": null,
+                "indexed_chunks": 1
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

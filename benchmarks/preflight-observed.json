@@ -1,0 +1,1516 @@
+{
+  "blockers": [
+    "host_file_isolation_unproven",
+    "chatgpt_provider_equivalence_unproven",
+    "additional_callable_tools"
+  ],
+  "captured_bytes": 99294,
+  "child_peak_rss_kib_linux": 124580,
+  "client": {
+    "binary_bytes": 262858016,
+    "binary_sha256": "3188814c35471432d4123203e0eb38e5bddc60226e3d7ddf0e59e649ea140022",
+    "version": "codex-cli 0.154.0"
+  },
+  "elapsed_seconds": 1.943,
+  "fixture_checks": {
+    "contamination_detected": true,
+    "exclusion_observed": true
+  },
+  "host_file_isolation": {
+    "established": false,
+    "reason": "private_configuration_and_empty_environments_are_not_OS_file_confinement"
+  },
+  "inference_performed": false,
+  "intended": {
+    "effort": "high",
+    "model": "gpt-5.6-luna"
+  },
+  "limits": {
+    "concurrent_clients": 1,
+    "deadline_seconds": 60,
+    "frame_bytes": 1048576,
+    "total_capture_bytes": 16777216
+  },
+  "next_action": "Use the receipt to refine runner isolation. Do not start a model trial.",
+  "observed_temporary_bytes": 9769042,
+  "pair_checks": [
+    {
+      "added_tools": [
+        "grepglint_search"
+      ],
+      "fixture_mode": "exclusion",
+      "only_grepglint_added": true,
+      "same_configuration_and_instructions": true
+    },
+    {
+      "added_tools": [
+        "grepglint_search"
+      ],
+      "fixture_mode": "contamination",
+      "only_grepglint_added": true,
+      "same_configuration_and_instructions": true
+    }
+  ],
+  "probes": [
+    {
+      "additional_tools": [
+        "functions.exec",
+        "functions.request_user_input",
+        "functions.wait",
+        "multi_agent_v1__close_agent",
+        "multi_agent_v1__resume_agent",
+        "multi_agent_v1__send_input",
+        "multi_agent_v1__spawn_agent",
+        "multi_agent_v1__wait_agent",
+        "skills__list",
+        "skills__read"
+      ],
+      "blockers": [
+        "additional_callable_tools"
+      ],
+      "credentials_present": false,
+      "effective_effort": "high",
+      "effective_model": "gpt-5.6-luna",
+      "errors": [],
+      "fixture_mode": "exclusion",
+      "hook_ran": false,
+      "instruction_blocks": [
+        {
+          "bytes": 91,
+          "location": "$.input[1].content[0]",
+          "normalized_sha256": "01076769f0c88fd03e969af6d2a5d54de3736878b69699f0d20f4fc79f5b4b00",
+          "origins": [
+            "launch:model_instructions_file"
+          ],
+          "role": "developer",
+          "sha256": "01076769f0c88fd03e969af6d2a5d54de3736878b69699f0d20f4fc79f5b4b00"
+        },
+        {
+          "bytes": 341,
+          "location": "$.input[2].content[0]",
+          "normalized_sha256": "29dad5ed6993c5e717376e0a1c84d54ab60ee593510916ac6cee4295e803315d",
+          "origins": [
+            "client:permission_instructions"
+          ],
+          "role": "developer",
+          "sha256": "29dad5ed6993c5e717376e0a1c84d54ab60ee593510916ac6cee4295e803315d"
+        },
+        {
+          "bytes": 117,
+          "location": "$.input[3].content[0]",
+          "normalized_sha256": "d32c90c405f7aad046e2de3046f8e22006f1d6f0ff7aecc3e403453dd86a53cc",
+          "origins": [
+            "client:environment_context"
+          ],
+          "role": "user",
+          "sha256": "d32c90c405f7aad046e2de3046f8e22006f1d6f0ff7aecc3e403453dd86a53cc"
+        },
+        {
+          "bytes": 25,
+          "location": "$.input[4].content[0]",
+          "normalized_sha256": "ae06c3d2b8fe1061235da8352b7e3213c3a24ffa048cef311d2a675bff89c0e7",
+          "origins": [
+            "probe:user_prompt"
+          ],
+          "role": "user",
+          "sha256": "ae06c3d2b8fe1061235da8352b7e3213c3a24ffa048cef311d2a675bff89c0e7"
+        }
+      ],
+      "launch_config_sha256": "aa9058c9afe38fdb72bcea6a495723d9f4cb8d498022c080db9f796248af2a00",
+      "owned_process_group_terminated": true,
+      "request_bytes": 13463,
+      "request_status": "unsupported",
+      "sentinels": {
+        "configuration": false,
+        "global_instruction": false,
+        "hook": false,
+        "outside_source": false,
+        "project_instruction": false,
+        "skill": false
+      },
+      "subprocess_output": {
+        "stderr": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": 8224
+      },
+      "supplied_tools": [
+        {
+          "deferLoading": false,
+          "description": "Search literal text inside the prepared source root.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "query": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "type": "object"
+          },
+          "name": "text_search",
+          "type": "function"
+        },
+        {
+          "deferLoading": false,
+          "description": "List paths inside the prepared source root.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "glob": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "glob"
+            ],
+            "type": "object"
+          },
+          "name": "file_list",
+          "type": "function"
+        },
+        {
+          "deferLoading": false,
+          "description": "Read a bounded file range inside the prepared source root.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "end": {
+                "type": "integer"
+              },
+              "path": {
+                "type": "string"
+              },
+              "start": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "path",
+              "start",
+              "end"
+            ],
+            "type": "object"
+          },
+          "name": "read_file",
+          "type": "function"
+        }
+      ],
+      "tool_accounting": [
+        {
+          "assessment": "JavaScript execution wrapper; includes the reported nested tools",
+          "name": "functions.exec"
+        },
+        {
+          "assessment": "utility; asks for input and does not grant source access",
+          "name": "functions.request_user_input"
+        },
+        {
+          "assessment": "utility; waits on an existing Code Mode call",
+          "name": "functions.wait"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "multi_agent_v1__close_agent"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "multi_agent_v1__resume_agent"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "multi_agent_v1__send_input"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "multi_agent_v1__spawn_agent"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "multi_agent_v1__wait_agent"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "skills__list"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "skills__read"
+        }
+      ],
+      "tools": {
+        "catalogs": [
+          {
+            "entries": 1,
+            "location": "$.input[0].tools"
+          },
+          {
+            "entries": 3,
+            "location": "$.input[0].tools[0].tools"
+          },
+          {
+            "entries": 5,
+            "location": "$.input[0].tools[0].tools[0].description"
+          }
+        ],
+        "declared_names": [
+          "file_list",
+          "functions.exec",
+          "functions.request_user_input",
+          "functions.wait",
+          "read_file",
+          "skills__list",
+          "skills__read",
+          "text_search"
+        ],
+        "errors": [],
+        "names": [
+          "file_list",
+          "functions.exec",
+          "functions.request_user_input",
+          "functions.wait",
+          "multi_agent_v1__close_agent",
+          "multi_agent_v1__resume_agent",
+          "multi_agent_v1__send_input",
+          "multi_agent_v1__spawn_agent",
+          "multi_agent_v1__wait_agent",
+          "read_file",
+          "skills__list",
+          "skills__read",
+          "text_search"
+        ],
+        "runtime_registry": [
+          {
+            "code_mode_name": null,
+            "deferred": false,
+            "direct": true,
+            "name": "functions.exec"
+          },
+          {
+            "code_mode_name": "file_list",
+            "deferred": false,
+            "direct": false,
+            "name": "functions.file_list"
+          },
+          {
+            "code_mode_name": "read_file",
+            "deferred": false,
+            "direct": false,
+            "name": "functions.read_file"
+          },
+          {
+            "code_mode_name": null,
+            "deferred": false,
+            "direct": true,
+            "name": "functions.request_user_input"
+          },
+          {
+            "code_mode_name": "text_search",
+            "deferred": false,
+            "direct": false,
+            "name": "functions.text_search"
+          },
+          {
+            "code_mode_name": null,
+            "deferred": false,
+            "direct": true,
+            "name": "functions.wait"
+          },
+          {
+            "code_mode_name": "multi_agent_v1__close_agent",
+            "deferred": false,
+            "direct": false,
+            "name": "multi_agent_v1.close_agent"
+          },
+          {
+            "code_mode_name": "multi_agent_v1__resume_agent",
+            "deferred": false,
+            "direct": false,
+            "name": "multi_agent_v1.resume_agent"
+          },
+          {
+            "code_mode_name": "multi_agent_v1__send_input",
+            "deferred": false,
+            "direct": false,
+            "name": "multi_agent_v1.send_input"
+          },
+          {
+            "code_mode_name": "multi_agent_v1__spawn_agent",
+            "deferred": false,
+            "direct": false,
+            "name": "multi_agent_v1.spawn_agent"
+          },
+          {
+            "code_mode_name": "multi_agent_v1__wait_agent",
+            "deferred": false,
+            "direct": false,
+            "name": "multi_agent_v1.wait_agent"
+          },
+          {
+            "code_mode_name": "skills__list",
+            "deferred": false,
+            "direct": false,
+            "name": "skills.list"
+          },
+          {
+            "code_mode_name": "skills__read",
+            "deferred": false,
+            "direct": false,
+            "name": "skills.read"
+          }
+        ]
+      },
+      "treatment": "control",
+      "turn_status": "completed"
+    },
+    {
+      "additional_tools": [
+        "functions.exec",
+        "functions.request_user_input",
+        "functions.wait",
+        "multi_agent_v1__close_agent",
+        "multi_agent_v1__resume_agent",
+        "multi_agent_v1__send_input",
+        "multi_agent_v1__spawn_agent",
+        "multi_agent_v1__wait_agent",
+        "skills__list",
+        "skills__read"
+      ],
+      "blockers": [
+        "additional_callable_tools"
+      ],
+      "credentials_present": false,
+      "effective_effort": "high",
+      "effective_model": "gpt-5.6-luna",
+      "errors": [],
+      "fixture_mode": "exclusion",
+      "hook_ran": false,
+      "instruction_blocks": [
+        {
+          "bytes": 91,
+          "location": "$.input[1].content[0]",
+          "normalized_sha256": "01076769f0c88fd03e969af6d2a5d54de3736878b69699f0d20f4fc79f5b4b00",
+          "origins": [
+            "launch:model_instructions_file"
+          ],
+          "role": "developer",
+          "sha256": "01076769f0c88fd03e969af6d2a5d54de3736878b69699f0d20f4fc79f5b4b00"
+        },
+        {
+          "bytes": 341,
+          "location": "$.input[2].content[0]",
+          "normalized_sha256": "29dad5ed6993c5e717376e0a1c84d54ab60ee593510916ac6cee4295e803315d",
+          "origins": [
+            "client:permission_instructions"
+          ],
+          "role": "developer",
+          "sha256": "29dad5ed6993c5e717376e0a1c84d54ab60ee593510916ac6cee4295e803315d"
+        },
+        {
+          "bytes": 117,
+          "location": "$.input[3].content[0]",
+          "normalized_sha256": "d32c90c405f7aad046e2de3046f8e22006f1d6f0ff7aecc3e403453dd86a53cc",
+          "origins": [
+            "client:environment_context"
+          ],
+          "role": "user",
+          "sha256": "d32c90c405f7aad046e2de3046f8e22006f1d6f0ff7aecc3e403453dd86a53cc"
+        },
+        {
+          "bytes": 25,
+          "location": "$.input[4].content[0]",
+          "normalized_sha256": "ae06c3d2b8fe1061235da8352b7e3213c3a24ffa048cef311d2a675bff89c0e7",
+          "origins": [
+            "probe:user_prompt"
+          ],
+          "role": "user",
+          "sha256": "ae06c3d2b8fe1061235da8352b7e3213c3a24ffa048cef311d2a675bff89c0e7"
+        }
+      ],
+      "launch_config_sha256": "aa9058c9afe38fdb72bcea6a495723d9f4cb8d498022c080db9f796248af2a00",
+      "owned_process_group_terminated": true,
+      "request_bytes": 13838,
+      "request_status": "unsupported",
+      "sentinels": {
+        "configuration": false,
+        "global_instruction": false,
+        "hook": false,
+        "outside_source": false,
+        "project_instruction": false,
+        "skill": false
+      },
+      "subprocess_output": {
+        "stderr": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": 8234
+      },
+      "supplied_tools": [
+        {
+          "deferLoading": false,
+          "description": "Search literal text inside the prepared source root.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "query": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "type": "object"
+          },
+          "name": "text_search",
+          "type": "function"
+        },
+        {
+          "deferLoading": false,
+          "description": "List paths inside the prepared source root.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "glob": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "glob"
+            ],
+            "type": "object"
+          },
+          "name": "file_list",
+          "type": "function"
+        },
+        {
+          "deferLoading": false,
+          "description": "Read a bounded file range inside the prepared source root.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "end": {
+                "type": "integer"
+              },
+              "path": {
+                "type": "string"
+              },
+              "start": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "path",
+              "start",
+              "end"
+            ],
+            "type": "object"
+          },
+          "name": "read_file",
+          "type": "function"
+        },
+        {
+          "deferLoading": false,
+          "description": "Search indexed code inside the same prepared source root.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "query": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "type": "object"
+          },
+          "name": "grepglint_search",
+          "type": "function"
+        }
+      ],
+      "tool_accounting": [
+        {
+          "assessment": "JavaScript execution wrapper; includes the reported nested tools",
+          "name": "functions.exec"
+        },
+        {
+          "assessment": "utility; asks for input and does not grant source access",
+          "name": "functions.request_user_input"
+        },
+        {
+          "assessment": "utility; waits on an existing Code Mode call",
+          "name": "functions.wait"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "multi_agent_v1__close_agent"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "multi_agent_v1__resume_agent"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "multi_agent_v1__send_input"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "multi_agent_v1__spawn_agent"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "multi_agent_v1__wait_agent"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "skills__list"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "skills__read"
+        }
+      ],
+      "tools": {
+        "catalogs": [
+          {
+            "entries": 1,
+            "location": "$.input[0].tools"
+          },
+          {
+            "entries": 3,
+            "location": "$.input[0].tools[0].tools"
+          },
+          {
+            "entries": 6,
+            "location": "$.input[0].tools[0].tools[0].description"
+          }
+        ],
+        "declared_names": [
+          "file_list",
+          "functions.exec",
+          "functions.request_user_input",
+          "functions.wait",
+          "grepglint_search",
+          "read_file",
+          "skills__list",
+          "skills__read",
+          "text_search"
+        ],
+        "errors": [],
+        "names": [
+          "file_list",
+          "functions.exec",
+          "functions.request_user_input",
+          "functions.wait",
+          "grepglint_search",
+          "multi_agent_v1__close_agent",
+          "multi_agent_v1__resume_agent",
+          "multi_agent_v1__send_input",
+          "multi_agent_v1__spawn_agent",
+          "multi_agent_v1__wait_agent",
+          "read_file",
+          "skills__list",
+          "skills__read",
+          "text_search"
+        ],
+        "runtime_registry": [
+          {
+            "code_mode_name": null,
+            "deferred": false,
+            "direct": true,
+            "name": "functions.exec"
+          },
+          {
+            "code_mode_name": "file_list",
+            "deferred": false,
+            "direct": false,
+            "name": "functions.file_list"
+          },
+          {
+            "code_mode_name": "grepglint_search",
+            "deferred": false,
+            "direct": false,
+            "name": "functions.grepglint_search"
+          },
+          {
+            "code_mode_name": "read_file",
+            "deferred": false,
+            "direct": false,
+            "name": "functions.read_file"
+          },
+          {
+            "code_mode_name": null,
+            "deferred": false,
+            "direct": true,
+            "name": "functions.request_user_input"
+          },
+          {
+            "code_mode_name": "text_search",
+            "deferred": false,
+            "direct": false,
+            "name": "functions.text_search"
+          },
+          {
+            "code_mode_name": null,
+            "deferred": false,
+            "direct": true,
+            "name": "functions.wait"
+          },
+          {
+            "code_mode_name": "multi_agent_v1__close_agent",
+            "deferred": false,
+            "direct": false,
+            "name": "multi_agent_v1.close_agent"
+          },
+          {
+            "code_mode_name": "multi_agent_v1__resume_agent",
+            "deferred": false,
+            "direct": false,
+            "name": "multi_agent_v1.resume_agent"
+          },
+          {
+            "code_mode_name": "multi_agent_v1__send_input",
+            "deferred": false,
+            "direct": false,
+            "name": "multi_agent_v1.send_input"
+          },
+          {
+            "code_mode_name": "multi_agent_v1__spawn_agent",
+            "deferred": false,
+            "direct": false,
+            "name": "multi_agent_v1.spawn_agent"
+          },
+          {
+            "code_mode_name": "multi_agent_v1__wait_agent",
+            "deferred": false,
+            "direct": false,
+            "name": "multi_agent_v1.wait_agent"
+          },
+          {
+            "code_mode_name": "skills__list",
+            "deferred": false,
+            "direct": false,
+            "name": "skills.list"
+          },
+          {
+            "code_mode_name": "skills__read",
+            "deferred": false,
+            "direct": false,
+            "name": "skills.read"
+          }
+        ]
+      },
+      "treatment": "grepglint",
+      "turn_status": "completed"
+    },
+    {
+      "additional_tools": [
+        "functions.exec",
+        "functions.request_user_input",
+        "functions.wait",
+        "multi_agent_v1__close_agent",
+        "multi_agent_v1__resume_agent",
+        "multi_agent_v1__send_input",
+        "multi_agent_v1__spawn_agent",
+        "multi_agent_v1__wait_agent",
+        "outside_source_read",
+        "skills__list",
+        "skills__read"
+      ],
+      "blockers": [
+        "additional_callable_tools",
+        "fixture_content_in_request",
+        "fixture_hook_executed"
+      ],
+      "credentials_present": false,
+      "effective_effort": "high",
+      "effective_model": "gpt-5.6-luna",
+      "errors": [],
+      "fixture_hook_trust_entries": 1,
+      "fixture_mode": "contamination",
+      "hook_ran": true,
+      "instruction_blocks": [
+        {
+          "bytes": 135,
+          "location": "$.input[1].content[0]",
+          "normalized_sha256": "6b35b2b2d9134d8f84b697428dbd5867d4c9164b0899089a66d8feff48268ec7",
+          "origins": [
+            "fixture:outside_source"
+          ],
+          "role": "developer",
+          "sha256": "6b35b2b2d9134d8f84b697428dbd5867d4c9164b0899089a66d8feff48268ec7"
+        },
+        {
+          "bytes": 42,
+          "location": "$.input[2].content[0]",
+          "normalized_sha256": "ec66814b56abab2eab64a4ef9c0f153f87ad204e14e7dbfd31078cf6fb54c821",
+          "origins": [
+            "fixture:configuration"
+          ],
+          "role": "developer",
+          "sha256": "ec66814b56abab2eab64a4ef9c0f153f87ad204e14e7dbfd31078cf6fb54c821"
+        },
+        {
+          "bytes": 521,
+          "location": "$.input[2].content[1]",
+          "normalized_sha256": "77010be163513ef8b8fe597c5bebd1ba86e6b7f413f42a5268c55f322e7cb723",
+          "origins": [
+            "fixture:skill"
+          ],
+          "role": "developer",
+          "sha256": "bbf3f35d427a0ce7129d57900766815cefc7ef81ff64bff360f2045cf6368adc"
+        },
+        {
+          "bytes": 341,
+          "location": "$.input[2].content[2]",
+          "normalized_sha256": "29dad5ed6993c5e717376e0a1c84d54ab60ee593510916ac6cee4295e803315d",
+          "origins": [
+            "client:permission_instructions"
+          ],
+          "role": "developer",
+          "sha256": "29dad5ed6993c5e717376e0a1c84d54ab60ee593510916ac6cee4295e803315d"
+        },
+        {
+          "bytes": 104,
+          "location": "$.input[3].content[0]",
+          "normalized_sha256": "bf87f871784f289682bd492418878c513a97b9c5b63c0b58d72e70d0dda4ee7f",
+          "origins": [
+            "fixture:global_instruction"
+          ],
+          "role": "user",
+          "sha256": "bf87f871784f289682bd492418878c513a97b9c5b63c0b58d72e70d0dda4ee7f"
+        },
+        {
+          "bytes": 117,
+          "location": "$.input[3].content[1]",
+          "normalized_sha256": "d32c90c405f7aad046e2de3046f8e22006f1d6f0ff7aecc3e403453dd86a53cc",
+          "origins": [
+            "client:environment_context"
+          ],
+          "role": "user",
+          "sha256": "d32c90c405f7aad046e2de3046f8e22006f1d6f0ff7aecc3e403453dd86a53cc"
+        },
+        {
+          "bytes": 33,
+          "location": "$.input[4].content[0]",
+          "normalized_sha256": "f7601bde2acd22c09175992239e9eefadfd276d63d22be3f5b29047e96061fc6",
+          "origins": [
+            "fixture:hook"
+          ],
+          "role": "developer",
+          "sha256": "f7601bde2acd22c09175992239e9eefadfd276d63d22be3f5b29047e96061fc6"
+        },
+        {
+          "bytes": 25,
+          "location": "$.input[5].content[0]",
+          "normalized_sha256": "ae06c3d2b8fe1061235da8352b7e3213c3a24ffa048cef311d2a675bff89c0e7",
+          "origins": [
+            "probe:user_prompt"
+          ],
+          "role": "user",
+          "sha256": "ae06c3d2b8fe1061235da8352b7e3213c3a24ffa048cef311d2a675bff89c0e7"
+        }
+      ],
+      "launch_config_sha256": "9a85e97bc41402e2cffcd268dc8aff156087b92aa71fdf9283d245d63fd96815",
+      "owned_process_group_terminated": true,
+      "request_bytes": 14813,
+      "request_status": "unsupported",
+      "sentinels": {
+        "configuration": true,
+        "global_instruction": true,
+        "hook": true,
+        "outside_source": true,
+        "project_instruction": false,
+        "skill": true
+      },
+      "subprocess_output": {
+        "stderr": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": 10209
+      },
+      "supplied_tools": [
+        {
+          "deferLoading": false,
+          "description": "Search literal text inside the prepared source root.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "query": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "type": "object"
+          },
+          "name": "text_search",
+          "type": "function"
+        },
+        {
+          "deferLoading": false,
+          "description": "List paths inside the prepared source root.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "glob": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "glob"
+            ],
+            "type": "object"
+          },
+          "name": "file_list",
+          "type": "function"
+        },
+        {
+          "deferLoading": false,
+          "description": "Read a bounded file range inside the prepared source root.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "end": {
+                "type": "integer"
+              },
+              "path": {
+                "type": "string"
+              },
+              "start": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "path",
+              "start",
+              "end"
+            ],
+            "type": "object"
+          },
+          "name": "read_file",
+          "type": "function"
+        },
+        {
+          "deferLoading": false,
+          "description": "Deliberately forbidden fixture tool.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ],
+            "type": "object"
+          },
+          "name": "outside_source_read",
+          "type": "function"
+        }
+      ],
+      "tool_accounting": [
+        {
+          "assessment": "JavaScript execution wrapper; includes the reported nested tools",
+          "name": "functions.exec"
+        },
+        {
+          "assessment": "utility; asks for input and does not grant source access",
+          "name": "functions.request_user_input"
+        },
+        {
+          "assessment": "utility; waits on an existing Code Mode call",
+          "name": "functions.wait"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "multi_agent_v1__close_agent"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "multi_agent_v1__resume_agent"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "multi_agent_v1__send_input"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "multi_agent_v1__spawn_agent"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "multi_agent_v1__wait_agent"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "outside_source_read"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "skills__list"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "skills__read"
+        }
+      ],
+      "tools": {
+        "catalogs": [
+          {
+            "entries": 1,
+            "location": "$.input[0].tools"
+          },
+          {
+            "entries": 3,
+            "location": "$.input[0].tools[0].tools"
+          },
+          {
+            "entries": 6,
+            "location": "$.input[0].tools[0].tools[0].description"
+          }
+        ],
+        "declared_names": [
+          "file_list",
+          "functions.exec",
+          "functions.request_user_input",
+          "functions.wait",
+          "outside_source_read",
+          "read_file",
+          "skills__list",
+          "skills__read",
+          "text_search"
+        ],
+        "errors": [],
+        "names": [
+          "file_list",
+          "functions.exec",
+          "functions.request_user_input",
+          "functions.wait",
+          "multi_agent_v1__close_agent",
+          "multi_agent_v1__resume_agent",
+          "multi_agent_v1__send_input",
+          "multi_agent_v1__spawn_agent",
+          "multi_agent_v1__wait_agent",
+          "outside_source_read",
+          "read_file",
+          "skills__list",
+          "skills__read",
+          "text_search"
+        ],
+        "runtime_registry": [
+          {
+            "code_mode_name": null,
+            "deferred": false,
+            "direct": true,
+            "name": "functions.exec"
+          },
+          {
+            "code_mode_name": "file_list",
+            "deferred": false,
+            "direct": false,
+            "name": "functions.file_list"
+          },
+          {
+            "code_mode_name": "outside_source_read",
+            "deferred": false,
+            "direct": false,
+            "name": "functions.outside_source_read"
+          },
+          {
+            "code_mode_name": "read_file",
+            "deferred": false,
+            "direct": false,
+            "name": "functions.read_file"
+          },
+          {
+            "code_mode_name": null,
+            "deferred": false,
+            "direct": true,
+            "name": "functions.request_user_input"
+          },
+          {
+            "code_mode_name": "text_search",
+            "deferred": false,
+            "direct": false,
+            "name": "functions.text_search"
+          },
+          {
+            "code_mode_name": null,
+            "deferred": false,
+            "direct": true,
+            "name": "functions.wait"
+          },
+          {
+            "code_mode_name": "multi_agent_v1__close_agent",
+            "deferred": false,
+            "direct": false,
+            "name": "multi_agent_v1.close_agent"
+          },
+          {
+            "code_mode_name": "multi_agent_v1__resume_agent",
+            "deferred": false,
+            "direct": false,
+            "name": "multi_agent_v1.resume_agent"
+          },
+          {
+            "code_mode_name": "multi_agent_v1__send_input",
+            "deferred": false,
+            "direct": false,
+            "name": "multi_agent_v1.send_input"
+          },
+          {
+            "code_mode_name": "multi_agent_v1__spawn_agent",
+            "deferred": false,
+            "direct": false,
+            "name": "multi_agent_v1.spawn_agent"
+          },
+          {
+            "code_mode_name": "multi_agent_v1__wait_agent",
+            "deferred": false,
+            "direct": false,
+            "name": "multi_agent_v1.wait_agent"
+          },
+          {
+            "code_mode_name": "skills__list",
+            "deferred": false,
+            "direct": false,
+            "name": "skills.list"
+          },
+          {
+            "code_mode_name": "skills__read",
+            "deferred": false,
+            "direct": false,
+            "name": "skills.read"
+          }
+        ]
+      },
+      "treatment": "control",
+      "turn_status": "completed"
+    },
+    {
+      "additional_tools": [
+        "functions.exec",
+        "functions.request_user_input",
+        "functions.wait",
+        "multi_agent_v1__close_agent",
+        "multi_agent_v1__resume_agent",
+        "multi_agent_v1__send_input",
+        "multi_agent_v1__spawn_agent",
+        "multi_agent_v1__wait_agent",
+        "outside_source_read",
+        "skills__list",
+        "skills__read"
+      ],
+      "blockers": [
+        "additional_callable_tools",
+        "fixture_content_in_request",
+        "fixture_hook_executed"
+      ],
+      "credentials_present": false,
+      "effective_effort": "high",
+      "effective_model": "gpt-5.6-luna",
+      "errors": [],
+      "fixture_hook_trust_entries": 1,
+      "fixture_mode": "contamination",
+      "hook_ran": true,
+      "instruction_blocks": [
+        {
+          "bytes": 135,
+          "location": "$.input[1].content[0]",
+          "normalized_sha256": "6b35b2b2d9134d8f84b697428dbd5867d4c9164b0899089a66d8feff48268ec7",
+          "origins": [
+            "fixture:outside_source"
+          ],
+          "role": "developer",
+          "sha256": "6b35b2b2d9134d8f84b697428dbd5867d4c9164b0899089a66d8feff48268ec7"
+        },
+        {
+          "bytes": 42,
+          "location": "$.input[2].content[0]",
+          "normalized_sha256": "ec66814b56abab2eab64a4ef9c0f153f87ad204e14e7dbfd31078cf6fb54c821",
+          "origins": [
+            "fixture:configuration"
+          ],
+          "role": "developer",
+          "sha256": "ec66814b56abab2eab64a4ef9c0f153f87ad204e14e7dbfd31078cf6fb54c821"
+        },
+        {
+          "bytes": 523,
+          "location": "$.input[2].content[1]",
+          "normalized_sha256": "77010be163513ef8b8fe597c5bebd1ba86e6b7f413f42a5268c55f322e7cb723",
+          "origins": [
+            "fixture:skill"
+          ],
+          "role": "developer",
+          "sha256": "7101ccc905a1f083cd45c378171d422a7381927b495e70d062dd429857010f40"
+        },
+        {
+          "bytes": 341,
+          "location": "$.input[2].content[2]",
+          "normalized_sha256": "29dad5ed6993c5e717376e0a1c84d54ab60ee593510916ac6cee4295e803315d",
+          "origins": [
+            "client:permission_instructions"
+          ],
+          "role": "developer",
+          "sha256": "29dad5ed6993c5e717376e0a1c84d54ab60ee593510916ac6cee4295e803315d"
+        },
+        {
+          "bytes": 104,
+          "location": "$.input[3].content[0]",
+          "normalized_sha256": "bf87f871784f289682bd492418878c513a97b9c5b63c0b58d72e70d0dda4ee7f",
+          "origins": [
+            "fixture:global_instruction"
+          ],
+          "role": "user",
+          "sha256": "bf87f871784f289682bd492418878c513a97b9c5b63c0b58d72e70d0dda4ee7f"
+        },
+        {
+          "bytes": 117,
+          "location": "$.input[3].content[1]",
+          "normalized_sha256": "d32c90c405f7aad046e2de3046f8e22006f1d6f0ff7aecc3e403453dd86a53cc",
+          "origins": [
+            "client:environment_context"
+          ],
+          "role": "user",
+          "sha256": "d32c90c405f7aad046e2de3046f8e22006f1d6f0ff7aecc3e403453dd86a53cc"
+        },
+        {
+          "bytes": 33,
+          "location": "$.input[4].content[0]",
+          "normalized_sha256": "f7601bde2acd22c09175992239e9eefadfd276d63d22be3f5b29047e96061fc6",
+          "origins": [
+            "fixture:hook"
+          ],
+          "role": "developer",
+          "sha256": "f7601bde2acd22c09175992239e9eefadfd276d63d22be3f5b29047e96061fc6"
+        },
+        {
+          "bytes": 25,
+          "location": "$.input[5].content[0]",
+          "normalized_sha256": "ae06c3d2b8fe1061235da8352b7e3213c3a24ffa048cef311d2a675bff89c0e7",
+          "origins": [
+            "probe:user_prompt"
+          ],
+          "role": "user",
+          "sha256": "ae06c3d2b8fe1061235da8352b7e3213c3a24ffa048cef311d2a675bff89c0e7"
+        }
+      ],
+      "launch_config_sha256": "9a85e97bc41402e2cffcd268dc8aff156087b92aa71fdf9283d245d63fd96815",
+      "owned_process_group_terminated": true,
+      "request_bytes": 15190,
+      "request_status": "unsupported",
+      "sentinels": {
+        "configuration": true,
+        "global_instruction": true,
+        "hook": true,
+        "outside_source": true,
+        "project_instruction": false,
+        "skill": true
+      },
+      "subprocess_output": {
+        "stderr": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": 10237
+      },
+      "supplied_tools": [
+        {
+          "deferLoading": false,
+          "description": "Search literal text inside the prepared source root.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "query": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "type": "object"
+          },
+          "name": "text_search",
+          "type": "function"
+        },
+        {
+          "deferLoading": false,
+          "description": "List paths inside the prepared source root.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "glob": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "glob"
+            ],
+            "type": "object"
+          },
+          "name": "file_list",
+          "type": "function"
+        },
+        {
+          "deferLoading": false,
+          "description": "Read a bounded file range inside the prepared source root.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "end": {
+                "type": "integer"
+              },
+              "path": {
+                "type": "string"
+              },
+              "start": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "path",
+              "start",
+              "end"
+            ],
+            "type": "object"
+          },
+          "name": "read_file",
+          "type": "function"
+        },
+        {
+          "deferLoading": false,
+          "description": "Search indexed code inside the same prepared source root.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "query": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "type": "object"
+          },
+          "name": "grepglint_search",
+          "type": "function"
+        },
+        {
+          "deferLoading": false,
+          "description": "Deliberately forbidden fixture tool.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ],
+            "type": "object"
+          },
+          "name": "outside_source_read",
+          "type": "function"
+        }
+      ],
+      "tool_accounting": [
+        {
+          "assessment": "JavaScript execution wrapper; includes the reported nested tools",
+          "name": "functions.exec"
+        },
+        {
+          "assessment": "utility; asks for input and does not grant source access",
+          "name": "functions.request_user_input"
+        },
+        {
+          "assessment": "utility; waits on an existing Code Mode call",
+          "name": "functions.wait"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "multi_agent_v1__close_agent"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "multi_agent_v1__resume_agent"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "multi_agent_v1__send_input"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "multi_agent_v1__spawn_agent"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "multi_agent_v1__wait_agent"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "outside_source_read"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "skills__list"
+        },
+        {
+          "assessment": "additional source or delegation capability; blocks the contract",
+          "name": "skills__read"
+        }
+      ],
+      "tools": {
+        "catalogs": [
+          {
+            "entries": 1,
+            "location": "$.input[0].tools"
+          },
+          {
+            "entries": 3,
+            "location": "$.input[0].tools[0].tools"
+          },
+          {
+            "entries": 7,
+            "location": "$.input[0].tools[0].tools[0].description"
+          }
+        ],
+        "declared_names": [
+          "file_list",
+          "functions.exec",
+          "functions.request_user_input",
+          "functions.wait",
+          "grepglint_search",
+          "outside_source_read",
+          "read_file",
+          "skills__list",
+          "skills__read",
+          "text_search"
+        ],
+        "errors": [],
+        "names": [
+          "file_list",
+          "functions.exec",
+          "functions.request_user_input",
+          "functions.wait",
+          "grepglint_search",
+          "multi_agent_v1__close_agent",
+          "multi_agent_v1__resume_agent",
+          "multi_agent_v1__send_input",
+          "multi_agent_v1__spawn_agent",
+          "multi_agent_v1__wait_agent",
+          "outside_source_read",
+          "read_file",
+          "skills__list",
+          "skills__read",
+          "text_search"
+        ],
+        "runtime_registry": [
+          {
+            "code_mode_name": null,
+            "deferred": false,
+            "direct": true,
+            "name": "functions.exec"
+          },
+          {
+            "code_mode_name": "file_list",
+            "deferred": false,
+            "direct": false,
+            "name": "functions.file_list"
+          },
+          {
+            "code_mode_name": "grepglint_search",
+            "deferred": false,
+            "direct": false,
+            "name": "functions.grepglint_search"
+          },
+          {
+            "code_mode_name": "outside_source_read",
+            "deferred": false,
+            "direct": false,
+            "name": "functions.outside_source_read"
+          },
+          {
+            "code_mode_name": "read_file",
+            "deferred": false,
+            "direct": false,
+            "name": "functions.read_file"
+          },
+          {
+            "code_mode_name": null,
+            "deferred": false,
+            "direct": true,
+            "name": "functions.request_user_input"
+          },
+          {
+            "code_mode_name": "text_search",
+            "deferred": false,
+            "direct": false,
+            "name": "functions.text_search"
+          },
+          {
+            "code_mode_name": null,
+            "deferred": false,
+            "direct": true,
+            "name": "functions.wait"
+          },
+          {
+            "code_mode_name": "multi_agent_v1__close_agent",
+            "deferred": false,
+            "direct": false,
+            "name": "multi_agent_v1.close_agent"
+          },
+          {
+            "code_mode_name": "multi_agent_v1__resume_agent",
+            "deferred": false,
+            "direct": false,
+            "name": "multi_agent_v1.resume_agent"
+          },
+          {
+            "code_mode_name": "multi_agent_v1__send_input",
+            "deferred": false,
+            "direct": false,
+            "name": "multi_agent_v1.send_input"
+          },
+          {
+            "code_mode_name": "multi_agent_v1__spawn_agent",
+            "deferred": false,
+            "direct": false,
+            "name": "multi_agent_v1.spawn_agent"
+          },
+          {
+            "code_mode_name": "multi_agent_v1__wait_agent",
+            "deferred": false,
+            "direct": false,
+            "name": "multi_agent_v1.wait_agent"
+          },
+          {
+            "code_mode_name": "skills__list",
+            "deferred": false,
+            "direct": false,
+            "name": "skills.list"
+          },
+          {
+            "code_mode_name": "skills__read",
+            "deferred": false,
+            "direct": false,
+            "name": "skills.read"
+          }
+        ]
+      },
+      "treatment": "grepglint",
+      "turn_status": "completed"
+    }
+  ],
+  "provider": {
+    "captured": "credential-free loopback Responses stub",
+    "chatgpt_verified": false,
+    "unresolved": [
+      "account_model_availability_and_effort_support",
+      "chatgpt_catalog_prompts_and_provider_capabilities",
+      "authentication_transport_and_server_side_tools"
+    ]
+  },
+  "schema_version": 1,
+  "source_evidence": "benchmarks/preflight-evidence.json",
+  "status": "unsupported"
+}
