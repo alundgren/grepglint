@@ -158,8 +158,11 @@ class Child:
 
 class ResponsesStub:
     """Accept exactly one bounded request, then return fixed SSE without tool calls."""
-    def __init__(self, budget):
+    def __init__(self, budget, responder=None, observe=None):
         self.budget = budget
+        self.responder = responder
+        self.observe = observe
+        self.exchanges = 0
         self.request = None
         self.error = None
         self.credentials_present = False
@@ -177,7 +180,14 @@ class ResponsesStub:
         self.thread.start()
 
     def serve(self):
+        while not self.stopped.is_set():
+            self.exchange()
+            if self.error or self.responder is None:
+                return
+
+    def exchange(self):
         try:
+            self.connection = None
             while not self.stopped.is_set():
                 self.budget.remaining()
                 try:
@@ -234,24 +244,36 @@ class ResponsesStub:
                     raise ProbeError('invalid_responses_request')
                 self.request = request
                 self.request_bytes = length
+                self.exchanges += 1
+                if self.exchanges > 100:
+                    raise ProbeError('responses_request_limit_exceeded')
+                if self.observe:
+                    self.observe(request)
                 item = {'id': 'msg_preflight', 'type': 'message', 'role': 'assistant',
                         'status': 'completed', 'content': [{'type': 'output_text',
                         'text': 'preflight-complete', 'annotations': []}]}
-                response = {'id': 'resp_preflight', 'object': 'response', 'status': 'completed',
-                            'output': [item], 'usage': {'input_tokens': 0, 'output_tokens': 0,
+                items = self.responder(request) if self.responder else [item]
+                response = {'id': f'resp_preflight_{self.exchanges}', 'object': 'response', 'status': 'completed',
+                            'output': items, 'usage': {'input_tokens': 0, 'output_tokens': 0,
                             'total_tokens': 0, 'input_tokens_details': {'cached_tokens': 0}}}
                 events = [
                     {'type': 'response.created', 'response': dict(response, status='in_progress', output=[])},
-                    {'type': 'response.output_item.done', 'output_index': 0, 'item': item},
+                    *[{'type': 'response.output_item.done', 'output_index': i, 'item': value}
+                      for i, value in enumerate(items)],
                     {'type': 'response.completed', 'response': response},
                 ]
                 payload = ''.join(f'event: {e["type"]}\ndata: {json.dumps(e)}\n\n' for e in events).encode()
+                if len(payload) > FRAME_LIMIT:
+                    raise ProbeError('responses_event_limit_exceeded')
+                if self.responder:
+                    self.budget.add(len(payload))
                 conn.sendall(b'HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nConnection: close\r\n'
                              + f'Content-Length: {len(payload)}\r\n\r\n'.encode() + payload)
         except ProbeError as error:
             self.error = str(error)
         except (OSError, ValueError, KeyError, UnicodeError):
-            self.error = 'local_http_failure'
+            if not self.stopped.is_set():
+                self.error = 'local_http_failure'
 
     def close(self):
         self.stopped.set()

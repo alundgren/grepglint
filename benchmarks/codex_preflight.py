@@ -331,7 +331,7 @@ def toml_value(value):
     return json.dumps(value)
 
 
-def run_probe(binary, root, treatment, contaminated, budget):
+def run_probe(binary, root, treatment, contaminated, budget, launcher=None):
     stub = ResponsesStub(budget)
     child = None
     result = {'treatment': treatment, 'fixture_mode': 'contamination' if contaminated else 'exclusion'}
@@ -345,7 +345,10 @@ def run_probe(binary, root, treatment, contaminated, budget):
             args += ['-c', f'{key}={toml_value(value)}']
         args += ['app-server', '--listen', 'stdio://']
         stub.start()
-        child = Child(args, root / 'source', child_environment(root, codex_dir), budget)
+        environment = child_environment(root, codex_dir)
+        if launcher:
+            args = launcher(args, environment)
+        child = Child(args, root / 'source', environment, budget)
         child.send({'id': 1, 'method': 'initialize', 'params': {
             'clientInfo': {'name': 'grepglint_preflight', 'version': '1'},
             'capabilities': {'experimentalApi': True}}})
@@ -494,6 +497,9 @@ def run(binary):
 
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] in ('verify', 'smoke'):
+        from _codex_verify import main as verify_main
+        return verify_main(sys.argv[1:])
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--codex', type=Path, required=True, help='Pinned Codex 0.154.0 binary')
     parser.add_argument('--receipt', type=Path, required=True, help='New JSON file in a private directory')

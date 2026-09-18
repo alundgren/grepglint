@@ -1,5 +1,9 @@
 # Codex preflight without inference
 
+For the newer local source-isolation and call-audit contract, use
+[stock Codex local verification](benchmark-verification.md). The diagnostic
+and version 1 evidence below remain unchanged.
+
 The [preflight command](../benchmarks/codex_preflight.py) captures the actual
 Codex 0.154.0 client's first Responses request for both benchmark tool
 configurations. A local stub returns fixed text. It never performs model

@@ -1,0 +1,115 @@
+{
+  "schema_version": 2,
+  "contract": "stock-codex-local-v2",
+  "source_commit": "6b9826e3aa83b1a5947db50f4332cb9c65f1b340",
+  "binary_sha256": "3188814c35471432d4123203e0eb38e5bddc60226e3d7ddf0e59e649ea140022",
+  "javascript_host_sha256": "0c57be435e73b70d9106c850d751cd259a7f04da958a453d7ef59090d82b70f1",
+  "sources": [
+    {
+      "path": "codex-rs/core/src/tools/spec_plan.rs",
+      "url": "https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/core/src/tools/spec_plan.rs",
+      "sha256": "451622e76c45dd1585318c200fdee9a00d7aaf785d4a540facca1010146307b7",
+      "relevance": "Registrations, hidden dispatch, empty environments, agents.enabled and nested namespace exclusions."
+    },
+    {
+      "path": "codex-rs/core/config.schema.json",
+      "url": "https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/core/config.schema.json",
+      "sha256": "2e1fcf1cbb20f255c3baca2e174b4a3c954cef577a130587b8935e2d12c8ade6",
+      "relevance": "Exact feature, provider, skill, instruction and code-mode-host settings."
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/thread.rs",
+      "url": "https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/app-server-protocol/src/protocol/v2/thread.rs",
+      "sha256": "ffc2f432bc7d0dadf9ae10db832035c8b75d7b709462bfed3c83d33ea89c526a",
+      "relevance": "Ephemeral threads, raw event opt-in, empty environments and dynamic tools."
+    },
+    {
+      "path": "codex-rs/app-server/src/bespoke_event_handling.rs",
+      "url": "https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/app-server/src/bespoke_event_handling.rs",
+      "sha256": "c633d68e02ac0a366f296edacd347d1bbc193716b7bb6a3ffbebae843c9ffba5",
+      "relevance": "Raw call/result delivery and controller callback lifecycle."
+    },
+    {
+      "path": "codex-rs/ext/skills/src/tools/list.rs",
+      "url": "https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/ext/skills/src/tools/list.rs",
+      "sha256": "2dd371168ef11553312bb53fe1913b38d4133669b7cae00c115feb253061eb5d",
+      "relevance": "Visible listing omits enabled packages hidden from the model."
+    },
+    {
+      "path": "codex-rs/ext/skills/src/tools/read.rs",
+      "url": "https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/ext/skills/src/tools/read.rs",
+      "sha256": "62bccc396069191e2c9a94cf81c38e23cb7d91e9211c8a59cbcfe5e2ec94de8f",
+      "relevance": "Read dispatch searches enabled packages, including packages omitted from listing."
+    },
+    {
+      "path": "codex-rs/ext/skills/src/tools/mod.rs",
+      "url": "https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/ext/skills/src/tools/mod.rs",
+      "sha256": "9195992e69aa4bd91f679b8edcdb7ada620e7c1d78a38d833fd8718f9904f51b",
+      "relevance": "Catalog authorities and extension tool registration."
+    },
+    {
+      "path": "codex-rs/ext/skills/src/extension.rs",
+      "url": "https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/ext/skills/src/extension.rs",
+      "sha256": "983a72a885a06b6ae3f91161d668ca1e19d7933506efedbde23c101d320d6b79",
+      "relevance": "Host, bundled, orchestrator and executor discovery inputs."
+    },
+    {
+      "path": "codex-rs/ext/skills/src/provider/orchestrator.rs",
+      "url": "https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/ext/skills/src/provider/orchestrator.rs",
+      "sha256": "22b95f3e59b82bc3fd67d19d9bf1384584f3fbed4cb8de09a9062cf49a985e60",
+      "relevance": "Orchestrator discovery is empty without the Codex apps MCP server, including hidden packages."
+    },
+    {
+      "path": "codex-rs/code-mode-runtime/src/runtime/globals.rs",
+      "url": "https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/code-mode-runtime/src/runtime/globals.rs",
+      "sha256": "e62df37ddd8d36f3f799d3a2713b225661e3706dcaf2fe97b3cf183427903c07",
+      "relevance": "V8 globals provide computation, output helpers and registered tools only."
+    },
+    {
+      "path": "codex-rs/code-mode-runtime/src/runtime/module_loader.rs",
+      "url": "https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/code-mode-runtime/src/runtime/module_loader.rs",
+      "sha256": "6e58d68d43d8aefca0daf5ebbd3876cc9f3837f02a50a676089366fcbff62528",
+      "relevance": "Static and dynamic imports are rejected."
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/model.rs",
+      "url": "https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/app-server-protocol/src/protocol/v2/model.rs",
+      "sha256": "3991f4a8f595767ac0de5d39a4edd7c2eea68ecaedfb007a4554e5fb1497d4e8",
+      "relevance": "Model picker metadata and three provider-capability booleans do not expose effective prompts or complete tools."
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/account.rs",
+      "url": "https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/app-server-protocol/src/protocol/v2/account.rs",
+      "sha256": "22d4ec67a5979d33cbe2e40b53c7afbdd1bbed935a54b2284e9b2de11f4b590c",
+      "relevance": "Exact authentication type, included-usage permission and weekly quota fields; usage percentages are not token counts."
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/common.rs",
+      "url": "https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/app-server-protocol/src/protocol/common.rs",
+      "sha256": "6aa47ec984c9198ea797bf63b784cf6a88cc0ab85efb0a4ac75e01aabffc2cfa",
+      "relevance": "Pinned method and raw-event names."
+    }
+  ],
+  "prior_diagnostic": "preflight-evidence.json",
+  "skill_catalog_proof": {
+    "host": "skip_host_skill_discovery=true; host home/config are absent from the mount tree",
+    "bundled": "skills.bundled.enabled=false",
+    "executor": "environments=[]",
+    "orchestrator": "No Codex apps MCP server; apps/plugins disabled and mcp_servers={}. Provider returns an empty complete catalog before listing filters.",
+    "dispatch": "Direct list/read remain allowed, read of unavailable packages fails, and both nested aliases are excluded."
+  },
+  "provider_verification": {
+    "status": "pending",
+    "required_metadata": [
+      "effective_tools",
+      "effective_instructions",
+      "all_skill_packages",
+      "hidden_direct_handlers",
+      "nested_aliases",
+      "zero_transport_retries"
+    ],
+    "available_metadata": "Model/list exposes names and supported effort choices. ModelProvider/capabilities/read exposes namespaceTools, imageGeneration and webSearch.",
+    "gap": "Those responses cannot establish the complete effective ChatGPT request. The smoke command stops before reading authentication or starting a provider turn.",
+    "inference_performed": false
+  }
+}

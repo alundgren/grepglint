@@ -1,0 +1,157 @@
+{
+  "audit": {
+    "calls": 57,
+    "outer_cell_association": "unavailable",
+    "records": 390,
+    "sha256": "39facd15f7800dfabfd15880c874ab7d5d7840276d96eb6499d9cfac0b8bb807",
+    "status": "passed"
+  },
+  "captured_bytes": 1202625,
+  "checks": {
+    "audit": "passed",
+    "local_isolation": "passed",
+    "tool_policy": "passed"
+  },
+  "cleanup": {
+    "owned_client_groups_stopped": true,
+    "service_stopped": true,
+    "temporary_files_removed": true
+  },
+  "client": {
+    "binary_sha256": "3188814c35471432d4123203e0eb38e5bddc60226e3d7ddf0e59e649ea140022",
+    "javascript_host_sha256": "0c57be435e73b70d9106c850d751cd259a7f04da958a453d7ef59090d82b70f1",
+    "pin_verified": true,
+    "source_commit": "6b9826e3aa83b1a5947db50f4332cb9c65f1b340",
+    "version": "codex-cli 0.154.0"
+  },
+  "contract": "stock-codex-local-v2",
+  "elapsed_seconds": 5.324,
+  "grepglint_catalog_sha256": "4c6a794d2c3a432624222b6cf4c71d456a17780450c96ce92dd55068180fc39b",
+  "grepglint_sha256": "765bdf76b16034d3b947020d245f71687c6cc9717da6b57851aac520e7b98de9",
+  "implementation_sha256": "6826a948b7d599ffd83d8d038b5ea2e098fb365ca1672e27b889b7dca7c406ce",
+  "inference_performed": false,
+  "limits": {
+    "aggregate_cpu_cores": 1,
+    "aggregate_memory_bytes": 1073741824,
+    "argument_bytes": 16384,
+    "deadline_seconds": 60,
+    "frame_bytes": 1048576,
+    "response_bytes": 65536,
+    "retained_runs": 4,
+    "retention_seconds": 3600,
+    "tool_calls": 100,
+    "total_bytes": 16777216
+  },
+  "provider_verification": {
+    "status": "pending"
+  },
+  "resource_fixtures": {
+    "allocation_oom_denied": true,
+    "allocation_requested_bytes": 1153433600,
+    "concurrent_cpu_loops_throttled": true,
+    "cpu_usec": 651693,
+    "memory_peak_including_fixture": 1073741824
+  },
+  "schema_version": 2,
+  "sessions": [
+    {
+      "audit": {
+        "calls": 27,
+        "controlled_calls": 10,
+        "outer_cell_association": "unavailable",
+        "status": "passed"
+      },
+      "catalog_sha256": "aea6d59cbe0a1f65e193d5b2a8a1d339021b5f15840433fc301df4fce0525e93",
+      "configuration": "control",
+      "configuration_sha256": "5a0ba20c93741508a0595a982969079a1298eba9b1d3ab4c7016ac2da63590d1",
+      "isolation_checks": {
+        "controller": true,
+        "credentials": true,
+        "history": true,
+        "network_10": true,
+        "network_2": true,
+        "oracle": true,
+        "private_cache_write": true,
+        "repository_execution": true,
+        "source": true,
+        "source_write": true
+      },
+      "negative_checks": {
+        "absolute_path": true,
+        "delegation": true,
+        "deterministic_input": true,
+        "discarded_calls_retained": true,
+        "executor_skills": true,
+        "hidden_skill": true,
+        "history": true,
+        "invalid_name": true,
+        "javascript_allocation_and_cpu_loops": true,
+        "javascript_restrictions": true,
+        "missing_skill": true,
+        "nested_catalog": true,
+        "orchestrator_skills": true,
+        "patch": true,
+        "resource": true,
+        "shell": true,
+        "symlink": true,
+        "traversal": true,
+        "yield_and_wait": true
+      },
+      "prompt_sha256": "3c8765dedd27d2deef221417680fa75a35fac6fcbfd1cfae18e961c3141752d2",
+      "source_sha256": "74b5343696472d43aa8266a6024efc28404affca373bfc614f0731a1f44b43dc",
+      "status": "passed"
+    },
+    {
+      "audit": {
+        "calls": 30,
+        "controlled_calls": 13,
+        "outer_cell_association": "unavailable",
+        "status": "passed"
+      },
+      "catalog_sha256": "8cc8f51c77866f00169bcec03b8215f92910e39056344b5b55e2976c630ac579",
+      "configuration": "grepglint",
+      "configuration_sha256": "5a0ba20c93741508a0595a982969079a1298eba9b1d3ab4c7016ac2da63590d1",
+      "isolation_checks": {
+        "controller": true,
+        "credentials": true,
+        "history": true,
+        "network_10": true,
+        "network_2": true,
+        "oracle": true,
+        "private_cache_write": true,
+        "repository_execution": true,
+        "source": true,
+        "source_write": true
+      },
+      "negative_checks": {
+        "absolute_path": true,
+        "delegation": true,
+        "deterministic_input": true,
+        "discarded_calls_retained": true,
+        "executor_skills": true,
+        "grepglint_empty": true,
+        "grepglint_error": true,
+        "grepglint_ok": true,
+        "hidden_skill": true,
+        "history": true,
+        "invalid_name": true,
+        "javascript_allocation_and_cpu_loops": true,
+        "javascript_restrictions": true,
+        "missing_skill": true,
+        "nested_catalog": true,
+        "orchestrator_skills": true,
+        "patch": true,
+        "real_grepglint_result": true,
+        "resource": true,
+        "shell": true,
+        "symlink": true,
+        "traversal": true,
+        "yield_and_wait": true
+      },
+      "prompt_sha256": "3c8765dedd27d2deef221417680fa75a35fac6fcbfd1cfae18e961c3141752d2",
+      "source_sha256": "74b5343696472d43aa8266a6024efc28404affca373bfc614f0731a1f44b43dc",
+      "status": "passed"
+    }
+  ],
+  "status": "passed"
+}
