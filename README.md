@@ -14,7 +14,24 @@ embeddings, network services, Git hooks, or filesystem watchers.
 
 ## Install
 
-Requires Linux or macOS, Git, Rust 1.89 or later, and a C compiler for bundled
+The [release contract](docs/releases.md) describes raw binaries for Linux
+x86_64 and macOS Apple Silicon, supported runtime baselines, prerequisites,
+and verification tied to the selected release tag and source commit. The first
+published release and hosted verification remain a human release task.
+
+From a trusted checkout, `./install install --release v0.1.0` downloads and
+verifies a selected published release before execution. `./install verify`
+checks a managed installation offline using its retained maintenance copy.
+Python 3, Git and authenticated gh 2.80.0 or newer are needed for initial
+release installation. See [managed installation](docs/installer.md#managed-installation)
+for consent, recovery, paths and limits. Use `./install upgrade --release vX.Y.Z`
+to replace a release and `./install repair` to recover interrupted operations or
+restore missing owned executables. `./install uninstall --yes` retains cached
+source contents and offline maintenance. `./install purge --purge-cache` erases
+recorded cached source contents with separate consent. Both run locally without
+gh or network. See the removal and recovery details in the installer guide.
+
+For source development, use Linux or macOS, Git, Rust 1.89 or later, and a C compiler for bundled
 SQLite and tree-sitter. Linux is tested locally; CI also covers macOS.
 
 ```sh
@@ -23,8 +40,7 @@ cd grepglint
 cargo install --path . --locked
 ```
 
-A proposed guided install/upgrade/verify/repair/uninstall flow is described in
-[the installer investigation](docs/installer.md).
+The [installer investigation](docs/installer.md) records the rationale and deferred lifecycle work.
 
 Run the binary from any directory inside a Git checkout, including regular
 clones and linked worktrees. The first search starts the daemon and registers
@@ -171,15 +187,15 @@ index free of CPU or disk activity. A repository that exceeds the limits needs
 ## Agent instructions and validation
 
 `grepglint tools --json` lists tools with their purpose, inputs, output, and
-side effects. It currently lists `search` and does not start the daemon. Future
-services can add subcommands and catalog entries. No routing framework is
+side effects. It lists repository search and output capture, search, paging, and purge without starting
+the daemon. Future services can add subcommands and catalog entries. No routing framework is
 needed for this prototype. Copy [the example instructions](examples/agent-instructions.md)
 into an agent's repository instructions.
 
 The repository pins Rust 1.89.0, Clippy, and rustfmt in `rust-toolchain.toml`.
 With rustup, Cargo selects and installs that toolchain automatically so local
-checks and CI use the same versions. Update the pin together with the release
-toolchain when upgrading Rust.
+checks and both CI workflows use the same versions. Update this pin when
+upgrading Rust.
 
 ```sh
 cargo fmt --all -- --check
@@ -215,3 +231,135 @@ Grepglint code is MIT licensed. Retained benchmark evidence keeps its upstream
 licenses and notices. The name combines grep with noticing something useful. Exact-name
 web, GitHub, npm, and crates.io searches found no existing match when this
 prototype was created.
+
+## Retained tool output
+
+`output bounce` is an opt-in experiment for finite UTF-8 logs, inside or outside
+Git repositories. It reads stdout from the pipe. Use `2>&1` to merge stderr,
+and enable your shell's `pipefail` to retain the producer's failure status:
+
+```sh
+set -o pipefail
+cargo test 2>&1 | grepglint output bounce
+grepglint output search <handle> "NodePtyModuleLoadError node-pty" --json
+grepglint output page <handle> --json
+grepglint output page <handle> --json --cursor <next_cursor>
+grepglint output purge
+```
+
+Accepted input through 4,096 bytes passes through byte for byte, including
+ANSI sequences and the final newline state. This does not start a daemon or
+create a cache. Larger input returns an immutable random handle, original
+byte/line counts, and a head/tail preview bounded to 8 KiB including instructions.
+A line is terminated by LF, with a final unterminated line counted once.
+Previewing does not advance paging. Without a cursor, paging starts at byte zero.
+Decode each JSON `content` and concatenate it until `end_of_output` is true;
+this reconstructs the original UTF-8 bytes. Cursors can be repeated and are
+bound to one handle and format version. Human-readable output escapes controls.
+`output search` ranks one retained output with the same lexical expansion and
+OR query rules as code search. It uses only that output's BM25 statistics.
+Queries accept at most 2,000 bytes and use the first 32 distinct expanded terms
+in lexical order. Results default to five, with `--limit 1` through `20`.
+Each result includes original byte offsets, line ranges, a clipped excerpt and
+a paging command positioned at that excerpt. Byte ranges are zero-based and
+end-exclusive; line numbers are one-based. Long lines remain searchable and
+can produce several regions on the same source line.
+
+Try identifiers such as `NodePtyModuleLoadError`, `node-pty`, `linux-x64`,
+`constructEvent`, `SQLITE_BUSY`, `v24.20.0`, or `src/auth/session.ts`. Expansion
+and OR matching are not exact-match semantics. The best-ranked excerpt need
+not contain the answer. Empty results include a command to page the original.
+A poor query never removes the ability to retrieve omitted bytes.
+
+Input containing NUL or invalid UTF-8 is rejected, even when the invalid bytes
+arrive late. Failures can consume input, so you may need to rerun the producer.
+Keep another copy of irreplaceable logs. A successful capture does not mean
+the producer succeeded. Breaking the downstream pipe cancels ongoing capture;
+a committed result whose preview cannot be delivered expires normally.
+
+Capture, paging and purge access a separate account-local store directly and
+do not contact a running daemon. Output search runs in the daemon to share its
+existing memory and work limits with repository search. An older daemon may
+reject output search; pause searches and retry after its idle exit, or page the
+original immediately. Repository search's
+16 KiB request and 64 KiB response protocol is unchanged. Output commands
+never stop a process or inspect a PID to decide ownership. They hold the shared
+maintenance lock while accessing output, so managed maintenance excludes them. Normal daemon
+startup also attempts output cleanup; output corruption cannot disable search.
+
+| Output resource | Default policy |
+| --- | --- |
+| Input | 8 MiB maximum; two captures; each reserves 8 MiB before storing bytes |
+| Retention | 32 MiB payload including reservations, at most 64 entries; one-hour fixed TTL from capture creation |
+| Pressure | Remove the oldest committed results when a reservation needs space; active captures remain reserved |
+| Buffers | 3,584-byte read/chunk buffer; at most 32,256 pending bytes; 28,672-byte write batches |
+| Preview | First/last 256 input bytes; at most 8 KiB after escaping and metadata |
+| Page | At most 4,096 original bytes, preferring LF boundaries and preserving UTF-8; encoded output below 64 KiB |
+| Disk | 40 MiB database plus at most 41 MiB rollback journal; under 4 KiB ownership metadata and fixed empty lock files |
+| Reserve | Capture requires the existing twice-repository-database plus 64 MiB reserve and another 81 MiB; cleanup/purge need only the current output database size plus 1 MiB for rollback |
+| Memory | Capture/page: 256 KiB SQLite page cache per client, 64 MiB SQLite heap ceiling, bounded buffers; search uses the daemon budget below |
+| Deadlines | 10 seconds without stdin, 120 seconds overall capture; two-second lock/database acquisition and output delivery waits |
+| Maintenance | At most 64 output records and two capture slots; runs on startup and output requests, never idle polling |
+
+Output bytes live in `output-v1` below the configured cache. The private
+ownership record identifies the database, persistent journal, and capture locks
+by device/inode. It is retained for reuse and future installer integration.
+A private `output-gate` file records an unpredictable initialization directory
+before its files are created. Incomplete initialization resumes on the next
+output request; the complete directory is published with one rename. No
+unrecorded directory is recursively removed.
+Output does not evict repository cache entries. Staging uses the same database;
+commit publishes metadata without copying the payload. Short transactions let
+other clients progress while a producer pauses. OS locks release on exit or
+crash, and the next output request removes abandoned captures.
+
+Expiry is checked on every page and does not extend on access. Expired bytes
+can remain on disk while Grepglint is idle, within the disk cap, until cleanup
+or explicit purge. Pages validate the retained stream's digest before returning
+content, and fail if the result disappeared or is corrupt. Each page reads at
+most 8 MiB to verify integrity. A read transaction prevents eviction halfway
+through a page; a later page may fail if the output was evicted in between.
+
+`output purge` erases retained contents and clears the journal while preserving
+repository caches, unknown files, and the empty bounded store/ownership record.
+It waits at most two seconds per capture slot and fails while a capture remains
+active. Retry after that capture finishes. Repeated purge is safe. Replaced or
+unsafe files are preserved and cause an error; inspect those files rather than
+recursively deleting a cache directory. Isolation is between OS accounts, not
+between sessions of the same account. No power-loss durability guarantee is
+added. See [output measurements](docs/output-measurements.md) for observations.
+
+### Output search limits
+
+Search verifies the full retained stream once in a read transaction, then builds
+and drops an in-memory FTS5 database. It does not register a Git repository or
+add output to the repository index. It creates no temporary disk index and
+retains no search cache. The read transaction protects the complete result
+against concurrent eviction or purge. Writers may receive the existing
+two-second database-busy error while a search reads; retry after it finishes.
+Expiry is checked before returning results and access does not extend it.
+
+| Search resource | Bound |
+| --- | --- |
+| Source allocation | At most 8 MiB, validated UTF-8; other chunk text borrows that allocation |
+| Generic chunks | At most 8,192 chunks; each at most 8,192 bytes and 60 LF-terminated lines; up to six lines and 1,024 bytes overlap, or 256 bytes inside a long line |
+| Expansion | At most 64 KiB per chunk and 32 MiB total expanded text; lexical expansion works on one bounded chunk at a time |
+| Temporary SQLite | At most 32 MiB logical database; in-memory only, including sort work; shares the daemon's existing 64 MiB total SQLite heap limit |
+| Process/concurrency | One daemon request at a time, including repository and output searches; existing 512 MiB Linux address-space limit and lower scheduling priority |
+| Work | 30-second work deadline covers store opening/lock waits/cleanup, retained chunks, ranking chunks, results and SQLite progress; request receipt and response delivery retain their separate deadlines |
+| Results | At most 20, each excerpt at most 1,000 original bytes and eight lines; complete encoded response at most 64 KiB, including metadata and escaping |
+
+The ranker searches every generated chunk or fails explicitly on a limit,
+timeout, cancellation or SQLite allocation failure. It never reports a prefix
+as a complete corpus. Extremely many short lines or a large vocabulary can
+exceed the ranking budget even when capture accepted the output. Use exact
+paging after such a failure. Human responses escape unsafe controls; JSON
+contains exact excerpt text. Clipping flags describe text omitted within the
+ranked chunk, while the top-level paging command starts the entire output.
+
+The CLI checks for downstream closure while waiting and disconnects the socket.
+The daemon checks that connection during traversal and ranking, so abandoned
+searches release their temporary database. No producer runs in the daemon.
+See [release search measurements](docs/output-search-measurements.md) for
+scripted retrieval and resource observations. These are not agent-effectiveness
+trials.
