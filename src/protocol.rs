@@ -101,3 +101,21 @@ pub enum ControlResponse {
     Stopped { instance: String },
     Error { message: String },
 }
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(tag = "command", deny_unknown_fields)]
+pub enum OutputRequest {
+    #[serde(rename = "output_search")]
+    Search {
+        version: u32,
+        handle: String,
+        query: String,
+        limit: usize,
+    },
+}
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(tag = "status", rename_all = "snake_case")]
+pub enum OutputResponse {
+    Ok { data: crate::output::Search },
+    Error { message: String },
+}

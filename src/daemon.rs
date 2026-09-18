@@ -6,7 +6,7 @@ use anyhow::{Context, Result, bail, ensure};
 use fs2::FileExt;
 use std::{
     fs::{self, OpenOptions},
-    io::{BufRead, BufReader, Read, Write},
+    io::{Read, Write},
     os::fd::AsRawFd,
     os::unix::{
         fs::{DirBuilderExt, FileTypeExt, MetadataExt, OpenOptionsExt, PermissionsExt},
@@ -95,7 +95,7 @@ impl Config {
 }
 
 fn restrict_process() -> Result<()> {
-    // These limits apply only to the detached daemon and its Git children.
+    // These limits apply to the detached daemon and its Git children.
     unsafe {
         libc::umask(0o077);
         libc::setpriority(libc::PRIO_PROCESS, 0, 10);
@@ -203,6 +203,8 @@ pub fn serve(config: &Config) -> Result<()> {
     config.prepare()?;
     restrict_process()?;
     let startup = crate::maintenance::shared(config)?;
+    // Output cleanup is independent: damaged output must not prevent repository search.
+    let _ = crate::output::startup_cleanup(config);
     let lock = crate::maintenance::lock_file(config, "daemon.lock")?;
     match FileExt::try_lock_exclusive(&lock) {
         Ok(()) => (),
@@ -312,6 +314,24 @@ fn handle(
     );
     let value: serde_json::Value =
         serde_json::from_slice(&bytes).context("Invalid request; use rg")?;
+    if value.get("command").and_then(|v| v.as_str()) == Some("output_search") {
+        let crate::protocol::OutputRequest::Search {
+            version,
+            handle,
+            query,
+            limit,
+        } = serde_json::from_value(value)?;
+        ensure!(
+            version == crate::protocol::VERSION,
+            "Unsupported output search protocol; use output page."
+        );
+        crate::temporary_rank::validate(&query, limit)?;
+        let budget = crate::temporary_rank::Budget::new(stream.as_raw_fd());
+        let mut store = crate::output::Store::open_for_search(config, budget)?;
+        let data = store.search_with_budget(&handle, &query, limit, budget)?;
+        send(stream, &crate::protocol::OutputResponse::Ok { data })?;
+        return Ok(false);
+    }
     if value.get("command").is_some() {
         use crate::protocol::ControlRequest;
         let request: ControlRequest =
@@ -380,6 +400,37 @@ fn send(stream: &mut UnixStream, response: &impl serde::Serialize) -> Result<()>
 }
 
 pub fn search(config: &Config, request: &Request) -> Result<Response> {
+    let response = exchange(config, request)?;
+    match serde_json::from_slice(&response).context("Invalid daemon response")? {
+        WireResponse::Ok { data } => Ok(*data),
+        WireResponse::Error { message } => bail!("{message}"),
+    }
+}
+
+pub fn output_search(
+    config: &Config,
+    handle: &str,
+    query: &str,
+    limit: usize,
+) -> Result<crate::output::Search> {
+    let request = crate::protocol::OutputRequest::Search {
+        version: crate::protocol::VERSION,
+        handle: handle.into(),
+        query: query.into(),
+        limit,
+    };
+    let response = exchange(config, &request)?;
+    match serde_json::from_slice(&response)
+        .context("Invalid output search response; use output page")?
+    {
+        crate::protocol::OutputResponse::Ok { data } => Ok(data),
+        crate::protocol::OutputResponse::Error { message } => bail!(
+            "{message}. If the daemon predates output search, pause searches and retry after its idle exit; exact output page remains available."
+        ),
+    }
+}
+
+fn exchange(config: &Config, request: &impl serde::Serialize) -> Result<Vec<u8>> {
     let mut bytes = serde_json::to_vec(request)?;
     bytes.push(b'\n');
     ensure!(bytes.len() <= MAX_REQUEST, "Request exceeds 16 KiB.");
@@ -436,7 +487,43 @@ pub fn search(config: &Config, request: &Request) -> Result<Response> {
     stream.set_read_timeout(Some(Duration::from_secs(120)))?;
     stream.write_all(&bytes)?;
     let mut response = Vec::new();
-    BufReader::new(stream.take(MAX_RESPONSE + 1)).read_until(b'\n', &mut response)?;
+    let deadline = Instant::now() + Duration::from_secs(120);
+    loop {
+        crate::temporary_rank::consumer_connected(1)?;
+        ensure!(
+            Instant::now() < deadline,
+            "Daemon response timed out; retry the query."
+        );
+        let mut poll = libc::pollfd {
+            fd: stream.as_raw_fd(),
+            events: libc::POLLIN,
+            revents: 0,
+        };
+        let ready = unsafe { libc::poll(&mut poll, 1, 100) };
+        if ready < 0 {
+            let error = std::io::Error::last_os_error();
+            if error.kind() == std::io::ErrorKind::Interrupted {
+                continue;
+            }
+            return Err(error.into());
+        }
+        if ready == 0 {
+            continue;
+        }
+        let mut buffer = [0; 4096];
+        let count = stream.read(&mut buffer)?;
+        if count == 0 {
+            break;
+        }
+        response.extend_from_slice(&buffer[..count]);
+        ensure!(
+            response.len() <= MAX_RESPONSE as usize,
+            "Daemon response exceeds 64 KiB."
+        );
+        if response.contains(&b'\n') {
+            break;
+        }
+    }
     ensure!(
         response.len() <= MAX_RESPONSE as usize && response.last() == Some(&b'\n'),
         "Daemon stopped before returning a complete response; retry the query."
@@ -444,13 +531,13 @@ pub fn search(config: &Config, request: &Request) -> Result<Response> {
     if let Some(mut child) = child {
         let _ = child.try_wait();
     }
-    match serde_json::from_slice(&response).context("Invalid daemon response")? {
-        WireResponse::Ok { data } => Ok(*data),
-        WireResponse::Error { message } => bail!("{message}"),
-    }
+    Ok(response)
 }
 
 pub fn record_startup_error(config: &Config, message: &str) {
+    let Ok(_guard) = crate::maintenance::shared(config) else {
+        return;
+    };
     if let Ok(mut file) = OpenOptions::new()
         .write(true)
         .create(true)
@@ -465,6 +552,7 @@ pub fn record_startup_error(config: &Config, message: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::{BufRead, BufReader};
 
     #[test]
     fn accepted_nonblocking_stream_waits_for_request_within_deadline() {

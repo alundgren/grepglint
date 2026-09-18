@@ -1,0 +1,4 @@
+#!/bin/sh
+# Run only from a trusted checkout. No downloaded code runs before verification.
+set -eu
+exec python3 "$(dirname "$0")/scripts/bootstrap.py" "$@"
