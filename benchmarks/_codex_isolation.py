@@ -116,6 +116,36 @@ def client_command(binary, configuration, arguments):
     return command + ['--chdir', '/work', '--remount-ro', '/', '--', '/opt/codex', *arguments]
 
 
+def authenticated_client_command(binary, configuration, auth_file, arguments):
+    """Launch Codex with only its installed auth file added to the empty home."""
+    info = auth_file.lstat()
+    if (not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid()
+            or info.st_mode & 0o077 or auth_file.is_symlink()):
+        raise UnsupportedHost('chatgpt_auth_file_must_be_private_and_owned')
+    command = bubblewrap() + ['--share-net', '--ro-bind', str(binary.parent), '/opt',
+        '--ro-bind', str(configuration), '/config', '--size', str(64 * 1024 ** 2),
+        '--tmpfs', '/work']
+    resolver = Path('/etc/resolv.conf').resolve()
+    certificates = Path('/etc/ssl/certs')
+    for path, directory in ((resolver, False), (certificates, True)):
+        info = path.stat()
+        expected = stat.S_ISDIR(info.st_mode) if directory else stat.S_ISREG(info.st_mode)
+        if not expected or info.st_mode & 0o022:
+            raise UnsupportedHost('provider_transport_files_unavailable')
+    command += ['--dir', '/etc', '--ro-bind', str(resolver), '/etc/resolv.conf',
+                '--dir', '/etc/ssl', '--ro-bind', str(certificates), '/etc/ssl/certs']
+    for name in ('user', 'codex', 'tmp', 'cache', 'data', 'state'):
+        command += ['--dir', '/work/' + name]
+    command += ['--ro-bind', str(auth_file), '/work/codex/auth.json']
+    for key, value in {'HOME': '/work/user', 'CODEX_HOME': '/work/codex',
+                       'TMPDIR': '/work/tmp', 'XDG_CACHE_HOME': '/work/cache',
+                       'XDG_CONFIG_HOME': '/work/user', 'XDG_DATA_HOME': '/work/data',
+                       'XDG_STATE_HOME': '/work/state', 'RUST_LOG': 'off',
+                       'NO_COLOR': '1'}.items():
+        command += ['--setenv', key, value]
+    return command + ['--chdir', '/work', '--remount-ro', '/', '--', '/opt/codex', *arguments]
+
+
 def diagnostic_command(binary, fixture, arguments, environment):
     command = bubblewrap() + ['--share-net', '--ro-bind', str(binary.parent), '/opt',
                               '--bind', str(fixture), str(fixture)]

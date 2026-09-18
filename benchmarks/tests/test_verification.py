@@ -14,15 +14,16 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from _codex_artifacts import create, export, owned, save, seal
-from _codex_audit import Audit, ARGUMENT_BYTES, RESPONSE_BYTES
+from _codex_audit import Audit, ARGUMENT_BYTES, RESPONSE_BYTES, encoded
 from _codex_capture import Budget, ProbeError, ResponsesStub
 import _codex_handler as handler
 import _codex_isolation as isolation
 import _codex_verify as verify
 from _codex_session import Handlers, inspect_policy
-from _codex_smoke import (Attempts, account_check, completed_session, main as smoke_main,
-                          provider_check, smoke_pair, stock_provider_evidence, weekly_quota)
-from codex_preflight import EFFORT, MODEL
+from _codex_smoke import (Attempts, account_check, completed_session, live_configuration,
+                          main as smoke_main, ChatGPTProvider, preturn, provider_check,
+                          run_confirmed, smoke_pair, stock_provider_evidence, weekly_quota)
+from codex_preflight import EFFORT, MODEL, ProbeCancelled, digest
 from test_preflight import request
 
 
@@ -67,6 +68,14 @@ class AuditTests(unittest.TestCase):
     def response_done(self):
         self.audit.receive({'method': 'rawResponse/completed', 'params': {
             'responseId': 'response', 'usage': {'inputTokens': 0}}}, 'control')
+
+    def test_usage_requires_every_observed_response(self):
+        self.response_done()
+        self.audit.receive({'method': 'rawResponse/completed', 'params': {
+            'responseId': 'complete', 'usage': {
+                'inputTokens': 2, 'outputTokens': 1, 'totalTokens': 3}}}, 'control')
+        with self.assertRaisesRegex(ProbeError, 'incompatible_provider_usage'):
+            self.audit.usage('control')
 
     def test_discarded_failed_nested_calls_are_independent_of_wrapper_output(self):
         self.wrapper()
@@ -414,18 +423,21 @@ class ArtifactTests(unittest.TestCase):
 
 
 def quota(percent=10, reset=2000000000):
-    return {'ordinaryUsageAllowed': True, 'rateLimits': {'limitId': 'codex', 'secondary': {
-        'usedPercent': percent, 'windowDurationMins': 10080, 'resetsAt': reset}}}
+    return {'ordinaryUsageAllowed': True, 'rateLimitResetCredits': None,
+        'rateLimitsByLimitId': {'codex': {'limitId': 'codex', 'secondary': {
+            'usedPercent': percent, 'windowDurationMins': 10080, 'resetsAt': reset}}}}
 
 
 class FakeProvider:
     def __init__(self):
         self.turns = []
-        self.evidence_value = {'origin': 'supported_provider_metadata_and_pinned_source',
+        self.config_hash = 'configuration-hash'
+        self.evidence_value = {'origin': 'pinned_client_request_and_protocol_observation',
             **{key: True for key in stock_provider_evidence() if key not in ('origin', 'source')}}
 
     def account(self):
-        return {'requiresOpenaiAuth': True, 'account': {'type': 'chatgpt'}}
+        return {'requiresOpenaiAuth': True, 'account': {
+            'type': 'chatgpt', 'email': 'fixture@example.invalid', 'planType': 'pro'}}
 
     def models(self):
         return [{'model': MODEL, 'supportedReasoningEfforts': [{'reasoningEffort': EFFORT}]}]
@@ -433,20 +445,132 @@ class FakeProvider:
     def quota(self):
         return quota()
 
-    def evidence(self):
+    def preflight_probe(self, configuration):
+        return {'configuration_sha256': self.config_hash, 'isolation': True,
+                'reported_model': MODEL, 'reported_effort': EFFORT}
+
+    def evidence(self, proofs=None, probe=None):
         return self.evidence_value
 
-    def session(self, configuration, seconds, calls):
+    def session(self, configuration, seconds, calls, reserve):
+        reserve()
         self.turns.append((configuration, seconds, calls))
         return {'model': MODEL, 'effort': EFFORT, 'calls': 3, 'elapsed_seconds': 1,
                 'audit_status': 'passed', 'usage': {'inputTokens': 10, 'outputTokens': 4, 'totalTokens': 14}}
 
 
 class SmokeTests(unittest.TestCase):
+    def test_authenticated_mount_exposes_only_private_auth_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            binary_dir = root / 'bin'
+            config = root / 'config'
+            binary_dir.mkdir()
+            config.mkdir()
+            binary = binary_dir / 'codex'
+            binary.write_bytes(b'binary')
+            auth = root / 'auth.json'
+            auth.write_text('PRIVATE_AUTH_VALUE')
+            auth.chmod(0o600)
+            command = isolation.authenticated_client_command(binary, config, auth, ['app-server'])
+            self.assertIn(str(auth), command)
+            self.assertNotIn('PRIVATE_AUTH_VALUE', json.dumps(command))
+            self.assertEqual(command.count(str(auth)), 1)
+            self.assertIn('/work/codex/auth.json', command)
+            self.assertNotIn(str(root / 'unrelated'), command)
+            self.assertIn('/etc/resolv.conf', command)
+            self.assertIn('/etc/ssl/certs', command)
+
+    def test_chatgpt_adapter_uses_protocol_metadata_and_one_turn_submission(self):
+        server_source = '''import json, sys
+for line in sys.stdin:
+    request = json.loads(line)
+    method = request.get("method")
+    if "id" not in request:
+        continue
+    if method == "account/read":
+        result = {"requiresOpenaiAuth": True, "account": {"type": "chatgpt", "email": "private@example.invalid", "planType": "pro"}}
+    elif method == "model/list":
+        result = {"data": [{"model": "gpt-5.6-luna", "supportedReasoningEfforts": [{"reasoningEffort": "high"}]}], "nextCursor": None}
+    elif method == "account/rateLimits/read":
+        result = {"ordinaryUsageAllowed": True, "rateLimitResetCredits": None, "rateLimitsByLimitId": {"codex": {"secondary": {"usedPercent": 10, "windowDurationMins": 10080, "resetsAt": 4102444800}}}}
+    elif method == "thread/start":
+        result = {"model": "gpt-5.6-luna", "reasoningEffort": "high", "thread": {"id": "thread"}}
+    else:
+        result = {}
+    print(json.dumps({"id": request["id"], "result": result}), flush=True)
+    if method == "turn/start":
+        print(json.dumps({"method": "rawResponseItem/completed", "params": {"item": {"type": "custom_tool_call", "call_id": "wrapper", "namespace": "functions", "name": "exec", "input": "await tools.read_file({});"}}}), flush=True)
+        print(json.dumps({"method": "rawResponseItem/completed", "params": {"item": {"type": "custom_tool_call_output", "call_id": "wrapper", "output": "done"}}}), flush=True)
+        arguments = {"path": "example.py", "start": 1, "end": 2}
+        item = {"type": "dynamicToolCall", "id": "nested", "tool": "read_file", "arguments": arguments, "status": "inProgress"}
+        print(json.dumps({"method": "item/started", "params": {"item": item}}), flush=True)
+        print(json.dumps({"id": 90, "method": "item/tool/call", "params": {"callId": "nested", "threadId": "thread", "turnId": "turn", "tool": "read_file", "namespace": None, "arguments": arguments}}), flush=True)
+        completed = dict(item, status="completed", success=True, contentItems=[{"type": "inputText", "text": "ok"}])
+        print(json.dumps({"method": "item/completed", "params": {"item": completed}}), flush=True)
+        print(json.dumps({"method": "rawResponse/completed", "params": {"responseId": "one", "usage": {"inputTokens": 4, "outputTokens": 2, "totalTokens": 6}}}), flush=True)
+        print(json.dumps({"method": "turn/completed", "params": {"turn": {"status": "completed"}}}), flush=True)
+'''
+        class DummyHandlers:
+            def __init__(self, source, grepglint, budget, audit, session):
+                self.error = None
+                self.audit, self.session = audit, session
+                self.child = type('Worker', (), {'proc': type('Process', (), {'pid': os.getpid()})()})()
+            def start(self, client):
+                pass
+            def submit(self, request):
+                response = {'id': request['id'], 'result': {'success': True,
+                    'contentItems': [{'type': 'inputText', 'text': 'ok'}]}}
+                self.audit.handler(request, response, {'ok': True}, 0.01, self.session)
+            def close(self):
+                pass
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            server = root / 'server.py'
+            server.write_text(server_source)
+            auth = root / 'auth.json'
+            auth.write_text('{}')
+            auth.chmod(0o600)
+            grepglint = root / 'grepglint'
+            grepglint.write_text('#!/bin/sh\nprintf \'{"tools":[]}\'\n')
+            grepglint.chmod(0o700)
+            audit = root / 'audit.jsonl'
+            with patch('_codex_smoke.prerequisites'), \
+                 patch('_codex_smoke.authenticated_client_command',
+                       return_value=[sys.executable, str(server)]), \
+                 patch('_codex_smoke.Handlers', DummyHandlers):
+                provider = ChatGPTProvider(root / 'codex', grepglint, auth, audit)
+                try:
+                    account_check(provider.account(), provider.models())
+                    self.assertEqual(len(weekly_quota(provider.quota(), 100)['buckets']), 1)
+                    reservations = []
+                    result = provider.session('control', 120, 20,
+                                              lambda: reservations.append('control'))
+                    self.assertEqual(reservations, ['control'])
+                    self.assertEqual(result['usage']['totalTokens'], 6)
+                    self.assertEqual(result['calls'], 2)
+                finally:
+                    provider.close()
+
     def test_default_smoke_is_offline(self):
         with patch('_codex_smoke.require_local') as local, patch('builtins.print'):
             self.assertEqual(smoke_main([]), 3)
             local.assert_not_called()
+
+    def test_launch_failure_never_overwrites_an_existing_receipt(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            receipt = root / 'existing.json'
+            receipt.write_text('preserve-me')
+            args = ['--provider', 'chatgpt', '--local-receipt', str(root / 'local.json'),
+                    '--codex', str(root / 'codex'), '--grepglint', str(root / 'grepglint'),
+                    '--receipt', str(receipt)]
+            with patch('_codex_smoke.check_user_manager',
+                       side_effect=isolation.UnsupportedHost('manager_unavailable')), \
+                 patch('builtins.print'):
+                self.assertEqual(smoke_main(args), 3)
+            self.assertEqual(receipt.read_text(), 'preserve-me')
 
     def test_exact_authentication_model_and_effort(self):
         provider = FakeProvider()
@@ -457,29 +581,42 @@ class SmokeTests(unittest.TestCase):
         with self.assertRaisesRegex(ProbeError, 'exact_model_and_effort'):
             account_check(provider.account(), [{'model': 'gpt-other'}])
 
+    def test_provider_evidence_is_derived_from_local_proof_and_live_probe(self):
+        checks = {'normalized_configuration': True, 'prompt_and_catalog': True,
+                  'runtime_registrations': True, 'direct_skill_handlers': True,
+                  'nested_aliases': True, 'negative_capabilities': True}
+        probe = {'configuration_sha256': digest(encoded(live_configuration())),
+                 'isolation': True}
+        evidence = stock_provider_evidence({'checks': checks}, probe)
+        provider_check(evidence)
+        checks['nested_aliases'] = False
+        with self.assertRaisesRegex(ProbeError, 'provider_effective_request_unverified'):
+            provider_check(stock_provider_evidence({'checks': checks}, probe))
+
     def test_weekly_quota_requires_fresh_explicit_availability(self):
-        self.assertEqual(weekly_quota(quota(), 100)['used_percent'], 10)
+        self.assertEqual(weekly_quota(quota(), 100)['buckets'][0]['used_percent'], 10)
         for observation in ({}, quota(100), quota(reset=50),
                             dict(quota(), ordinaryUsageAllowed=None)):
             with self.assertRaises(ProbeError):
                 weekly_quota(observation, 100)
 
-    def test_provider_uncertainty_consumes_no_turn_and_attempts_persist(self):
+    def test_provider_uncertainty_consumes_no_turn_or_attempt(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'attempts.json'
             attempts = Attempts(path)
             provider = FakeProvider()
-            provider.evidence_value = stock_provider_evidence()
+            provider.evidence_value = {'origin': 'pinned_client_request_and_protocol_observation'}
             try:
                 with self.assertRaisesRegex(ProbeError, 'provider_effective_request_unverified'):
                     smoke_pair(provider, attempts, 'receipt-hash')
                 self.assertEqual(provider.turns, [])
+                self.assertEqual(attempts.entries, [])
             finally:
                 attempts.close()
             attempts = Attempts(path)
             try:
-                with self.assertRaisesRegex(ProbeError, 'smoke_attempts_exhausted'):
-                    attempts.reserve('control', 'new-receipt-does-not-reset')
+                attempts.reserve('control', 'receipt')
+                self.assertEqual(attempts.entries[0]['status'], 'reserved')
             finally:
                 attempts.close()
 
@@ -491,12 +628,121 @@ class SmokeTests(unittest.TestCase):
                 self.assertEqual(len(smoke_pair(provider, attempts, 'hash')), 2)
                 self.assertEqual(provider.turns, [('control', 120, 20), ('grepglint', 120, 20)])
                 with self.assertRaisesRegex(ProbeError, 'smoke_attempts_exhausted'):
-                    attempts.reserve('third', 'hash')
+                    attempts.next_configuration()
             finally:
                 attempts.close()
 
+    def test_confirmation_binds_quota_and_ledger(self):
+        with tempfile.TemporaryDirectory() as directory:
+            attempts = Attempts(Path(directory) / 'attempts.json')
+            provider = FakeProvider()
+            proofs = {'receipt_sha256': 'proof'}
+            try:
+                prepared = preturn(provider, proofs, attempts, now=100)
+                provider.quota = lambda: quota(11)
+                with self.assertRaisesRegex(ProbeError, 'stale_or_missing_confirmation'):
+                    run_confirmed(provider, attempts, proofs, prepared['confirmation'])
+                self.assertEqual(attempts.entries, [])
+                provider.quota = lambda: quota(10)
+                prepared = preturn(provider, proofs, attempts, now=100)
+                attempts.reserve('control', 'proof')
+                with self.assertRaisesRegex(ProbeError, 'baseline_not_passed'):
+                    run_confirmed(provider, attempts, proofs, prepared['confirmation'])
+            finally:
+                attempts.close()
+
+    def test_uncertain_submission_consumes_baseline_and_blocks_treatment(self):
+        class Uncertain(FakeProvider):
+            def session(self, configuration, seconds, calls, reserve):
+                reserve()
+                raise ProbeError('client_exited')
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'attempts.json'
+            attempts = Attempts(path)
+            provider = Uncertain()
+            proofs = {'receipt_sha256': 'proof'}
+            events = []
+            try:
+                prepared = preturn(provider, proofs, attempts)
+                with self.assertRaisesRegex(ProbeError, 'client_exited'):
+                    run_confirmed(provider, attempts, proofs, prepared['confirmation'],
+                                  on_prepared=lambda value: events.append('prepared'),
+                                  on_reserved=lambda value: events.append('reserved'))
+                self.assertEqual(events, ['prepared', 'reserved'])
+                self.assertEqual(attempts.entries[0]['status'], 'failed')
+                with self.assertRaisesRegex(ProbeError, 'baseline_not_passed'):
+                    attempts.next_configuration()
+            finally:
+                attempts.close()
+
+    def test_success_remains_reserved_until_cleanup_commit(self):
+        with tempfile.TemporaryDirectory() as directory:
+            attempts = Attempts(Path(directory) / 'attempts.json')
+            provider = FakeProvider()
+            proofs = {'receipt_sha256': 'proof'}
+            try:
+                prepared = preturn(provider, proofs, attempts)
+                session = run_confirmed(provider, attempts, proofs, prepared['confirmation'])
+                self.assertEqual(session['status'], 'passed')
+                self.assertEqual(attempts.entries[0]['status'], 'reserved')
+                with self.assertRaisesRegex(ProbeError, 'baseline_not_passed'):
+                    attempts.next_configuration()
+                attempts.finish('control', 'passed')
+                self.assertEqual(attempts.next_configuration(), 'grepglint')
+            finally:
+                attempts.close()
+
+    def test_worker_cancellation_after_reservation_retains_partial_evidence(self):
+        class CancelProvider(FakeProvider):
+            def __init__(self, *args):
+                super().__init__()
+            def session(self, configuration, seconds, calls, reserve):
+                reserve()
+                raise ProbeCancelled()
+            def close(self):
+                pass
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            receipt = root / 'cancelled.json'
+            ledger = root / 'attempts.json'
+            proofs = {'receipt_sha256': 'proof', 'checks': {}, 'sessions': []}
+            args = ['--provider', 'chatgpt', '--local-receipt', str(root / 'local.json'),
+                    '--codex', str(root / 'codex'), '--grepglint', str(root / 'grepglint'),
+                    '--receipt', str(receipt), '--confirm', 'confirmed',
+                    '--worker', '--invocation', '0' * 32]
+            with patch('_codex_smoke.cgroup_limits'), \
+                 patch('_codex_smoke.require_local', return_value=proofs), \
+                 patch('_codex_smoke.ledger_path', return_value=ledger), \
+                 patch('_codex_smoke.ChatGPTProvider', CancelProvider), \
+                 patch('_codex_smoke.confirmation_value', return_value='confirmed'), \
+                 patch('builtins.print'):
+                self.assertEqual(smoke_main(args), 3)
+            result = json.loads(receipt.read_text())
+            self.assertTrue(result['inference_performed'])
+            self.assertEqual(result['attempt']['status'], 'failed')
+            self.assertIn('quota_before', result['attempt'])
+            self.assertEqual(result['errors'], ['cancelled'])
+            attempts = Attempts(ledger)
+            try:
+                self.assertEqual(attempts.entries[0]['status'], 'failed')
+                with self.assertRaisesRegex(ProbeError, 'baseline_not_passed'):
+                    attempts.next_configuration()
+            finally:
+                attempts.close()
+
+    def test_all_weekly_buckets_are_retained(self):
+        value = quota()
+        value['rateLimitsByLimitId']['other'] = {'primary': {
+            'usedPercent': 2, 'windowDurationMins': 10080, 'resetsAt': 2000000100},
+            'secondary': {'usedPercent': 3, 'windowDurationMins': 300, 'resetsAt': 2000000100}}
+        result = weekly_quota(value, 100)
+        self.assertEqual([(item['bucket_id'], item['slot']) for item in result['buckets']],
+                         [('codex', 'secondary'), ('other', 'primary')])
+
     def test_missing_usage_reset_and_tool_overflow_do_not_pass(self):
-        result = FakeProvider().session('control', 120, 20)
+        result = FakeProvider().session('control', 120, 20, lambda: None)
         before, after = weekly_quota(quota(10), 100), weekly_quota(quota(11), 101)
         completed_session(result, before, after)
         for key, value, message in [('usage', None, 'provider_usage_missing'),

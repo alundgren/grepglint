@@ -3,7 +3,8 @@
 `codex_preflight.py verify` runs stock Codex against scripted local Responses
 events. It exercises source handlers, hidden direct handlers, nested JavaScript
 calls and cancellation without model inference or account credentials. A pass
-applies to the local contract only. ChatGPT verification stays pending.
+applies to the local contract only. The separate confirmed smoke command can
+collect ChatGPT observations; issue #39 owns the two real turns.
 
 The original command and its [unsupported diagnostic](benchmark-preflight.md)
 remain available. The new receipt uses schema version 2 and contract
@@ -160,27 +161,77 @@ Default invocation and CI are offline. The explicit entry point is:
 ```sh
 python3 benchmarks/codex_preflight.py smoke \
   --provider chatgpt \
+  --dry-run \
   --local-receipt /private/verification/run-ID/receipt.json \
   --codex /absolute/path/to/codex \
   --grepglint "$PWD/target/release/grepglint" \
-  --receipt /private/smoke-check.json
+  --receipt /private/control-dry-run.json
 ```
 
-It requires a successful local receipt matching the implementation and binaries.
-With this pinned client it then reports `provider_effective_request_unverified`
-and stops before reading authentication or sending a provider turn. The
-supported metadata exposes model names, effort choices and three provider
-capability flags. It does not expose the complete effective instructions,
-hidden dispatch registrations and available package catalogs. Model prose or
-the absence of an unexpected call cannot supply those facts.
+The dry run performs no inference. It requires the matching successful local
+receipt, pinned Codex and Grepglint binaries, a private installed
+`~/.codex/auth.json`, ChatGPT rather than API-key authentication, exact
+`gpt-5.6-luna` with `high`, explicit included usage, and at least one fresh
+weekly quota window. It lists the next configuration, remaining attempt count,
+proof hashes, pre-turn statuses, weekly bucket count and a confirmation value.
+It does not print the account identity, quota values, credentials, source or
+transcripts. Use a new receipt path for every invocation.
 
-Account-backed execution therefore remains pending. The retained fake-provider
-checks cover the required allowance of one baseline and one treatment session,
-120 seconds and 20 calls each, a persistent two-attempt ledger, exact ChatGPT
-authentication, Luna/high, explicit included weekly quota, resets, missing usage
-and provider uncertainty. They do not establish a working account-backed launch.
-No real account turn was run during implementation. Keep #16 unresolved until
-the provider evidence and account-backed execution path are established.
+For an unused ledger the next configuration is `control` and two attempts
+remain. Copy the exact `confirmation` value from the dry-run receipt into one
+live command:
+
+```sh
+python3 benchmarks/codex_preflight.py smoke \
+  --provider chatgpt \
+  --local-receipt /private/verification/run-ID/receipt.json \
+  --codex /absolute/path/to/codex \
+  --grepglint "$PWD/target/release/grepglint" \
+  --confirm CONFIRMATION_FROM_DRY_RUN \
+  --receipt /private/control-live.json
+```
+
+The live command repeats every pre-turn check. It rejects the confirmation if
+the account identity, any weekly bucket ID/reset/availability value, proof,
+configuration or attempt ledger changed. Observation time is checked for
+freshness but is not part of the confirmation hash. A successful control run
+must be followed by another dry run and a newly confirmed live command for
+`grepglint`. Never reuse the control confirmation for the treatment.
+
+The durable account-local ledger is
+`$XDG_STATE_HOME/grepglint/codex-smoke-attempts-v1.json`, or
+`~/.local/state/grepglint/codex-smoke-attempts-v1.json` when `XDG_STATE_HOME`
+is unset. It permits one control submission and one treatment submission for
+the account. A reservation is flushed immediately before `turn/start`; a
+disconnect or uncertain write consumes that attempt. Failed pre-turn checks do
+not. A failed or uncertain control blocks the treatment without consuming the
+treatment attempt. New receipts, cleanup and quota resets do not reset the
+ledger. Do not edit, replace or remove it to repeat a turn.
+
+The live audit is stored beside the receipt as `RECEIPT.audit.jsonl`. The
+controller, Codex and handlers run together under the verifier's 1 GiB memory,
+one-CPU, 128-task and 145-second service limits. The Codex mount contains only
+the pinned runtime, fixed configuration, temporary directories, read-only DNS
+and certificate files, and a read-only mount of the installed auth file. The
+model, JavaScript, handlers, Grepglint, fixture source and receipts cannot read
+that file. The configured ChatGPT transport has zero request and stream retries
+and no WebSocket reconnect path. It never falls back to API-key billing,
+purchases credits or uses quota-reset credits.
+
+The evidence claim is intentionally limited. The successful offline receipt
+proves the request constructed by the pinned client: normalized instructions,
+tool declarations and registrations, skill probes, nested aliases and negative
+capability checks. The live audit proves the protocol-visible model/effort,
+actual direct and nested calls, raw response completion events and provider
+usage. It does not claim that app-server reveals provider-side instructions or
+capabilities absent from the protocol.
+
+Stop after any non-passing result, changed weekly reset, missing later quota or
+usage, unexpected tool, incomplete raw event, deadline, cancellation,
+disconnect or cleanup failure. Preserve the receipt, audit and ledger. Do not
+run another account-backed command. The two real sessions and their sanitized
+evidence comment belong to #39; no real account turn was run while implementing
+this adapter. Keep #16 unresolved until #39 succeeds under this contract.
 
 Run validation without account access:
 
