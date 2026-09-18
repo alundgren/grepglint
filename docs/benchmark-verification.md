@@ -192,9 +192,19 @@ python3 benchmarks/codex_preflight.py smoke \
 ```
 
 The live command repeats every pre-turn check. It rejects the confirmation if
-the account identity, any weekly bucket ID/reset/availability value, proof,
-configuration or attempt ledger changed. Observation time is checked for
-freshness but is not part of the confirmation hash. A successful control run
+the account identity, any weekly bucket ID/usage/availability value, proof,
+configuration or attempt ledger changed. Reset timestamps must also match,
+with one exception: a bucket reporting zero usage and a reset one full window
+from its observation, within five seconds for transport and timestamp precision,
+is compared as `zero_usage_full_window`. The provider can move that timestamp
+on every read. Both observations must meet this condition; active buckets and
+zero-usage buckets with other reset times still require exact timestamps.
+Receipts retain every original reset timestamp. Zero reported usage can be
+rounded, so this exception does not establish that no account activity occurred.
+Post-session comparisons use the same rule and reject usage decreases, bucket
+changes and crossings of any previously observed reset time.
+Observation time is checked for freshness but is not part of the confirmation
+hash. A successful control run
 must be followed by another dry run and a newly confirmed live command for
 `grepglint`. Never reuse the control confirmation for the treatment.
 

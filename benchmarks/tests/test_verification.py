@@ -21,6 +21,7 @@ import _codex_isolation as isolation
 import _codex_verify as verify
 from _codex_session import Handlers, inspect_policy
 from _codex_smoke import (Attempts, account_check, completed_session, live_configuration,
+                          confirmation_value,
                           main as smoke_main, ChatGPTProvider, preturn, provider_check,
                           run_confirmed, smoke_pair, stock_provider_evidence, weekly_quota)
 from codex_preflight import EFFORT, MODEL, ProbeCancelled, digest
@@ -651,6 +652,45 @@ for line in sys.stdin:
                     run_confirmed(provider, attempts, proofs, prepared['confirmation'])
             finally:
                 attempts.close()
+
+    def test_confirmation_accepts_moving_zero_usage_full_week_only(self):
+        before = weekly_quota(quota(0, reset=604900), 100)
+        after = weekly_quota(quota(0, reset=604930), 130)
+        def token(value):
+            return confirmation_value({'account': 'fixture'}, value, {'proof': 'one'}, 'config', [])
+        original = copy.deepcopy(before)
+        self.assertEqual(token(before), token(after))
+        self.assertEqual(before, original)
+        for percent, reset in ((1, 604930), (0, 604920), (0, 604940)):
+            with self.subTest(percent=percent, reset=reset):
+                self.assertNotEqual(token(before), token(weekly_quota(quota(percent, reset), 130)))
+        active = weekly_quota(quota(10, reset=604900), 100)
+        self.assertNotEqual(token(active), token(weekly_quota(quota(10, reset=604930), 130)))
+        self.assertNotEqual(token(before), token(weekly_quota(quota(0, reset=604900), 130)))
+
+    def test_completed_session_retains_moving_zero_usage_timestamps(self):
+        result = FakeProvider().session('control', 120, 20, lambda: None)
+        before = weekly_quota(quota(0, reset=604900), 100)
+        after = weekly_quota(quota(0, reset=604930), 130)
+        for value in (before, after):
+            value['buckets'].append(dict(value['buckets'][0], bucket_id='active',
+                                        used_percent=10, resets_at=500000))
+        completed = completed_session(result, before, after)
+        self.assertEqual(completed['quota_before']['buckets'][0]['resets_at'], 604900)
+        self.assertEqual(completed['quota_after']['buckets'][0]['resets_at'], 604930)
+        for changed in ('reset', 'usage', 'bucket'):
+            modified = copy.deepcopy(after)
+            if changed == 'reset':
+                modified['buckets'][1]['resets_at'] += 1
+            elif changed == 'usage':
+                modified['buckets'][1]['used_percent'] = 0
+            else:
+                modified['buckets'][1]['bucket_id'] = 'different'
+            with self.subTest(changed=changed), self.assertRaisesRegex(ProbeError, 'weekly_quota_reset'):
+                completed_session(result, before, modified)
+        with self.assertRaisesRegex(ProbeError, 'weekly_quota_reset'):
+            completed_session(result, weekly_quota(quota(0, reset=604900), 100),
+                              weekly_quota(quota(0, reset=1209701), 604901))
 
     def test_uncertain_submission_consumes_baseline_and_blocks_treatment(self):
         class Uncertain(FakeProvider):

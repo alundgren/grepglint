@@ -26,6 +26,7 @@ SESSION_SECONDS = 120
 SESSION_CALLS = 20
 MAX_ATTEMPTS = 2
 FRESH_SECONDS = 300
+RESET_OBSERVATION_SECONDS = 5
 PROVIDER_ID = 'grepglint-chatgpt-smoke'
 CHATGPT_BASE_URL = 'https://chatgpt.com/backend-api/codex'
 EVIDENCE_REQUIRED = ('effective_tools', 'effective_instructions', 'all_skill_packages',
@@ -278,6 +279,21 @@ def provider_check(evidence):
         raise ProbeError('provider_effective_request_unverified')
 
 
+def quota_confirmation(quota):
+    result = {key: value for key, value in quota.items() if key != 'observed_at'}
+    result['buckets'] = []
+    for bucket in quota['buckets']:
+        value = dict(bucket)
+        # An unused bucket can report a full window from every observation.
+        # Preserve the actual timestamp in the receipt, not in this comparison.
+        if (bucket['used_percent'] == 0
+                and abs(bucket['resets_at'] - quota['observed_at']
+                        - bucket['window_minutes'] * 60) <= RESET_OBSERVATION_SECONDS):
+            value['resets_at'] = 'zero_usage_full_window'
+        result['buckets'].append(value)
+    return result
+
+
 def completed_session(result, before, after):
     if result.get('model') != MODEL or result.get('effort') != EFFORT:
         raise ProbeError('provider_model_or_effort_mismatch')
@@ -290,12 +306,15 @@ def completed_session(result, before, after):
     if not isinstance(usage, dict) or any(type(usage.get(key)) is not int or usage[key] < 0
                                        for key in ('inputTokens', 'outputTokens', 'totalTokens')):
         raise ProbeError('provider_usage_missing')
-    before_by_id = {(item['bucket_id'], item['slot']): item for item in before['buckets']}
-    after_by_id = {(item['bucket_id'], item['slot']): item for item in after['buckets']}
+    before_by_id = {(item['bucket_id'], item['slot']): item
+                    for item in quota_confirmation(before)['buckets']}
+    after_by_id = {(item['bucket_id'], item['slot']): item
+                   for item in quota_confirmation(after)['buckets']}
     if before_by_id.keys() != after_by_id.keys() or any(
             after_by_id[key]['resets_at'] != value['resets_at']
             or after_by_id[key]['used_percent'] < value['used_percent']
-            for key, value in before_by_id.items()):
+            for key, value in before_by_id.items()) or any(
+                item['resets_at'] <= after['observed_at'] for item in before['buckets']):
         raise ProbeError('weekly_quota_reset_during_smoke')
     return {'status': 'passed', 'usage': usage, 'quota_before': before, 'quota_after': after}
 
@@ -313,8 +332,7 @@ def live_configuration():
 
 
 def confirmation_value(account, quota, proofs, config_hash, ledger):
-    bound = {'account': account, 'quota': {key: value for key, value in quota.items()
-                                          if key != 'observed_at'},
+    bound = {'account': account, 'quota': quota_confirmation(quota),
              'proofs': proofs, 'configuration_sha256': config_hash, 'ledger': ledger}
     return digest(encoded(bound))
 
@@ -530,7 +548,8 @@ def preturn(provider, proofs, attempts, now=None, checks=None):
         _model_check(provider.models())
         checks[phase] = 'passed'
         phase = 'included_weekly_quota'
-        quota = weekly_quota(provider.quota(), now)
+        observation = provider.quota()
+        quota = weekly_quota(observation, time.time() if live_clock else now)
         if live_clock and time.time() - quota['observed_at'] > FRESH_SECONDS:
             raise ProbeError('quota_observation_stale')
         checks[phase] = 'passed'
