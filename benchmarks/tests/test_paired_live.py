@@ -2,10 +2,12 @@
 import copy
 import json
 import os
+import queue
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from types import SimpleNamespace
 import unittest
@@ -14,6 +16,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from _codex_capture import Budget, ProbeError
 from _codex_smoke import ChatGPTProvider, weekly_quota
+from _codex_session import Handlers
 from _paired_attempts import Attempts
 from _paired_live import quota_compatible, observation, Run
 from _paired_proof import plan_hash
@@ -191,6 +194,11 @@ for line in sys.stdin:
  if m == 'turn/start' and scenario == 'disconnect': sys.exit(0)
  if m == 'account/rateLimits/read' and scenario == 'missing-quota' and sum(json.loads(x).get('method') == m for x in log.read_text().splitlines()) >= 4: result = {'ordinaryUsageAllowed':False}
  print(json.dumps({'id':r['id'],'result':result}),flush=True)
+ if m == 'turn/start' and scenario == 'tool-limit':
+  arguments = {'glob':'**/*','path':'.'}
+  print(json.dumps({'method':'item/started','params':{'item':{'type':'dynamicToolCall','id':'list','tool':'file_list','arguments':arguments,'status':'inProgress'}}}),flush=True)
+  print(json.dumps({'id':0,'method':'item/tool/call','params':{'callId':'list','threadId':'fresh','turnId':'turn','tool':'file_list','arguments':arguments}}),flush=True)
+  continue
  if m == 'turn/start':
   text = 'malformed' if scenario == 'malformed' else json.dumps({'explanation':'SIMULATED provider answer','evidence':[]})
   print(json.dumps({'method':'rawResponseItem/completed','params':{'item':{'type':'message','id':'final','role':'assistant','phase':'final_answer','content':[{'type':'output_text','text':text}]}}}),flush=True)
@@ -209,6 +217,22 @@ class DummyHandlers:
         pass
     def close(self):
         pass
+
+
+class OutputLimitHandlers(Handlers):
+    """Exercise the real handler thread with a bounded-output failure response."""
+    def __init__(self, source, grepglint, budget, audit, session, **kwargs):
+        self.budget, self.audit, self.session = budget, audit, session
+        self.error = None
+        self.queued_max = 0
+        self.requests = queue.Queue(maxsize=8)
+        self.stop = threading.Event()
+        self.send_lock = threading.Lock()
+        self.child = SimpleNamespace(send=lambda value: None, close=lambda: None,
+            line=lambda: b'{"ok":false,"error":"handler_output_limit_exceeded"}')
+        self.thread = None
+        self.checks = {'simulated_isolation': True}
+        self.cache_identity = 'simulated-cache'
 
 
 class Adapter(unittest.TestCase):
@@ -250,7 +274,7 @@ class Adapter(unittest.TestCase):
                  patch('_paired_live.Attempts', side_effect=lambda: Attempts(ledger_path)), \
                  patch('_codex_smoke.prerequisites'), \
                  patch('_codex_smoke.children_in_current_cgroup', return_value=True), \
-                 patch('_codex_smoke.Handlers', DummyHandlers), \
+                 patch('_codex_smoke.Handlers', OutputLimitHandlers if scenario == 'tool-limit' else DummyHandlers), \
                  patch('_codex_smoke.authenticated_client_command', return_value=[sys.executable, str(server), str(log), scenario]):
                 ready = live.worker(args, catalog, cg)
                 self.assertEqual(ready['status'], 'ready')
@@ -285,6 +309,13 @@ class Adapter(unittest.TestCase):
                         live_identity(run_path / 't0001.jsonl', changed, {'question': planned['trials'][0]['question']}, planned, result)
                 else:
                     self.assertEqual(store.read(run_path / 't0002.json')['state'], 'not-started')
+                if scenario == 'tool-limit':
+                    self.assertEqual(first['errors'], ['trial_tool_bound_exhausted'])
+                    self.assertEqual(result['errors'], first['errors'])
+                    self.assertEqual(first['tools'][0]['error'], 'handler_output_limit_exceeded')
+                    after = first['quota_observations'][-1]
+                    self.assertIsNone(after['weekly'])
+                    self.assertEqual(after['error'], 'client_exited')
                 ledger = Attempts(ledger_path)
                 try:
                     with self.assertRaisesRegex(ProbeError, 'consumed'):
@@ -304,3 +335,6 @@ class Adapter(unittest.TestCase):
 
     def test_invalid_final_answer_stops_partner(self):
         self.exercise('malformed')
+
+    def test_output_limit_survives_client_exit_and_missing_posttrial_quota(self):
+        self.exercise('tool-limit')

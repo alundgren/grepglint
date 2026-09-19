@@ -213,6 +213,13 @@ deadline or exhausted limits stop the run. The current trial remains and later
 trials stay explicitly `not-started`. Factual correctness is not available here
 and cannot stop execution. Partial runs remain valid incomplete scoring inputs.
 
+A recursive `file_list` on a large repository can exceed the 64 KiB handler
+output limit. This stops the trial with `trial_tool_bound_exhausted`; the tool
+record retains `handler_output_limit_exceeded`. The handler terminates the
+client to stop further inference. If the post-trial quota read then fails,
+its error remains in `quota_observations` without replacing the trial error.
+The quota change is unknown when that reading is missing.
+
 ```sh
 python3 benchmarks/paired.py --validate /private/paired-runs/run-ID
 python3 benchmarks/paired.py --validate /private/paired-runs/run-ID \

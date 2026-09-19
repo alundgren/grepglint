@@ -113,6 +113,7 @@ class Run:
             raise ProbeError('approved_source_changed')
         provider = self.provider(trial, audit, budget)
         reserved = False
+        session_failed = False
         index = trial['order']
         before_roles = ['trial_before'] + (['pair_before'] if index % 2 == 0 else []) + (['run_before'] if index == 0 else [])
         after_roles = ['trial_after'] + (['pair_after'] if index % 2 else [])
@@ -142,6 +143,9 @@ class Run:
             result = provider.session(trial['configuration'], LIMITS['trial_seconds'], LIMITS['tool_calls'], reserve)
             result['reported_model'], result['reported_effort'] = result['model'], result['effort']
             return result
+        except BaseException:
+            session_failed = True
+            raise
         finally:
             try:
                 if reserved:
@@ -149,9 +153,11 @@ class Run:
                     record['quota_observations'].append(after)
                     # Preserve raw/missing observations even when continuity fails.
                     store.save(self.run, trial['trial_id'] + '.json', record)
-                    weekly = fresh(after)
-                    quota_compatible(record['quota_observations'][0]['weekly'], weekly)
-                    self.previous = weekly
+                    # Missing post-trial quota must not replace the trial's failure.
+                    if not session_failed:
+                        weekly = fresh(after)
+                        quota_compatible(record['quota_observations'][0]['weekly'], weekly)
+                        self.previous = weekly
             finally:
                 record['reported_model'] = getattr(provider, 'reported_model', None)
                 record['reported_effort'] = getattr(provider, 'reported_effort', None)
