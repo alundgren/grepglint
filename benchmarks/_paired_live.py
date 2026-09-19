@@ -6,8 +6,9 @@ from _codex_capture import Budget, ProbeError
 from _codex_smoke import (account_check, weekly_quota, quota_confirmation,
                           provider_check, FRESH_SECONDS)
 from _paired_session import NativeProvider as ChatGPTProvider, live_configuration
+from _paired_skill import skill_enabled
 from _paired_attempts import Attempts
-from _paired_contract import BASE, LIMITS, tools
+from _paired_contract import LIMITS, tools, trial_instructions
 from _paired_proof import plan_hash, require_proof
 from _paired_source import verify
 from codex_preflight import digest
@@ -64,13 +65,15 @@ class Run:
     def provider(self, trial, audit, budget):
         source = self.args.snapshots / trial['source']['id']
         return ChatGPTProvider(self.args.codex, self.args.grepglint, self.args.auth,
-            trial={'source': source, 'source_sha256': self.planned['prepared_sources'][trial['source']['id']]['sha256'], 'base': BASE, 'prompt': trial['question'],
-                   'catalog': self.catalog, 'tools': tools(trial['configuration'], self.catalog),
+            trial={'source': source, 'source_sha256': self.planned['prepared_sources'][trial['source']['id']]['sha256'], 'base': trial_instructions(trial), 'prompt': trial['question'],
+                   'skill': skill_enabled(trial), 'catalog': self.catalog, 'tools': tools(trial['configuration'], self.catalog),
                    'budget': budget, 'audit': audit, 'cache_bytes': LIMITS['cache_bytes']})
 
     def binding(self, account):
         return {'plan_sha256': plan_hash(self.planned), 'account': account,
-                'proofs': self.proofs, 'configuration_sha256': digest(encoded(live_configuration()))}
+                'proofs': self.proofs, 'configuration_sha256': digest(encoded({
+                    trial['trial_id']: live_configuration(base=trial_instructions(trial), skill=skill_enabled(trial))
+                    for trial in self.planned['trials']}))}
 
     def check_identities(self, trial):
         from paired import implementation_hash

@@ -94,6 +94,8 @@ def trial_result(record, task, corpus, judgment):
     decision = judgment if judgment is not None else judgment_template(task)
     result = {k: record[k] for k in ('run_id', 'trial_id', 'pair_id', 'task_id', 'partition', 'configuration', 'repetition', 'order', 'state', 'source')}
     result.update(group=task['group'], language=task['language'], source_bytes=corpus.sources[task['source']]['source_bytes'],
+        guidance=record.get('guidance', 'description-only'),
+        skill_full_read_observed=record.get('session', {}).get('skill_full_read_observed'),
         simulation=record['simulation'], excluded_from_live_comparison=record['simulation'],
         run_status=record['_run_status'], run_errors=record['_run_errors'], run_cleanup=record['_run_cleanup'],
         answer_status=record['answer']['status'], errors=record.get('errors', []),
@@ -188,9 +190,10 @@ def shareable(value):
     result['trials'] = []
     for row in value['trials']:
         item = {k: row[k] for k in ('run_id', 'trial_id', 'pair_id', 'task_id', 'partition', 'configuration', 'repetition', 'order', 'state',
-            'group', 'language', 'source_bytes', 'simulation', 'excluded_from_live_comparison', 'answer_status', 'correctness', 'tool_calls', 'returned_bytes', 'grepglint_calls', 'tool_environment')}
+            'group', 'language', 'source_bytes', 'simulation', 'excluded_from_live_comparison', 'answer_status', 'correctness', 'tool_calls', 'returned_bytes', 'grepglint_calls', 'tool_environment', 'guidance')}
         for name in ('retrieved', 'cited'):
             item[name] = {k: v for k, v in row[name].items() if k != 'ranges'}
+        item['skill_full_read_observed'] = row.get('skill_full_read_observed') if type(row.get('skill_full_read_observed')) is bool else None
         item['measurements'] = {k: v for k, v in row['measurements'].items() if k in ('trial_wall_seconds', 'captured_bytes', 'source_verification_seconds', 'source_preparation_seconds', 'memory_peak_bytes', 'tool_seconds') and (v is None or type(v) in (int, float))}
         item['usage'] = {'counters': {k: v if type(v := (row['usage'].get('counters') or {}).get(k)) is int and v >= 0 else None for k in TOKENS}, 'simulation': row['simulation']}
         observation = row.get('grepglint') or {}
@@ -206,6 +209,7 @@ def shareable(value):
 
 def markdown(value):
     lines = ['# Discovery comparison', '', *value['limitations'], '',
+        'Exploration guidance experiment: ' + ', '.join(sorted({r.get('guidance', 'description-only') for r in value['trials']})) + '.', '',
         f"Oracle version {value.get('oracle_version', value.get('oracle', {}).get('version'))}. Input `{value['input_sha256']}`.", '',
         '| Trials | Attempted | Failed | Not started | Unscored | Pass | Fail | Excluded from live comparison |',
         '| --- | --- | --- | --- | --- | --- | --- | --- |',
@@ -220,6 +224,10 @@ def markdown(value):
             row['state'] + ' / ' + row['answer_status'], row['correctness'], number(row['retrieved']['region_recall']), number(row['cited']['region_recall']),
             ' / '.join(number(counters.get(k)) for k in TOKENS[:4]), number(row['measurements'].get('trial_wall_seconds')),
             f"{row['tool_calls']} / {number(row['returned_bytes'])} / {row['grepglint_calls']}"]) + ' |')
+    for row in value['trials']:
+        if row.get('guidance') == 'skill-v1' and row['configuration'] == 'grepglint':
+            lines += ['', 'Full skill file observed in native command output for ' + row['trial_id'] + ': '
+                      + str(row.get('skill_full_read_observed')) + '. This records a read, not successful retrieval.']
     lines += ['', '## Resource observations', '',
         '| Trial | Indexing seconds | Non-use | Index errors / fallback calls | Memory bytes | Cache / database / journal bytes |',
         '| --- | --- | --- | --- | --- | --- |']

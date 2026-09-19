@@ -8,13 +8,64 @@ from types import SimpleNamespace
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from _paired_contract import LIMITS, NATIVE_FRAME_BYTES, BASE, TOOL_ENVIRONMENT
+from _paired_contract import LIMITS, NATIVE_FRAME_BYTES, BASE, TOOL_ENVIRONMENT, trial_instructions
 from _paired_trial import TrialAudit, validate_audit
 from _paired_session import configuration, live_configuration, normalize_instructions
 from _codex_capture import Budget, ProbeError
 
 
 class NativeAudit(unittest.TestCase):
+    def test_skill_configuration_adds_only_discovery_and_read_permission(self):
+        expected = configuration()
+        actual = configuration(skill=True)
+        self.assertTrue(actual['skills.include_instructions'])
+        self.assertFalse(actual['features.skip_host_skill_discovery'])
+        fs = actual['permissions']['discovery']['filesystem']
+        self.assertEqual(fs.pop('<temporary>/codex/skills'), 'read')
+        self.assertNotIn('<temporary>/codex', fs)
+        self.assertNotIn('<temporary>/codex/auth.json', fs)
+        actual['skills.include_instructions'] = False
+        actual['features.skip_host_skill_discovery'] = True
+        self.assertEqual(actual, expected)
+
+    def test_skill_catalog_comparison_rejects_missing_extra_and_changed_content(self):
+        from unittest.mock import patch
+        from _paired_skill import inspect_skill_request, SKILL_READ_ENTRY
+        from codex_preflight import digest
+        catalog = '<skills_instructions>fixture</skills_instructions>'
+        def request(text=catalog, extra=''):
+            return {'input': [{'role': 'developer', 'content': text},
+                {'role': 'user', 'content': '<environment_context>' + SKILL_READ_ENTRY + extra + '</environment_context>'}]}
+        with patch('_paired_skill.SKILL_CATALOG_SHA256', digest(catalog)):
+            observed = inspect_skill_request(request(), True)
+            baseline = {'input': [{'role': 'user', 'content': '<environment_context></environment_context>'}]}
+            self.assertEqual(observed['comparison_instruction_sha256'],
+                             inspect_skill_request(baseline, False)['comparison_instruction_sha256'])
+            self.assertNotEqual(observed['comparison_instruction_sha256'],
+                                inspect_skill_request(request(extra='changed permissions'), True)['comparison_instruction_sha256'])
+            for value, enabled in ((baseline, True), (request(), False),
+                                   (request(text=catalog + 'extra skill'), True),
+                                   (request(extra=SKILL_READ_ENTRY), True)):
+                with self.subTest(value=value), self.assertRaises(ProbeError):
+                    inspect_skill_request(value, enabled)
+
+    def test_guidance_changes_only_developer_instructions_and_preserves_other_blocks(self):
+        from _score_input import comparison_instructions
+        from codex_preflight import instruction_blocks
+        base = trial_instructions({'configuration': 'grepglint', 'guidance': 'prefer-search-v1'})
+        expected = configuration()
+        actual = configuration(base=base)
+        self.assertEqual(actual.pop('developer_instructions'), base)
+        expected.pop('developer_instructions')
+        self.assertEqual(actual, expected)
+        def inspect(text, extra='same permission instructions'):
+            return {'instruction_blocks': instruction_blocks({'input': [
+                {'role': 'developer', 'content': text}, {'role': 'developer', 'content': extra}]})}
+        common = comparison_instructions(inspect(BASE), BASE)
+        self.assertEqual(comparison_instructions(inspect(base), base), common)
+        self.assertNotEqual(comparison_instructions(inspect(base + ' unexpected'), base), common)
+        self.assertNotEqual(comparison_instructions(inspect(base, 'changed permissions'), base), common)
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

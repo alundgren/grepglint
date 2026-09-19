@@ -49,6 +49,34 @@ def tiny_plan():
 
 
 class Planning(unittest.TestCase):
+    def test_skill_experiment_records_content_without_changing_task_or_developer_text(self):
+        from _paired_skill import skill_hash, skill_text, skill_enabled
+        planned = contract.plan(CORPUS, ['ccx-crossorg-217'], guidance='skill-v1')
+        self.assertEqual(planned['skill'], {'sha256': skill_hash(), 'contents': skill_text()})
+        self.assertEqual(planned['exploration_instructions'], '')
+        for trial in planned['trials']:
+            self.assertEqual(contract.trial_instructions(trial), contract.BASE)
+            self.assertEqual(skill_enabled(trial), trial['configuration'] == 'grepglint')
+        self.assertEqual(planned['trials'][0]['prompt_sha256'], planned['trials'][1]['prompt_sha256'])
+
+    def test_guidance_is_explicit_and_changes_only_treatment_instructions(self):
+        original = contract.plan(CORPUS, ['ccx-crossorg-217'])
+        guided = contract.plan(CORPUS, ['ccx-crossorg-217'], guidance='prefer-search-v1')
+        self.assertEqual(guided['exploration_instructions'], contract.EXPLORATION_GUIDANCE)
+        for before, after in zip(original['trials'], guided['trials']):
+            self.assertEqual(before['question'], after['question'])
+            self.assertEqual(before['source'], after['source'])
+            if after['configuration'] == 'control':
+                self.assertEqual(before['prompt_sha256'], after['prompt_sha256'])
+                self.assertEqual(contract.trial_instructions(after), contract.BASE)
+            else:
+                self.assertNotEqual(before['prompt_sha256'], after['prompt_sha256'])
+                self.assertEqual(contract.trial_instructions(after), contract.BASE + '\n\n' + contract.EXPLORATION_GUIDANCE)
+        self.assertIn('its use is optional', contract.EXPLORATION_GUIDANCE)
+        self.assertNotIn('middleware', contract.EXPLORATION_GUIDANCE)
+        with self.assertRaisesRegex(ProbeError, 'unsupported_exploration_guidance'):
+            contract.plan(CORPUS, ['ccx-crossorg-217'], guidance='unknown')
+
     def test_all_80_deterministic_equal_prompts(self):
         first = contract.plan(CORPUS, [], True, seed=123)
         second = contract.plan(CORPUS, [], True, seed=123)
@@ -92,7 +120,15 @@ class Planning(unittest.TestCase):
         control = contract.tools('control', catalog)
         treatment = contract.tools('grepglint', catalog)
         self.assertEqual(control, treatment[:-1])
-        self.assertIn('REAL', treatment[-1]['description'])
+        self.assertEqual(treatment[-1]['description'], 'REAL\nresults\nread\nindex')
+        schema = treatment[-1]['inputSchema']
+        self.assertEqual(set(schema['properties']), {'query'})
+        self.assertEqual(schema['required'], ['query'])
+        self.assertFalse(schema['additionalProperties'])
+        query = schema['properties']['query']
+        self.assertEqual(query['type'], 'string')
+        self.assertIn('no regex or FTS operators', query['description'])
+        self.assertIn('migration dependency graph', query['description'])
         self.assertEqual(control, [])
         self.assertEqual(treatment[-1]['name'], 'grepglint_search')
 

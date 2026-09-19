@@ -8,7 +8,9 @@ import stat
 from _codex_audit import encoded
 from _codex_capture import ProbeError, json_value
 from _paired_contract import (BASE, LEGACY_BASE, TOOL_ENVIRONMENT, CONTRACT, MAX_TRIALS, initial_record,
-                              NATIVE_FRAME_BYTES as FRAME_LIMIT, CAPTURE_BYTES as TOTAL_LIMIT)
+                              NATIVE_FRAME_BYTES as FRAME_LIMIT, CAPTURE_BYTES as TOTAL_LIMIT,
+                              trial_instructions)
+from _paired_skill import skill_enabled
 import _paired_store as store
 from _score_metrics import require, valid_range
 from validate import load, validate, read_bytes
@@ -91,11 +93,21 @@ def request_instructions(value):
     return [{k: v for k, v in block.items() if k != 'location'} for block in value['instruction_blocks']]
 
 
+def comparison_instructions(inspected, base):
+    """Remove only the declared treatment paragraph when comparing paired requests."""
+    from codex_preflight import digest as text_digest
+    blocks = request_instructions(inspected)
+    for block in blocks:
+        if block['role'] == 'developer' and block['sha256'] == text_digest(base):
+            block.update(bytes=len(BASE.encode()), sha256=text_digest(BASE), normalized_sha256=text_digest(BASE))
+    return digest(blocks)
+
+
 def effective_identity(path, record, task):
     from _codex_session import inspect_policy
     if record.get('tool_environment') == TOOL_ENVIRONMENT:
         from _paired_session import inspect_policy
-    base = BASE if record.get('tool_environment') == TOOL_ENVIRONMENT else LEGACY_BASE
+    base = trial_instructions(record) if record.get('tool_environment') == TOOL_ENVIRONMENT else LEGACY_BASE
     session = record.get('session')
     require(isinstance(session, dict), 'missing_effective_session_identity')
     require(digest(session.get('normalized_configuration')) == record['configuration_sha256'], 'effective_configuration_hash_mismatch')
@@ -108,7 +120,8 @@ def effective_identity(path, record, task):
             require(len(line) <= FRAME_LIMIT and consumed <= TOTAL_LIMIT, 'audit_input_limit_exceeded')
             event = json_value(line)
             if event.get('kind') == 'responses.request':
-                current = inspect_policy(event['value'], record['configuration'], base, task['question'])
+                options = {'skill': skill_enabled(record)} if record.get('tool_environment') == TOOL_ENVIRONMENT else {}
+                current = inspect_policy(event['value'], record['configuration'], base, task['question'], **options)
                 if inspected is None:
                     inspected = current
                     first_tools = digest(request_tools(event['value']))
@@ -124,14 +137,22 @@ def effective_identity(path, record, task):
     require(inspected is not None and dynamic_hash == record['catalog_sha256'], 'missing_or_mismatched_effective_catalog')
     for field in ('catalog_sha256', 'prompt_sha256', 'instruction_blocks', 'observed', 'model', 'effort'):
         require(session.get(field) == inspected[field], 'effective_request_identity_mismatch')
-    return first_tools, digest(request_instructions(inspected))
+    if skill_enabled(record):
+        require(session.get('skill') == inspected.get('skill'), 'effective_skill_identity_mismatch')
+        return first_tools, inspected['skill']['comparison_instruction_sha256']
+    common = (comparison_instructions(inspected, base) if record.get('guidance') == 'prefer-search-v1'
+              else digest(request_instructions(inspected)))
+    return first_tools, common
 
 
 
 def live_identity(path, record, task, plan, status):
     from _codex_smoke import live_configuration
     if record.get('tool_environment') == TOOL_ENVIRONMENT:
-        from _paired_session import live_configuration
+        from _paired_session import live_configuration as native_configuration
+        expected_configuration = native_configuration(base=trial_instructions(record), skill=skill_enabled(record))
+    else:
+        expected_configuration = live_configuration()
     from _paired_proof import plan_hash
     authorization = status.get('authorization', {})
     binding = authorization.get('binding', {})
@@ -145,8 +166,8 @@ def live_identity(path, record, task, plan, status):
     require(record.get('offline_proof', {}).get('receipt_sha256') == proof.get('receipt_sha256'),
             'live_proof_receipt_mismatch')
     session = record.get('session', {})
-    require(session.get('normalized_configuration') == live_configuration()
-            and digest(live_configuration()) == record['configuration_sha256'], 'live_configuration_mismatch')
+    require(session.get('normalized_configuration') == expected_configuration
+            and digest(expected_configuration) == record['configuration_sha256'], 'live_configuration_mismatch')
     sent, consumed = {}, 0
     with path.open('rb') as stream:
         while line := stream.readline(FRAME_LIMIT + 1):
@@ -164,7 +185,9 @@ def live_identity(path, record, task, plan, status):
             and turn.get('input') == [{'type': 'text', 'text': task['question']}]
             and turn.get('model') == record['requested_model']
             and turn.get('effort') == record['requested_effort'], 'live_submission_identity_mismatch')
-    return record['catalog_sha256'], record['prompt_sha256']
+    common_prompt = (hashlib.sha256((BASE + '\n' + task['question']).encode()).hexdigest()
+                     if record.get('guidance') == 'prefer-search-v1' else record['prompt_sha256'])
+    return record['catalog_sha256'], common_prompt
 
 def records(runs, corpus):
     require(1 <= len(runs) <= 8, 'select_one_to_eight_runs')
@@ -192,7 +215,7 @@ def records(runs, corpus):
             require(record['source'] == {k: source[k] for k in ('id', 'commit', 'tree', 'upstream_commit', 'upstream_tree')}, 'record_source_revision_mismatch')
             require(record['partition'] == task['split'], 'record_partition_mismatch')
             hashes = {'manifest_sha256': corpus.manifest_hash, 'sources_sha256': corpus.sources_hash,
-                      'task_sha256': digest(task), 'prompt_sha256': hashlib.sha256(((BASE if record.get('tool_environment') == TOOL_ENVIRONMENT else LEGACY_BASE) + '\n' + task['question']).encode()).hexdigest()}
+                      'task_sha256': digest(task), 'prompt_sha256': hashlib.sha256(((trial_instructions(record) if record.get('tool_environment') == TOOL_ENVIRONMENT else LEGACY_BASE) + '\n' + task['question']).encode()).hexdigest()}
             require(all(record.get(k) == v for k, v in hashes.items()), 'record_task_or_prompt_mismatch')
             require(record.get('tool_environment', 'controlled-handlers-v1') == plan.get('tool_environment', 'controlled-handlers-v1'), 'tool_environment_mismatch')
             for field in ('implementation_sha256', 'client_sha256', 'grepglint_sha256', 'requested_model', 'requested_effort'):
@@ -208,6 +231,19 @@ def records(runs, corpus):
                 previous = signatures.setdefault(record['configuration'], sig)
                 require(previous == sig, 'incompatible_run_configuration')
                 record['_effective_instructions'] = effective[1]
+                if record.get('guidance') in ('prefer-search-v1', 'skill-v1'):
+                    config = copy.deepcopy(record['session']['normalized_configuration'])
+                    require(config.get('developer_instructions') == trial_instructions(record),
+                            'exploration_instruction_mismatch')
+                    config['developer_instructions'] = BASE
+                    if skill_enabled(record):
+                        from _paired_session import configuration
+                        expected = configuration(live=not record['simulation'], base=trial_instructions(record), skill=True)
+                        require(record['session']['normalized_configuration'] == expected, 'skill_configuration_mismatch')
+                        config['skills.include_instructions'] = False
+                        config['features.skip_host_skill_discovery'] = True
+                        config['permissions']['discovery']['filesystem'].pop('<temporary>/codex/skills')
+                    record['_comparison_configuration_sha256'] = digest(config)
             record['_run_status'] = 'completed' if status['status'] == run_status.get('status') == 'completed' else 'incomplete'
             record['_run_errors'] = run_status.get('errors', [])
             record['_run_cleanup'] = run_status.get('cleanup', {})
@@ -217,8 +253,13 @@ def records(runs, corpus):
         pairs.setdefault((record['run_id'], record['pair_id']), []).append(record)
     for pair in pairs.values():
         require(len(pair) == 2 and {r['configuration'] for r in pair} == {'control', 'grepglint'}, 'invalid_planned_pair')
-        for field in ('task_id', 'repetition', 'source', 'prompt_sha256', 'requested_model', 'requested_effort', 'client_sha256', 'implementation_sha256', 'grepglint_sha256'):
+        guided = pair[0].get('guidance') in ('prefer-search-v1', 'skill-v1')
+        require(pair[0].get('guidance', 'description-only') == pair[1].get('guidance', 'description-only'), 'pair_guidance_mismatch')
+        for field in ('task_id', 'repetition', 'source', 'requested_model', 'requested_effort', 'client_sha256', 'implementation_sha256', 'grepglint_sha256'):
             require(pair[0][field] == pair[1][field], 'pair_identity_mismatch')
+        if not guided:
+            require(pair[0]['prompt_sha256'] == pair[1]['prompt_sha256'], 'pair_identity_mismatch')
         if all(r['state'] == 'completed' for r in pair):
-            require(pair[0]['configuration_sha256'] == pair[1]['configuration_sha256'] and pair[0]['_effective_instructions'] == pair[1]['_effective_instructions'], 'pair_effective_configuration_mismatch')
+            config_key = '_comparison_configuration_sha256' if guided else 'configuration_sha256'
+            require(pair[0][config_key] == pair[1][config_key] and pair[0]['_effective_instructions'] == pair[1]['_effective_instructions'], 'pair_effective_configuration_mismatch')
     return sorted(result, key=lambda r: (r['run_id'], r['order']))

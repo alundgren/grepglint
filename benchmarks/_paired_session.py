@@ -14,17 +14,18 @@ from _codex_session import configuration as controlled_configuration, AUXILIARY
 from _codex_smoke import ChatGPTProvider, CHATGPT_BASE_URL, PROVIDER_ID
 from codex_preflight import MODEL, EFFORT, digest, instruction_blocks, tool_catalog, toml_value, MARKERS
 from _paired_contract import BASE, LIMITS, NATIVE_FRAME_BYTES, tools
+from _paired_skill import SKILL_RELATIVE, skill_text, inspect_skill_request
 
 NATIVE_TOOLS = {'exec_command', 'write_stdin', 'apply_patch', 'view_image', 'update_plan'}
 NATIVE_MODEL_INSTRUCTIONS_SHA256 = 'cbefa6b0bede0e332d957fca70ccacf9f12f4c0ecdf81b819e5cbe1a3b16e265'
 
 
-def configuration(url='<loopback>', source='<source>', runtime='<runtime>', temporary='<temporary>', *, live=False):
+def configuration(url='<loopback>', source='<source>', runtime='<runtime>', temporary='<temporary>', *, live=False, base=BASE, skill=False):
     values = controlled_configuration(url)
     # Preserve the client's own model instructions and default local environment.
     for key in ('model_instructions_file', 'sandbox_mode'):
         values.pop(key)
-    values.update({'developer_instructions': BASE, 'features.shell_tool': True,
+    values.update({'developer_instructions': base, 'features.shell_tool': True,
         'features.unified_exec': True, 'tools.update_plan.enabled': True,
         'default_permissions': 'discovery',
         'permissions': {'discovery': {'filesystem': {
@@ -32,6 +33,10 @@ def configuration(url='<loopback>', source='<source>', runtime='<runtime>', temp
             '/etc': 'read', runtime: 'read', source: 'read',
             temporary + '/user': 'write', temporary + '/tmp': 'write'},
             'network': {'enabled': False}}}})
+    if skill:
+        values['skills.include_instructions'] = True
+        values['features.skip_host_skill_discovery'] = False
+        values['permissions']['discovery']['filesystem'][temporary + '/codex/skills'] = 'read'
     if live:
         values['model_provider'] = PROVIDER_ID
         values.pop('model_providers.preflight')
@@ -42,8 +47,8 @@ def configuration(url='<loopback>', source='<source>', runtime='<runtime>', temp
     return values
 
 
-def live_configuration():
-    return configuration(live=True)
+def live_configuration(base=BASE, skill=False):
+    return configuration(live=True, base=base, skill=skill)
 
 
 def normalize_instructions(request):
@@ -56,7 +61,7 @@ def normalize_instructions(request):
     return json.loads(text)
 
 
-def inspect_policy(request, treatment, base=BASE, prompt=None):
+def inspect_policy(request, treatment, base=BASE, prompt=None, skill=False):
     catalog = tool_catalog(request)
     expected = NATIVE_TOOLS | ({'grepglint_search'} if treatment == 'grepglint' else set())
     allowed = expected | {'functions.' + name for name in expected} | AUXILIARY
@@ -75,8 +80,12 @@ def inspect_policy(request, treatment, base=BASE, prompt=None):
         raise ProbeError('expected_instructions_missing')
     if any(marker in json.dumps(request) for marker in MARKERS.values()):
         raise ProbeError('instruction_contamination')
-    return {'observed': catalog, 'instruction_blocks': blocks, 'model': MODEL, 'effort': EFFORT,
+    result = {'observed': catalog, 'instruction_blocks': blocks, 'model': MODEL, 'effort': EFFORT,
             'catalog_sha256': digest(encoded(catalog)), 'prompt_sha256': digest(encoded(blocks))}
+    skill_proof = inspect_skill_request(normalize_instructions(request), skill)
+    if skill:
+        result['skill'] = skill_proof
+    return result
 
 
 class NativeProvider(ChatGPTProvider):
@@ -115,10 +124,18 @@ class NativeProvider(ChatGPTProvider):
                 path = self.root / 'outside' / name
                 path.write_text('PRIVATE_' + name)
                 self.forbidden[name] = str(path)
-            self.config = configuration(live=auth_file is not None)
+            base = trial.get('base', BASE)
+            skill = trial.get('skill', False)
+            if skill:
+                path = self.root / SKILL_RELATIVE
+                path.parent.mkdir(parents=True, mode=0o700)
+                path.write_text(skill_text())
+                path.chmod(0o400)
+                (self.root / 'codex' / 'private-skill-probe.txt').write_text('PRIVATE_SKILL_SIBLING')
+            self.config = configuration(live=auth_file is not None, base=base, skill=skill)
             self.config_hash = digest(encoded(self.config))
             actual = configuration(url or CHATGPT_BASE_URL, str(self.source), str(binary.parent),
-                                   str(self.root), live=auth_file is not None)
+                                   str(self.root), live=auth_file is not None, base=base, skill=skill)
             arguments = []
             for key, value in actual.items():
                 arguments += ['-c', f'{key}={toml_value(value)}']
@@ -145,6 +162,17 @@ class NativeProvider(ChatGPTProvider):
     def turn_parameters(self):
         return {}
 
+    def session(self, treatment, seconds, calls, reserve):
+        result = super().session(treatment, seconds, calls, reserve)
+        if self.trial.get('skill', False):
+            text = skill_text()
+            if (self.root / SKILL_RELATIVE).read_text() != text:
+                raise ProbeError('installed_skill_changed')
+            result['skill_full_read_observed'] = any(text.strip() in (
+                state.get('completion', {}).get('aggregatedOutput') or '')
+                for state in self.audit.native_items.values())
+        return result
+
     def allowed_tools(self, treatment, catalog):
         return {'functions.' + name for name in NATIVE_TOOLS} | AUXILIARY | {
             'functions.' + item['name'] for item in tools(treatment, catalog)}
@@ -169,11 +197,11 @@ class NativeProvider(ChatGPTProvider):
                 **{key: passed for key in EVIDENCE_REQUIRED}}
 
 
-def local_session(binary, grepglint, source, catalog, treatment, audit, budget, script, prompt, source_sha256):
+def local_session(binary, grepglint, source, catalog, treatment, audit, budget, script, prompt, source_sha256, base=BASE, skill=False):
     initial = []
     def observe(request):
         audit.record('responses.request', request, treatment)
-        current = inspect_policy(request, treatment, prompt=prompt)
+        current = inspect_policy(request, treatment, base=base, prompt=prompt, skill=skill)
         if initial:
             def stable(value):
                 return [{k: v for k, v in b.items() if k != 'location'} for b in value['instruction_blocks']]
@@ -186,9 +214,10 @@ def local_session(binary, grepglint, source, catalog, treatment, audit, budget, 
     try:
         stub.start()
         provider = NativeProvider(binary, grepglint, trial={'source': source, 'source_sha256': source_sha256,
-            'prompt': prompt, 'catalog': catalog, 'tools': tools(treatment, catalog),
+            'prompt': prompt, 'base': base, 'skill': skill, 'catalog': catalog, 'tools': tools(treatment, catalog),
             'budget': budget, 'audit': audit, 'cache_bytes': LIMITS['cache_bytes']}, url=stub.url)
         script.source, script.temporary = source, provider.root
+        script.skill = skill
         result = provider.session(treatment, LIMITS['trial_seconds'], LIMITS['tool_calls'], lambda: None)
         if stub.error:
             raise ProbeError(stub.error)

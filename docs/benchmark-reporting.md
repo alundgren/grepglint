@@ -83,7 +83,17 @@ failed execution, failed human judgments, missing judgments and simulation
 exclusions. Completed trial audits are replayed, including every constructed
 request's effective tool definitions, registration metadata and instructions.
 Assistant and tool messages may grow the conversation without changing those
-identities. Pairing rejects duplicate
+identities. Reports identify the guidance experiment. For `prefer-search-v1`, pairing allows
+only the fixed treatment paragraph to differ: prompt hashes are checked against
+the selected instructions, offline request replay preserves all other instruction
+blocks, and paired client settings must still match after removing that paragraph.
+The `skill-v1` experiment instead permits the pinned skill catalog and its single
+read-only directory permission. Other instructions and client settings must still
+match. Reports record whether the complete skill file appeared in native command
+output. A false observation does not rule out partial reads; a true observation
+does not establish tool use or retrieval benefit. Historical records without a
+guidance field retain the `description-only` checks.
+Pairing rejects duplicate
 run/trial identities, different source revisions, task or prompt hashes, model
 identities and incompatible configuration or build identities. Run IDs scope
 trial IDs, so separate runs may each contain `t0001`.

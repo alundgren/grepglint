@@ -13,7 +13,7 @@ def selected_live(args):
         raise ProbeError('explicit_chatgpt_selection_required')
     if (bool(args.readiness) == bool(args.execute) or args.fake or args.prove
             or args.task or args.all or args.dry_run or args.repetitions is not None
-            or args.seed is not None or args.fake_scenario != 'success'):
+            or args.seed is not None or args.guidance is not None or args.fake_scenario != 'success'):
         raise ProbeError('select_one_live_action_without_selection_overrides')
     if not args.snapshots:
         raise ProbeError('prepared_snapshots_required_no_implicit_fetch')

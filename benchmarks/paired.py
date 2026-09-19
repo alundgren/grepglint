@@ -15,10 +15,11 @@ from _codex_capture import Budget, Child, ProbeError, json_value
 from _codex_isolation import (UnsupportedHost, cgroup_limits, check_user_manager, file_hash,
                               prerequisites, service_command)
 from _paired_session import local_session
+from _paired_skill import SKILL_SOURCE, skill_enabled
 from codex_preflight import (cancellation_signals, exclusive_probe, ProbeCancelled,
                              write_receipt, digest, MODEL, EFFORT)
-from _paired_contract import (BASE, CONTRACT, LIMITS, MAX_TRIALS, plan, tools, answer,
-                              validate_record)
+from _paired_contract import (CONTRACT, LIMITS, MAX_TRIALS, plan, tools, answer,
+                              validate_record, GUIDANCE_MODES, trial_instructions)
 from _paired_source import verify as verify_source
 from _paired_trial import TrialAudit, FakeCodex
 import _paired_store as store
@@ -29,7 +30,7 @@ CORPUS = Path(__file__).resolve().parent
 def implementation_hash():
     result = __import__('hashlib').sha256()
     for path in sorted([CORPUS / 'paired.py', CORPUS / 'codex_preflight.py', CORPUS / 'prepare.py',
-                        CORPUS / 'validate.py', *CORPUS.glob('_codex_*.py'), *CORPUS.glob('_paired_*.py')]):
+                        CORPUS / 'validate.py', SKILL_SOURCE, *CORPUS.glob('_codex_*.py'), *CORPUS.glob('_paired_*.py')]):
         result.update(path.name.encode() + b'\0' + path.read_bytes())
     return result.hexdigest()
 
@@ -54,7 +55,7 @@ def trial_worker(run, trial, args, catalog, cg, *, live=None):
                   else FakeCodex(configuration, audit, args.fake_scenario))
         result = live.session(trial, audit, budget, record) if live else local_session(
             args.codex, args.grepglint, source, catalog, configuration, audit, budget,
-            script, trial['question'], before['sha256'])
+            script, trial['question'], before['sha256'], base=trial_instructions(trial), skill=skill_enabled(trial))
         record['session'] = result
         record['reported_model'] = result['reported_model']
         record['reported_effort'] = result['reported_effort']
@@ -241,6 +242,7 @@ def export(run):
         item = {key: safe_id(record[key]) for key in ('trial_id', 'pair_id', 'task_id', 'partition',
             'configuration', 'state')}
         item.update({key: record[key] for key in ('repetition', 'order') if type(record[key]) is int})
+        item['guidance'] = record.get('guidance', 'description-only')
         item['source'] = {key: sha(record['source'].get(key), 40) for key in ('commit', 'tree', 'upstream_commit', 'upstream_tree')}
         item['source']['id'] = safe_id(record['source'].get('id'))
         for key in ('client_sha256', 'grepglint_sha256', 'implementation_sha256'):
@@ -270,6 +272,8 @@ def main(argv=None):
     selection.add_argument('--all', action='store_true')
     parser.add_argument('--repetitions', type=int)
     parser.add_argument('--seed', type=int)
+    parser.add_argument('--guidance', choices=GUIDANCE_MODES,
+                        help='Select description-only or optional persistent exploration guidance for treatment.')
     parser.add_argument('--dry-run', action='store_true')
     parser.add_argument('--fake', action='store_true')
     parser.add_argument('--prove', action='store_true', help='Run selected corpus capability probes offline.')
@@ -333,7 +337,8 @@ def main(argv=None):
             if not args.task and not args.all:
                 parser.print_help()
                 return 0
-            planned = plan(CORPUS, args.task, args.all, args.repetitions if args.repetitions is not None else 1, args.seed if args.seed is not None else 0)
+            planned = plan(CORPUS, args.task, args.all, args.repetitions if args.repetitions is not None else 1,
+                           args.seed if args.seed is not None else 0, args.guidance or 'description-only')
             planned['implementation_sha256'] = implementation_hash()
             planned['execution'] = 'proof' if args.prove else 'simulation'
             planned['aggregate_limits'] = {

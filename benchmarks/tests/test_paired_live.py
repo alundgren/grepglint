@@ -147,6 +147,8 @@ class Authorization(unittest.TestCase):
                    lambda p: p['trials'][0].update(repetition=2),
                    lambda p: p['prepared_sources']['source'].update(sha256='b'),
                    lambda p: p.update(requested_model='other'),
+                   lambda p: p.update(guidance='prefer-search-v1'),
+                   lambda p: p.update(exploration_instructions='changed'),
                    lambda p: p['limits'].update(tool_calls=101)]
         for change in changes:
             other = copy.deepcopy(plan)
@@ -236,7 +238,7 @@ class OutputLimitHandlers(Handlers):
 
 
 class Adapter(unittest.TestCase):
-    def exercise(self, scenario, all_tasks=False):
+    def exercise(self, scenario, all_tasks=False, guidance='description-only'):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             source, corpus, identity = fixture(root)
@@ -244,7 +246,8 @@ class Adapter(unittest.TestCase):
             snapshots.mkdir()
             source.rename(snapshots / 'test')
             source = snapshots / 'test'
-            planned = contract.plan(paired.CORPUS, [], True) if all_tasks else tiny_plan()
+            planned = contract.plan(paired.CORPUS, [], True, guidance=guidance) if all_tasks else contract.plan(
+                paired.CORPUS, ['ccx-crossorg-217'], guidance=guidance)
             planned.update(schema_version=2, simulation=False, execution='chatgpt',
                            implementation_sha256='a' * 64, grepglint_sha256='b' * 64)
             for trial in planned['trials']:
@@ -302,6 +305,11 @@ class Adapter(unittest.TestCase):
                         self.assertTrue(r['params']['ephemeral'])
                         self.assertEqual(r['params']['model'], 'gpt-5.6-luna')
                 self.assertEqual(result['status'], 'completed' if scenario == 'success' else 'incomplete')
+                for trial in planned['trials']:
+                    saved = store.read(run_path / (trial['trial_id'] + '.json'))
+                    if saved['state'] == 'completed':
+                        self.assertEqual(saved['session']['normalized_configuration']['developer_instructions'],
+                                         contract.trial_instructions(trial))
                 store.seal(run_path)
                 self.assertEqual(store.validate_run(run_path)['status'], result['status'])
                 first = store.read(run_path / 't0001.json')
@@ -336,6 +344,12 @@ class Adapter(unittest.TestCase):
 
     def test_80_trials_one_confirmation_real_adapter_with_fake_transport(self):
         self.exercise('success', all_tasks=True)
+
+    def test_guided_pair_uses_selected_instructions_with_fake_transport(self):
+        self.exercise('success', guidance='prefer-search-v1')
+
+    def test_skill_pair_with_fake_transport(self):
+        self.exercise('success', guidance='skill-v1')
 
     def test_uncertain_transport_is_consumed_once_and_stops_run(self):
         self.exercise('disconnect')

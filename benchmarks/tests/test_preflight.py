@@ -116,6 +116,10 @@ class CatalogTests(unittest.TestCase):
         treatment = dynamic_tools('grepglint')
         self.assertEqual(treatment[:-1], control)
         self.assertEqual(treatment[-1]['name'], 'grepglint_search')
+        query = treatment[-1]['inputSchema']['properties']['query']
+        self.assertIn('Related words or identifiers', query['description'])
+        self.assertIn('no regex or FTS operators', query['description'])
+        self.assertIn('migration dependency graph', query['description'])
 
     def test_duplicate_json_and_non_finite_values_rejected(self):
         for value in ['{"tools":[],"tools":[1]}', '{"size":NaN}', '[[[']:
