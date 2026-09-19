@@ -164,8 +164,9 @@ and fixed recorded filenames. There is no recursive traversal or deletion.
 The database uses secure deletion and a persistent rollback journal truncated
 after each committed transaction. Both files retain recorded inode identities.
 The 40 MiB database cap and 41 MiB journal allowance include retained/staged
-payload, indexes, deleted-page reuse, and rollback work. No second payload copy
-or vacuum file is created. Private ownership metadata remains after purge for
+payload, indexes, deleted-page reuse, and rollback work. `output bounce` creates no second payload copy
+or vacuum file. Command execution additionally permits two anonymous 8 MiB
+spools, making the combined output file allowance 97 MiB. Private ownership metadata remains after purge for
 later installer integration. Store initialization refuses unrecorded or replaced
 files. A locked initialization intent names one unpredictable staging directory.
 Recovery completes only its empty files and matching partial ownership record,
@@ -256,3 +257,33 @@ peek for platforms that report EOF without a hangup flag. Capture, page and purg
 producer waits never occupy a daemon request. A concurrent output writer may
 reach its existing two-second busy timeout while a search holds the consistent
 read transaction. A later page remains byte-exact if the handle is still retained.
+
+## Command execution
+
+`output/execution.rs` owns finite shell execution in a child process group.
+The CLI passes the selected shell, command string, working directory and
+environment directly to `Command`; no producer runs in the daemon or a hook.
+A single pipe defines the combined stdout/stderr byte order. A caller deadline
+or cancellation controls producer lifetime independently of storage budgets.
+
+The unchanged profile forwards bytes immediately. Preview profiles keep a small
+prefix, then acquire an existing capture slot and full reservation before
+creating a bounded anonymous spool. No database payload is written until the
+producer has completed. The wrapper streams the spool into the retained store,
+verifies its digest and commits the immutable handle. Existing search and exact
+paging need no protocol or data-format changes. The two preview thresholds are
+16 KiB and 32 KiB; all other preview and retrieval policies are identical.
+
+The spool preserves the bytes needed to recover from invalid text, size limits,
+capacity failures or a failed store commit. Capture failures replay the prefix,
+then forward remaining output without rerunning or terminating the producer.
+Cancellation remains active while forwarding. Owned anonymous files disappear
+when closed; uncommitted reservations left by a crash are removed under their
+existing capture locks on the next output request. Spool bytes count in the
+free-space reserve alongside the store, journal and repository allowance.
+
+One bounded stderr record accounts for the producer and capture separately.
+It includes counts, timings and fixed error codes, without command contents.
+There is no new daemon service, retained accounting log or background cleanup.
+See the [execution contract](../README.md#execute-a-command-once) and
+[deterministic measurements](output-exec-measurements.md).

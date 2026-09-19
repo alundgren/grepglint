@@ -63,6 +63,8 @@ enum Tool {
 enum OutputTool {
     /// Pass small stdin through unchanged; retain larger text with a bounded preview
     Bounce,
+    /// Execute a finite shell command once with bounded output retention and exact recovery
+    Exec(grepglint::output::execution::Options),
     /// Read retained text from the beginning or an opaque continuation cursor
     Page {
         handle: String,
@@ -137,8 +139,13 @@ fn run(cli: &Cli) -> Result<()> {
             }
         }
         Tool::Output { command } => {
+            if let OutputTool::Exec(options) = command {
+                let code = grepglint::output::execution::run(options)?;
+                std::process::exit(code);
+            }
             let config = Config::from_env()?;
             match command {
+                OutputTool::Exec(_) => unreachable!(),
                 OutputTool::Bounce => grepglint::output::bounce(&config)?,
                 OutputTool::Page {
                     handle,
@@ -219,6 +226,12 @@ fn run(cli: &Cli) -> Result<()> {
                             "follow_up":"Read the relevant regions to verify them. Use rg for exact strings, regex, or all occurrences; directly read a file when its location is already known. If indexing fails, use rg and file reads; repeating the same query will not fix a capacity failure.",
                             "side_effects":"The first search builds a bounded local index and may take several seconds. Starts a local daemon if needed and updates a bounded, disposable machine-local cache. Does not edit the repository or use the network."
                         }, {
+                            "name":"output exec", "command":"grepglint output exec --shell /bin/sh --command <command> [--profile preview16k|preview32k|unchanged]",
+                            "use_when":"Run a finite noninteractive command once and retrieve omitted output through search or exact pages.",
+                            "inputs":"Explicit shell and command; optional --cwd, repeatable --env NAME=VALUE, --timeout-seconds. Inherits caller permissions, environment and limits. No TTY or interactive stdin.",
+                            "returns":"Merged stdout/stderr unchanged or an incomplete bounded preview with producer status and recovery commands. Original exit code, or 128+signal. One JSON metadata record on stderr.",
+                            "side_effects":"Runs the supplied command once. Retains accepted UTF-8 output up to 8 MiB in private bounded local storage, subject to expiry and eviction. Capture failure forwards original output; caller truncation still applies."
+                        }, {
                             "name":"output bounce", "command":"producer | grepglint output bounce",
                             "use_when":"Keep large UTF-8 stdout out of the initial response and retrieve all of it later.",
                             "inputs":"Finite UTF-8 stdin without NUL, at most 8 MiB. Use 2>&1 to merge stderr and pipefail to preserve producer failure.",
@@ -244,7 +257,7 @@ fn run(cli: &Cli) -> Result<()> {
                 );
             } else {
                 println!(
-                    "search  Find likely implementation regions from related words or identifiers when no file is known or broad text search returns too many matches.\n        grepglint search --json \"refresh token validation\"\n\nResults are lexical suggestions. Read the relevant code to verify them. Use rg for exact strings, regex, or all occurrences; read known files directly.\noutput bounce  Retain large stdin with a bounded preview.\noutput search  Find relevant sections; use paging to inspect original bytes.\noutput page    Retrieve exact retained text with --json.\noutput purge   Erase owned output contents.\nRun grepglint tools --json for the machine-readable tool catalog."
+                    "search  Find likely implementation regions from related words or identifiers when no file is known or broad text search returns too many matches.\n        grepglint search --json \"refresh token validation\"\n\nResults are lexical suggestions. Read the relevant code to verify them. Use rg for exact strings, regex, or all occurrences; read known files directly.\noutput exec    Execute a finite command once with recoverable output.\noutput bounce  Retain large stdin with a bounded preview.\noutput search  Find relevant sections; use paging to inspect original bytes.\noutput page    Retrieve exact retained text with --json.\noutput purge   Erase owned output contents.\nRun grepglint tools --json for the machine-readable tool catalog."
                 );
             }
         }

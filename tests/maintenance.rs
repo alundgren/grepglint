@@ -99,6 +99,7 @@ fn missing_daemon_help_and_catalog_do_not_start_or_create_cache() {
         vec!["status", "--json"],
         vec!["shutdown"],
         vec!["--help"],
+        vec!["output", "exec", "--help"],
         vec!["tools", "--json"],
     ] {
         let started = Instant::now();
@@ -120,6 +121,7 @@ fn missing_daemon_help_and_catalog_do_not_start_or_create_cache() {
                     .collect::<Vec<_>>(),
                 [
                     "search",
+                    "output exec",
                     "output bounce",
                     "output page",
                     "output search",
