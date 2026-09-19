@@ -13,6 +13,8 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
+pub mod execution;
+
 pub const THRESHOLD: usize = 4096;
 pub const CHUNK: usize = 3584;
 pub const PAGE: usize = 4096;
@@ -185,25 +187,24 @@ fn initialize(cache: &Path, gate: &mut File) -> Result<PathBuf> {
 
 impl Store {
     pub fn open(config: &Config) -> Result<Self> {
-        Self::open_inner(config, None)
+        Self::open_checked(config, || Ok(()))
     }
 
     pub(crate) fn open_for_search(
         config: &Config,
         budget: crate::temporary_rank::Budget,
     ) -> Result<Self> {
-        let result = Self::open_inner(config, Some(budget));
+        let result = Self::open_checked(config, move || budget.check());
         if result.is_err() {
             budget.check()?;
         }
         result
     }
 
-    fn open_inner(config: &Config, budget: Option<crate::temporary_rank::Budget>) -> Result<Self> {
-        let check = || match budget {
-            Some(budget) => budget.check(),
-            None => Ok(()),
-        };
+    fn open_checked(
+        config: &Config,
+        check: impl Fn() -> Result<()> + Copy + Send + 'static,
+    ) -> Result<Self> {
         check()?;
         directory(&config.directory)?;
         let maintenance = crate::maintenance::shared(config)?;
@@ -262,9 +263,7 @@ impl Store {
                 | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX
                 | rusqlite::OpenFlags::SQLITE_OPEN_NOFOLLOW,
         )?;
-        if let Some(budget) = budget {
-            db.progress_handler(1000, Some(move || budget.check().is_err()))?;
-        }
+        db.progress_handler(1000, Some(move || check().is_err()))?;
         check()?;
         db.busy_timeout(LOCK_WAIT)?;
         db.pragma_update(None, "journal_mode", "PERSIST")?;
@@ -306,7 +305,10 @@ impl Store {
 
     fn space(&self) -> Result<()> {
         ensure!(
-            fs2::available_space(&self.directory)? >= self.reserve + 2 * DB_LIMIT + 1024 * 1024,
+            fs2::available_space(&self.directory)?
+                >= self
+                    .reserve
+                    .saturating_add(2 * DB_LIMIT + 1024 * 1024 + 2 * MAX_OUTPUT),
             "Insufficient free disk space for output and repository reserves; consumed input may require rerunning the producer."
         );
         Ok(())

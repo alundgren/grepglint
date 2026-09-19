@@ -328,8 +328,8 @@ do not contact a running daemon. Output search runs in the daemon to share its
 existing memory and work limits with repository search. An older daemon may
 reject output search; pause searches and retry after its idle exit, or page the
 original immediately. Repository search's
-16 KiB request and 64 KiB response protocol is unchanged. Output commands
-never stop a process or inspect a PID to decide ownership. They hold the shared
+16 KiB request and 64 KiB response protocol is unchanged. Capture, retrieval and purge commands never stop a process or inspect a PID
+to decide ownership. `output exec` owns and cancels the process group it starts. They hold the shared
 maintenance lock while accessing output, so managed maintenance excludes them. Normal daemon
 startup also attempts output cleanup; output corruption cannot disable search.
 
@@ -341,10 +341,10 @@ startup also attempts output cleanup; output corruption cannot disable search.
 | Buffers | 3,584-byte read/chunk buffer; at most 32,256 pending bytes; 28,672-byte write batches |
 | Preview | First/last 256 input bytes; at most 8 KiB after escaping and metadata |
 | Page | At most 4,096 original bytes, preferring LF boundaries and preserving UTF-8; encoded output below 64 KiB |
-| Disk | 40 MiB database plus at most 41 MiB rollback journal; under 4 KiB ownership metadata and fixed empty lock files |
-| Reserve | Capture requires the existing twice-repository-database plus 64 MiB reserve and another 81 MiB; cleanup/purge need only the current output database size plus 1 MiB for rollback |
+| Disk | 40 MiB database plus at most 41 MiB rollback journal, plus two command spools of at most 8 MiB each; under 4 KiB ownership metadata and fixed empty lock files |
+| Reserve | Capture requires the existing twice-repository-database plus 64 MiB reserve and another 97 MiB; cleanup/purge need only the current output database size plus 1 MiB for rollback |
 | Memory | Capture/page: 256 KiB SQLite page cache per client, 64 MiB SQLite heap ceiling, bounded buffers; search uses the daemon budget below |
-| Deadlines | 10 seconds without stdin, 120 seconds overall capture; two-second lock/database acquisition and output delivery waits |
+| Bounce deadlines | 10 seconds without stdin, 120 seconds overall capture; two-second lock/database acquisition and output delivery waits |
 | Maintenance | At most 64 output records and two capture slots; runs on startup and output requests, never idle polling |
 
 Output bytes live in `output-v1` below the configured cache. The private
@@ -409,3 +409,100 @@ searches release their temporary database. No producer runs in the daemon.
 See [release search measurements](docs/output-search-measurements.md) for
 scripted retrieval and resource observations. These are not agent-effectiveness
 trials.
+
+### Execute a command once
+
+`output exec` is an experimental native command wrapper. It runs the selected
+shell directly with `-c` and the command as one argument. The command runs once,
+under the caller's existing permissions and resource limits. It runs in the CLI
+process's child group, never in a hook or the search daemon.
+
+```sh
+grepglint output exec --shell /bin/bash --command 'set -o pipefail; cargo test 2>&1 | cat' \
+  --cwd /path/to/project --env CARGO_TERM_COLOR=always --profile preview16k
+```
+
+Use it only for finite, noninteractive commands. Stdin is `/dev/null`. TTYs,
+interactive input and persistent background services are unsupported. The
+producer inherits the caller's environment, with repeatable `--env NAME=VALUE`
+overrides. Shell quoting, pipelines and redirects belong to the selected shell;
+Grepglint does not parse or rewrite them. Pipeline exit semantics also belong to
+that shell, including whether `pipefail` is enabled.
+
+Both stdout and stderr write to the same pipe. The captured stream is the byte
+order the kernel delivers on that pipe, including controls and original line
+endings. Writes within the platform's `PIPE_BUF` limit are atomic; larger writes
+from concurrent processes can interleave. Application buffering can affect when
+writes happen. Retrieval reconstructs this combined stream, without separate
+stdout/stderr attribution. An explicit command redirect can send bytes elsewhere.
+
+| Fixed profile | Initial response |
+| --- | --- |
+| `unchanged` | Stream every original byte directly and measure it; no capture or UTF-8 restrictions |
+| `preview16k`, default | Pass through up to 16,384 bytes; retain larger accepted output |
+| `preview32k` | Pass through up to 32,768 bytes; retain larger accepted output |
+
+The two preview profiles differ only in threshold. They use the existing
+first/last 256-byte excerpts, 8 KiB encoded preview ceiling, 4 KiB exact pages,
+and on-demand search. The preview starts with an incomplete-output label,
+producer status, original byte count, handle, expiry/eviction limitations and
+copyable recovery commands. Small output passes through byte-for-byte at EOF.
+A yielded native executor call can resume waiting on this same wrapper process;
+accepted retained bytes are not emitted before the final preview.
+
+If capture cannot start or fails after reading a prefix, Grepglint forwards the
+prefix and remaining bytes to the caller's native executor. Invalid UTF-8, NUL,
+more than 8 MiB, unavailable slots, expired captures, insufficient reserve and
+store write failures all select this fallback. It emits one bounded diagnostic,
+does not retry or terminate the producer, and publishes no partial handle. The
+native executor can still truncate the forwarded output. Capture needs a readable
+local spool to replay previously accepted bytes; hardware read errors cannot be
+recovered by this wrapper. Such errors fail delivery explicitly.
+
+After spawning the producer, the wrapper ignores SIGXFSZ so its own limited
+file writes return errors and select fallback. The producer keeps its inherited
+signal disposition and file-size limit.
+
+The shell's exit code is preserved even when capture fails. A producer signal
+is represented as `128 + signal`. One JSON accounting record, at most 2 KiB,
+is written to the wrapper's stderr after completion. It contains the profile,
+captured/bypassed/cancelled state, original and returned stdout byte counts,
+producer status and signal, wrapper exit status, capture/execution error codes, handle and
+elapsed timings. It contains no command text, environment values or source text.
+Accounting is not persisted; consumers can retain these small records for
+benchmarks. A closed or stalled stderr destination can prevent its delivery.
+Original byte counts on cancellation describe bytes read so far.
+
+There is no idle or automatic 120-second execution limit. Supply
+`--timeout-seconds N` for a caller-selected deadline, or cancel through the native
+executor. SIGINT, SIGTERM and SIGHUP reach the owned process group. Cancellation,
+deadline expiry or a disconnected/stalled output consumer triggers a group kill
+after a 250 ms grace period and reaps the shell. Deadline exit is 124; externally
+requested signals use `128 + signal`; delivery failures use 1. A producer that
+closes its output and continues working still runs until it completes or the
+caller cancels. SIGKILL of the wrapper and processes that deliberately leave its
+group are outside this cancellation contract.
+
+Command capture shares the store's two slots and full 8 MiB reservations. After
+the threshold, each slot can own one anonymous spool of at most 8 MiB. At EOF it
+streams that spool into the existing store and checks the received digest before
+publishing. The spool stays readable until publication so failed storage can be
+replayed. The peak file allowance is 97 MiB: 40 MiB database, 41 MiB journal and
+16 MiB spools. Capture reserves this allowance in addition to the existing
+repository/free-disk reserve. Spools close on completion or cancellation and
+have no persistent names. A crashed reservation is removed on the next request
+under its slot lock. Failed bounded cleanup leaves only uncommitted state for
+that same recovery path.
+
+The read/transfer buffer is 28 KiB. Before spooling, the pending prefix is at
+most 60 KiB, plus one read buffer, one UTF-8 validation buffer and two 256-byte
+excerpts. There is no whole-output allocation. SQLite keeps its existing
+256 KiB client page cache and 64 MiB heap ceiling. Storage statements and lock
+acquisition have separate two-second budgets; delivery permits at most two
+seconds without write progress. Cancellation checks run during producer waits,
+forwarding, storage and recovery. These are application deadlines, not protection
+against a kernel call stuck on a failing filesystem.
+
+See [command execution measurements](docs/output-exec-measurements.md) for the
+execution-once proof, exact recovery and observed resource costs. Direct
+`output bounce` retains its existing 4 KiB threshold and input timeout contract.
