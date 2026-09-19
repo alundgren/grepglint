@@ -164,8 +164,8 @@ def create(root, plan):
     staging.mkdir(mode=0o700)
     # Nothing executes until the complete initial record set is published.
     write(staging / 'plan.json', plan)
-    write(staging / 'run.json', {'schema_version': 1, 'contract': CONTRACT, 'run_id': run.name,
-        'simulation': True, 'inference_performed': False, 'status': 'incomplete', 'errors': [],
+    write(staging / 'run.json', {'schema_version': plan['schema_version'], 'contract': CONTRACT, 'run_id': run.name,
+        'simulation': plan['simulation'], 'inference_performed': False, 'status': 'incomplete', 'errors': [],
         'cleanup': {'service_stopped': False}, 'limits': LIMITS})
     names = ['plan.json', 'run.json']
     for trial in plan['trials']:
@@ -247,6 +247,14 @@ def validate_run(run):
             continue
         record = read(path)
         states.append(validate_record(record))
+        if not record['simulation'] and record['inference_performed']:
+            from _paired_proof import plan_hash
+            authorization = read(run / 'run.json').get('authorization', {})
+            binding = authorization.get('binding', {})
+            if (record.get('authorization_sha256') != authorization.get('confirmation')
+                    or binding.get('plan_sha256') != plan_hash(plan)
+                    or record.get('offline_proof', {}).get('receipt_sha256') != binding.get('proofs', {}).get('receipt_sha256')):
+                raise ProbeError('live_record_authorization_mismatch')
         if record['run_id'] != run.name or record['seed'] != plan['seed']:
             raise ProbeError('trial_plan_identity_mismatch')
         for key in ('trial_id', 'pair_id', 'task_id', 'partition', 'repetition', 'order', 'configuration', 'source'):
@@ -254,5 +262,5 @@ def validate_run(run):
                 raise ProbeError('trial_plan_identity_mismatch')
         if not validate_audit(run / (trial['trial_id'] + '.jsonl'), record, budget):
             states.append('incomplete')
-    return {'contract': plan['contract'], 'simulation': True, 'trials': len(plan['trials']),
+    return {'contract': plan['contract'], 'simulation': plan['simulation'], 'trials': len(plan['trials']),
             'status': 'completed' if owner.get('sealed') and not owner.get('pending') and all(s == 'completed' for s in states) else 'incomplete'}

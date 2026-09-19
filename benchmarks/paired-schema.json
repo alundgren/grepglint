@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "paired-discovery-v1",
-  "title": "Simulated paired discovery trial",
+  "title": "Paired discovery trial: simulated v1 or authorized ChatGPT v2",
   "type": "object",
   "required": [
     "schema_version",
@@ -37,16 +37,19 @@
   ],
   "properties": {
     "schema_version": {
-      "const": 1
+      "enum": [
+        1,
+        2
+      ]
     },
     "contract": {
       "const": "paired-discovery-v1"
     },
     "simulation": {
-      "const": true
+      "type": "boolean"
     },
     "inference_performed": {
-      "const": false
+      "type": "boolean"
     },
     "state": {
       "enum": [
@@ -214,7 +217,7 @@
       ],
       "properties": {
         "simulation": {
-          "const": true
+          "type": "boolean"
         },
         "counters": {
           "type": [
@@ -335,6 +338,32 @@
         "string",
         "null"
       ]
+    },
+    "authorization_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "offline_proof": {
+      "type": "object",
+      "required": [
+        "receipt_sha256",
+        "plan_sha256",
+        "provider_evidence"
+      ]
+    },
+    "quota_observations": {
+      "type": "array",
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "required": [
+          "roles",
+          "observed_at",
+          "raw",
+          "weekly",
+          "error"
+        ]
+      }
     }
   },
   "allOf": [
@@ -686,6 +715,62 @@
             }
           }
         }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": 1
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "simulation": {
+            "const": true
+          },
+          "inference_performed": {
+            "const": false
+          },
+          "usage": {
+            "properties": {
+              "simulation": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "simulation": {
+            "const": false
+          },
+          "usage": {
+            "properties": {
+              "simulation": {
+                "const": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "inference_performed": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "authorization_sha256",
+          "offline_proof",
+          "quota_observations"
+        ]
       }
     }
   ]
