@@ -5,12 +5,13 @@ network access, credentials, inference, source execution or daemon changes. The
 [corpus scoring contract](benchmark-scoring.md) remains authoritative. Historical
 synthetic results in [evaluation.md](evaluation.md) are not inputs to this report.
 
-The currently supported input is `paired-discovery-v1`, produced by the
-[offline paired runner](benchmark-paired.md). It is simulated. Its answer judgments,
-usage counters and timings are workflow diagnostics, excluded from live correctness,
-consumption and model-efficiency comparisons. The scorer refuses other contracts,
-including preflight receipts. A future live runner requires an explicit input
-contract update; relabeling these records as live is rejected.
+The supported input is `paired-discovery-v1`, produced by the
+[paired runner](benchmark-paired.md). Schema version 1 is simulated and excluded
+from live comparisons. Version 2 records authorized ChatGPT trials and adds
+selected-proof, authorization and audited submission checks. The scorer refuses
+other contracts, including preflight receipts. Relabeling version 1 records as
+live is rejected. Embedded live quota observations stay separate from manual
+comparative quota judgments.
 
 ## Prepare and grade
 

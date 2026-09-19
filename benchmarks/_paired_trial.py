@@ -8,7 +8,8 @@ from _paired_contract import ANSWER_BYTES, returned_ranges
 
 
 class TrialAudit(Audit):
-    def __init__(self, path, budget):
+    def __init__(self, path, budget, *, simulation=True):
+        self.simulation = simulation
         super().__init__(path, budget)
         self.optional_usage = {}
         self.final_messages = {}
@@ -79,12 +80,12 @@ class TrialAudit(Audit):
     def usage_summary(self):
         values = list(self.optional_usage.values())
         fields = ('inputTokens', 'cachedInputTokens', 'outputTokens', 'reasoningOutputTokens', 'totalTokens')
-        return {'simulation': True, 'scope': 'model_only', 'response_count': len(values),
+        return {'simulation': self.simulation, 'scope': 'model_only', 'response_count': len(values),
                 'counters': {key: sum(v[key] for v in values) if values and all(v[key] is not None for v in values) else None
                              for key in fields},
                 'complete': {key: bool(values) and all(v[key] is not None for v in values) for key in fields},
                 'inclusions': 'cached input is included in input; reasoning is included in output; never added again',
-                'quota': None, 'quota_completeness': 'not_applicable_simulation'}
+                'quota': None, 'quota_completeness': 'not_applicable_simulation' if self.simulation else 'recorded_separately'}
 
     def observations(self):
         grep = [t for t in self.tools if t['name'] == 'grepglint_search']
@@ -187,6 +188,7 @@ def validate_audit(path, record, budget):
     import hashlib
     from _paired_contract import METADATA_BYTES
     replay = ReplayAudit(budget)
+    replay.simulation = record['simulation']
     sha = hashlib.sha256()
     sequence = 0
     partial = False

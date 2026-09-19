@@ -123,6 +123,43 @@ def effective_identity(path, record, task):
     return first_tools, digest(request_instructions(inspected))
 
 
+
+def live_identity(path, record, task, plan, status):
+    from _codex_smoke import live_configuration
+    from _paired_proof import plan_hash
+    authorization = status.get('authorization', {})
+    binding = authorization.get('binding', {})
+    proof = binding.get('proofs', {})
+    require(record.get('authorization_sha256') == authorization.get('confirmation')
+            and binding.get('plan_sha256') == plan_hash(plan)
+            and proof.get('plan_sha256') == plan_hash(plan), 'live_authorization_identity_mismatch')
+    selected = proof.get('sessions', {}).get(record['trial_id'], {})
+    require(all(selected.get(key) == record.get(key) for key in ('catalog_sha256', 'prompt_sha256')),
+            'live_selected_proof_mismatch')
+    require(record.get('offline_proof', {}).get('receipt_sha256') == proof.get('receipt_sha256'),
+            'live_proof_receipt_mismatch')
+    session = record.get('session', {})
+    require(session.get('normalized_configuration') == live_configuration()
+            and digest(live_configuration()) == record['configuration_sha256'], 'live_configuration_mismatch')
+    sent, consumed = {}, 0
+    with path.open('rb') as stream:
+        while line := stream.readline(FRAME_LIMIT + 1):
+            consumed += len(line)
+            require(len(line) <= FRAME_LIMIT and consumed <= TOTAL_LIMIT, 'audit_input_limit_exceeded')
+            event = json_value(line)
+            message = event.get('value', {})
+            if event.get('kind') == 'rpc.sent' and message.get('method') in ('thread/start', 'turn/start'):
+                method = message['method']
+                require(method not in sent, 'duplicate_live_submission')
+                sent[method] = message['params']
+    thread, turn = sent.get('thread/start', {}), sent.get('turn/start', {})
+    require(digest(thread.get('dynamicTools')) == record['catalog_sha256']
+            and thread.get('ephemeral') is True
+            and turn.get('input') == [{'type': 'text', 'text': task['question']}]
+            and turn.get('model') == record['requested_model']
+            and turn.get('effort') == record['requested_effort'], 'live_submission_identity_mismatch')
+    return record['catalog_sha256'], record['prompt_sha256']
+
 def records(runs, corpus):
     require(1 <= len(runs) <= 8, 'select_one_to_eight_runs')
     result, seen, consumed = [], set(), 0
@@ -131,7 +168,7 @@ def records(runs, corpus):
         status = store.validate_run(run)
         require('trials' in status, 'run_initialization_incomplete_no_published_plan')
         plan = store.read(run / 'plan.json')
-        require(plan.get('contract') == CONTRACT and plan.get('schema_version') == 1, 'unsupported_run_contract')
+        require(plan.get('contract') == CONTRACT and plan.get('schema_version') in (1, 2), 'unsupported_run_contract')
         require(plan.get('manifest_sha256') == corpus.manifest_hash and plan.get('sources_sha256') == corpus.sources_hash, 'run_corpus_identity_mismatch')
         require(len(result) + len(plan['trials']) <= MAX_TRIALS, 'score_trial_limit_exceeded')
         run_status = store.read(run / 'run.json')
@@ -156,7 +193,9 @@ def records(runs, corpus):
             if record['state'] == 'completed':
                 # Configuration includes normalized instructions and client settings;
                 # tool catalogs differ by treatment, but must be stable across repeats.
-                effective = effective_identity(run / (record['trial_id'] + '.jsonl'), record, task)
+                effective = (effective_identity(run / (record['trial_id'] + '.jsonl'), record, task)
+                             if record['simulation'] else live_identity(
+                                 run / (record['trial_id'] + '.jsonl'), record, task, plan, run_status))
                 sig = tuple(record.get(k) for k in ('requested_model', 'requested_effort', 'client_sha256',
                             'implementation_sha256', 'grepglint_sha256', 'configuration_sha256', 'catalog_sha256')) + (effective[0],)
                 previous = signatures.setdefault(record['configuration'], sig)

@@ -262,7 +262,7 @@ def output_text(audit, session, call_id):
     return output if isinstance(output, str) else '\n'.join(part.get('text', '') for part in output)
 
 
-def check_script(script, audit, session):
+def check_script(script, audit, session, *, check_grepglint=True):
     checks = {}
     for call in ('orchestrator_skills', 'executor_skills'):
         result = json_value(output_text(audit, session, call))
@@ -284,7 +284,7 @@ def check_script(script, audit, session):
         for name in ('javascript_resources_a', 'javascript_resources_b'))
     checks['discarded_calls_retained'] = len([state for (s, _), state in audit.dynamic.items()
                                             if s == session]) >= 10
-    if session == 'grepglint':
+    if session == 'grepglint' and check_grepglint:
         for call in ('grepglint_ok', 'grepglint_empty'):
             checks[call] = audit.dynamic[(session, call)]['handler']['response']['result']['success']
         payload = audit.dynamic[(session, 'grepglint_ok')]['handler']['result']['result']['content']
@@ -304,8 +304,16 @@ def local_session(binary, grepglint, source, config_dir, catalog, treatment, aud
     initial = []
     def observe(request):
         audit.record('responses.request', request, treatment)
+        current = inspect_policy(request, treatment, base, prompt)
         if not initial:
-            initial.append(inspect_policy(request, treatment, base, prompt))
+            initial.append(current)
+        else:
+            def instructions(value):
+                return [{k: v for k, v in block.items() if k != 'location'}
+                        for block in value['instruction_blocks']]
+            if (current['observed']['runtime_registry'] != initial[0]['observed']['runtime_registry']
+                    or instructions(current) != instructions(initial[0])):
+                raise ProbeError('effective_request_changed')
     stub.responder, stub.observe = script, observe
     config = configuration(stub.url)
     args = []
@@ -364,7 +372,8 @@ def local_session(binary, grepglint, source, config_dir, catalog, treatment, aud
         if completed['turn']['status'] != 'completed' or not initial:
             raise ProbeError('turn_not_completed')
         result = {'configuration': treatment, 'status': 'passed', **initial[0],
-                  'negative_checks': check_script(script, audit, treatment) if fixture else {},
+                  'negative_checks': (check_script(script, audit, treatment) if fixture else
+                                      script.check(audit, treatment) if hasattr(script, 'check') else {}),
                   'isolation_checks': handlers.checks,
                   'audit': audit.verify(treatment, script.expected, stub.exchanges),
                   'handler_work': {'concurrency': 1, 'observed_queue_peak': handlers.queued_max},

@@ -367,27 +367,38 @@ def stock_provider_evidence(proofs=None, probe=None):
 
 class ChatGPTProvider:
     """One pinned app-server process with read-only access to installed ChatGPT auth."""
-    def __init__(self, binary, grepglint, auth_file, audit_path=None):
+    def __init__(self, binary, grepglint, auth_file, audit_path=None, *, trial=None):
         prerequisites(binary, auth_file.parent)
         self.binary, self.grepglint = binary, grepglint
         self.temp = tempfile.TemporaryDirectory(prefix='grepglint-smoke-')
         self.root = Path(self.temp.name)
         self.config_dir = self.root / 'configuration'
         self.config_dir.mkdir(mode=0o700)
-        (self.config_dir / 'base.md').write_text(BASE)
+        self.trial = trial
+        self.prompt = trial['prompt'] if trial else PROMPT
+        (self.config_dir / 'base.md').write_text(trial['base'] if trial else BASE)
         fixture = self.root / 'fixture'
         fixture.mkdir(mode=0o700)
-        self.source = prepare_fixture(fixture)
-        self.source_before = source_hash(self.source)
+        self.source = trial['source'] if trial else prepare_fixture(fixture)
+        self.forbidden = None
+        if trial:
+            outside = self.root / 'outside'
+            outside.mkdir(mode=0o700)
+            self.forbidden = {}
+            for name in ('source', 'oracle', 'credentials', 'history', 'controller'):
+                path = outside / name
+                path.write_text('PRIVATE_' + name)
+                self.forbidden[name] = str(path)
+        self.source_before = trial['source_sha256'] if trial else source_hash(self.source)
         self.config = live_configuration()
         self.config_hash = digest(encoded(self.config))
         args = []
         for key, value in self.config.items():
             args += ['-c', f'{key}={toml_value(value)}']
         args += ['app-server', '--listen', 'stdio://']
-        self.budget = Budget(SESSION_SECONDS + 20)
+        self.budget = trial['budget'] if trial else Budget(SESSION_SECONDS + 20)
         self.client = None
-        self.audit = None
+        self.audit = trial['audit'] if trial else None
         self.handlers = None
         self.request_id = 10
         if audit_path:
@@ -408,7 +419,10 @@ class ChatGPTProvider:
     def _send(self, method, params, session=None):
         self.request_id += 1
         request_id = self.request_id
-        self.client.send({'id': request_id, 'method': method, 'params': params})
+        message = {'id': request_id, 'method': method, 'params': params}
+        if self.audit and session:
+            self.audit.record('rpc.sent', message, session)
+        self.client.send(message)
         return self._receive(request_id=request_id, session=session)
 
     def _receive(self, request_id=None, method=None, session=None):
@@ -457,22 +471,25 @@ class ChatGPTProvider:
         return stock_provider_evidence(proofs, probe)
 
     def _start_thread(self, treatment, audit):
-        catalog = json_value(subprocess.check_output(
+        catalog = self.trial['catalog'] if self.trial else json_value(subprocess.check_output(
             [str(self.grepglint), 'tools', '--json'], cwd=self.source, timeout=3))
-        self.handlers = Handlers(self.source, self.grepglint, self.budget, audit, treatment)
+        options = {'forbidden': self.forbidden, 'file_limit': self.trial['cache_bytes']} if self.trial else {}
+        self.handlers = Handlers(self.source, self.grepglint, self.budget, audit, treatment, **options)
         self.handlers.start(self.client)
         if not children_in_current_cgroup((self.client, self.handlers.child)):
             raise ProbeError('child_outside_resource_group')
         started = self._send('thread/start', {'model': MODEL, 'modelProvider': PROVIDER_ID,
             'cwd': '/work', 'ephemeral': True, 'environments': [], 'experimentalRawEvents': True,
-            'dynamicTools': definitions(treatment, catalog)}, treatment if audit else None)
+            'dynamicTools': self.trial['tools'] if self.trial else definitions(treatment, catalog)}, treatment if audit else None)
         if started.get('model') != MODEL or started.get('reasoningEffort') != EFFORT:
             raise ProbeError('reported_model_or_effort_mismatch')
+        self.reported_model = started['model']
+        self.reported_effort = started['reasoningEffort']
         return catalog, started
 
     def preflight_probe(self, treatment):
         _catalog, started = self._start_thread(treatment, None)
-        if source_hash(self.source) != self.source_before:
+        if not self.trial and source_hash(self.source) != self.source_before:
             raise ProbeError('source_changed')
         self.handlers.close()
         self.handlers = None
@@ -490,15 +507,17 @@ class ChatGPTProvider:
         self.request_id += 1
         request_id = self.request_id
         # The durable reservation intentionally survives any uncertain write.
-        self.client.send({'id': request_id, 'method': 'turn/start', 'params': {
+        message = {'id': request_id, 'method': 'turn/start', 'params': {
             'threadId': started['thread']['id'], 'model': MODEL, 'effort': EFFORT,
-            'environments': [], 'input': [{'type': 'text', 'text': PROMPT}]}})
+            'environments': [], 'input': [{'type': 'text', 'text': self.prompt}]}}
+        self.audit.record('rpc.sent', message, treatment)
+        self.client.send(message)
         self._receive(request_id=request_id, session=treatment)
         completed = self._receive(method='turn/completed', session=treatment)
         self.budget.deadline = aggregate_deadline
         if completed.get('turn', {}).get('status') != 'completed':
             raise ProbeError('turn_not_completed')
-        if source_hash(self.source) != self.source_before:
+        if not self.trial and source_hash(self.source) != self.source_before:
             raise ProbeError('source_changed')
         allowed = ({'functions.' + item['name'] for item in definitions(treatment, catalog)}
                    | AUXILIARY)
@@ -511,16 +530,18 @@ class ChatGPTProvider:
         checked = self.audit.verify(treatment, expected)
         result = {'model': started['model'], 'effort': started['reasoningEffort'],
                 'calls': checked['calls'], 'elapsed_seconds': time.monotonic() - turn_started,
-                'audit_status': checked['status'], 'usage': self.audit.usage(treatment),
+                'audit_status': checked['status'], 'usage': self.audit.usage_summary() if self.trial else self.audit.usage(treatment),
                 'audit_sha256': self.audit.sha.hexdigest(), 'source_sha256': self.source_before,
-                'configuration_sha256': self.config_hash}
+                'configuration_sha256': self.config_hash, 'normalized_configuration': self.config}
+        result['isolation_checks'] = self.handlers.checks if self.trial else None
+        result['cache_identity'] = self.handlers.cache_identity if self.trial else None
         self.handlers.close()
         self.handlers = None
         return result
 
     def close(self):
         failure = None
-        for resource in (self.handlers, self.client, self.audit):
+        for resource in (self.handlers, self.client, None if self.trial else self.audit):
             if resource:
                 try:
                     resource.close()

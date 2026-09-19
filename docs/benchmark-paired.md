@@ -1,9 +1,10 @@
-# Offline paired discovery runs
+# Paired discovery runs
 
 `benchmarks/paired.py` runs scripted Codex responses through the pinned real
-client and Linux source handlers. It performs no inference, reads no account
-authentication, and has no live mode. Every trial and usage record carries
-`simulation: true`. A successful fake answer tests storage and protocol behavior;
+client and Linux source handlers. The default plan, `--fake`, and `--prove` perform no inference and read no account
+authentication. These trial and usage records carry `simulation: true`.
+The separate ChatGPT commands below require explicit readiness and one approval
+for the complete selected run. A successful fake answer tests storage and protocol behavior;
 it is not a factual answer to the corpus question or a live measurement.
 
 ## Select and inspect
@@ -72,6 +73,109 @@ The Django calibration task stays `ccx-crossorg-217`. Its default `SQLITE_FULL`
 error is retained in the raw structured result with subsequent fallback call
 IDs in trial metadata. The runner never raises daemon limits or substitutes a
 different task. A recoverable search error alone does not fail a trial.
+
+## Selected ChatGPT runs
+
+Implementation and CI authorize zero live trials. Issue #18 owns executing and
+grading the first calibration: only `ccx-crossorg-217`, one repetition per
+configuration, seed 0, fresh treatment cache and default daemon limits. Its
+known Django cold-index failure stays visible. Larger selections are a runner
+capability, not permission to use account allowance.
+
+An account-free preview of all 40 tasks produces 80 sequential trials:
+
+```sh
+python3 benchmarks/paired.py --all --repetitions 1 --seed 0 --dry-run
+```
+
+First prepare the selected sources and produce an offline capability proof
+using the installed stock Codex 0.154.0 client. This uses local scripted
+Responses, the actual task prompts and answer instructions, prepared source,
+scoped handler schemas and both catalogs. It probes empty direct skills,
+excluded nested skills, disabled capabilities, discarded nested calls,
+JavaScript restrictions and deterministic no-assistance replies. It does not
+query an account or model service.
+
+```sh
+python3 benchmarks/paired.py --task ccx-crossorg-217 --seed 0 --prove \
+  --snapshots /private/prepared-sources --artifacts /private/paired-runs
+```
+
+Record the printed proof run directory. An explicit readiness request then
+checks the pinned client and JavaScript host, implementation/build identities,
+selected offline proof, source contents, exact `gpt-5.6-luna` with `high`,
+ChatGPT account and included weekly allowance. No model turn starts here.
+The output displays the complete order, task IDs/partitions/repetitions,
+identities, per-trial limits, aggregate worst-case time/calls/output,
+reservation, account identity, quota observations and previous attempt history.
+It prints a private confirmation tied to that immutable run.
+
+```sh
+python3 benchmarks/paired.py --provider chatgpt --readiness /private/paired-runs/PROOF_RUN \
+  --snapshots /private/prepared-sources --artifacts /private/paired-runs
+```
+
+Only a separate operator decision permits executing the displayed run. Pass
+its exact run directory and confirmation once. There are no per-trial prompts.
+This example is a command template, not authorization to execute it:
+
+```sh
+python3 benchmarks/paired.py --provider chatgpt --execute /private/paired-runs/READY_RUN \
+  --confirm CONFIRMATION_FROM_READINESS --snapshots /private/prepared-sources
+```
+
+`--codex`, `--grepglint` and `--auth` select the installed paths when defaults
+are unsuitable. Authentication is mounted only in the isolated stock client.
+The source handlers, JavaScript host, Grepglint and saved events never receive
+credentials. No API billing, purchases, reset redemption, model substitution,
+transport retry or reconnect is allowed. Each trial has a fresh ephemeral
+thread and a fresh handler cache. Grepglint use remains optional.
+
+Fresh quota reads run before every inference submission and after every
+attempted trial. A single timed observation also covers coincident pair/run
+boundaries. Usage increases and new observation times do not require another
+approval. Account changes, missing included quota, bucket changes, incompatible
+resets, proof changes or model/effort changes stop the run. Raw reset times stay
+private; comparison preserves the narrowly tested zero-usage moving full-week
+normalization. Percentages can reflect concurrent account activity and delayed
+or rounded reporting. They never imply per-tool tokens, money or zero cost.
+
+Attempt history is independent of run artifacts and the exhausted two-attempt
+smoke ledger. The owner-only, append-only file is
+`~/.local/state/grepglint/paired-attempts-v1.jsonl`. Its lock excludes concurrent
+account benchmark execution. It retains planned run/trial identities, consumed
+confirmations, durable reservations immediately before submission, outcomes and
+unstarted entries. An uncertain write remains consumed. New processes, quota
+resets and artifact cleanup cannot renew it. A later run receives a new
+confirmation identifying earlier history. Changed history invalidates an older
+unused confirmation.
+
+The ledger has a 16 MiB cap, at most 64 run authorizations, 64 KiB event limit,
+and a 256 KiB history reservation per outstanding run. It never evicts history.
+At capacity, preserve the file and stop; there is no automatic reset command.
+A partial write blocks further execution and remains available for inspection.
+A stopped run cannot resume, even if entries were never started. Inspect the
+failure and retained artifacts before requesting a new readiness check and
+separate approval. Missing measurements and post-trial quota failures remain
+explicit. Cleaning an unused ready run cancels its confirmation before deleting owned
+artifacts. Cleanup never deletes this ledger or changes the smoke allowance.
+
+Live trial records use `schema_version: 2`, `simulation: false` under the same
+`paired-discovery-v1` contract. The [trial schema](../benchmarks/paired-schema.json)
+adds authorization/proof identities and private before/after quota observations.
+`inference_performed: true` means submission was reserved and may have reached
+the provider, including uncertain transport. Version 1 stays simulation-only;
+changing its provenance flags still fails validation. The scorer accepts the
+new records after checking authorization, selected proof, configuration and
+audited submission identities. Embedded quota observations remain separate from
+manual comparative quota judgments. The shareable runner export allows only
+weekly bucket IDs, times, percentages and availability, never raw account data.
+
+The [successful provider evidence](https://github.com/alundgren/grepglint/issues/39#issuecomment-5732530859)
+remains the accepted basis. Selected offline proof extends prompt and source
+binding; it does not establish new provider evidence. Checks cover constructed
+client requests and protocol-visible calls, not undisclosed provider-side
+instructions or capabilities.
 
 ## Limits and retained artifacts
 

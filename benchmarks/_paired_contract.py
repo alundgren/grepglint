@@ -38,10 +38,10 @@ LIMITS = {'trial_seconds': 1200, 'cleanup_seconds': 8, 'tool_calls': 100,
 
 
 def initial_record(run, planned, trial):
-    return {**trial, 'schema_version': 1, 'contract': CONTRACT, 'run_id': run.name,
-        'seed': planned['seed'], 'simulation': True, 'inference_performed': False,
+    return {**trial, 'schema_version': planned['schema_version'], 'contract': CONTRACT, 'run_id': run.name,
+        'seed': planned['seed'], 'simulation': planned['simulation'], 'inference_performed': False,
         'state': 'not-started', 'answer': {'status': 'missing', 'raw': None, 'parsed': None},
-        'usage': {'simulation': True, 'counters': None, 'complete': False, 'quota': None},
+        'usage': {'simulation': planned['simulation'], 'counters': None, 'complete': False, 'quota': None},
         'audit': {'status': 'incomplete'}, 'measurements': {}, 'errors': [],
         'manifest_sha256': planned['manifest_sha256'], 'sources_sha256': planned['sources_sha256'],
         'implementation_sha256': planned['implementation_sha256'],
@@ -193,10 +193,14 @@ def answer_structure(value):
 
 
 def validate_record(record):
-    if not isinstance(record, dict) or record.get('schema_version') != 1 or record.get('contract') != CONTRACT:
+    if not isinstance(record, dict) or record.get('schema_version') not in (1, 2) or record.get('contract') != CONTRACT:
         raise ProbeError('unsupported_trial_contract')
-    if record.get('simulation') is not True or record.get('inference_performed') is not False:
-        raise ProbeError('fake_artifact_cannot_be_live_measurement')
+    if record['schema_version'] == 1:
+        if record.get('simulation') is not True or record.get('inference_performed') is not False:
+            raise ProbeError('fake_artifact_cannot_be_live_measurement')
+    elif (record.get('simulation') is not False or type(record.get('inference_performed')) is not bool
+          or record['inference_performed'] and not record.get('authorization_sha256')):
+        raise ProbeError('live_artifact_requires_authorization')
     required = {'run_id', 'trial_id', 'pair_id', 'task_id', 'partition', 'repetition', 'order',
                 'configuration', 'seed', 'source', 'state', 'answer', 'usage', 'audit', 'measurements',
                 'requested_model', 'requested_effort', 'reported_model', 'reported_effort', *IDENTITY_HASHES}
@@ -240,6 +244,14 @@ def validate_record(record):
     if final['status'] == 'valid':
         answer_structure(final['parsed'])
     if record['state'] == 'completed':
+        if not record['simulation']:
+            if (record['inference_performed'] is not True
+                    or not isinstance(record.get('authorization_sha256'), str)
+                    or not re.fullmatch('[0-9a-f]{64}', record['authorization_sha256'])
+                    or not isinstance(record.get('offline_proof'), dict)
+                    or len(record.get('quota_observations', [])) != 2
+                    or any(q.get('weekly') is None for q in record['quota_observations'])):
+                raise ProbeError('completed_live_trial_requires_authorization_proof_and_quota')
         if record['reported_model'] != record['requested_model'] or record['reported_effort'] != record['requested_effort']:
             raise ProbeError('reported_model_or_effort_mismatch')
         for key in ('catalog_sha256', 'configuration_sha256'):
@@ -285,7 +297,7 @@ def validate_record(record):
                 raise ProbeError('invalid_usage_completeness')
     if record['state'] == 'completed' and (record['answer'].get('status') != 'valid' or record['audit'].get('status') != 'passed'):
         raise ProbeError('completed_trial_requires_answer_and_audit')
-    if record['usage'].get('simulation') is not True:
+    if record['usage'].get('simulation') is not record['simulation']:
         raise ProbeError('usage_requires_simulation_provenance')
     if len(encoded(record)) > METADATA_BYTES:
         raise ProbeError('trial_metadata_limit_exceeded')

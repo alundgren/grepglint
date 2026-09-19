@@ -31,6 +31,23 @@ class PairedLinux(unittest.TestCase):
         store.owned(run, sealed=True)
         return run, [store.read(run / name) for name in ('t0001.json', 't0002.json')]
 
+    def test_selected_capability_proof_uses_real_client_without_account(self):
+        from _paired_proof import require_proof
+        from paired import implementation_hash
+        with tempfile.TemporaryDirectory() as directory:
+            command = self.command(Path(directory))
+            command[command.index('--fake')] = '--prove'
+            result = subprocess.run(command, capture_output=True, timeout=65)
+            self.assertEqual(result.returncode, 0, result.stdout.decode() + result.stderr.decode())
+            run = Path(json.loads(result.stdout)['run'])
+            proof = require_proof(run, Path(__import__('shutil').which('codex')).resolve(),
+                                  ROOT / 'target/release/grepglint', implementation_hash())
+            self.assertEqual(set(proof['sessions']), {'t0001', 't0002'})
+            for trial in ('t0001', 't0002'):
+                raw = (run / (trial + '.jsonl')).read_text()
+                self.assertNotIn('account/read', raw)
+                self.assertNotIn('account/rateLimits/read', raw)
+
     def test_default_index_failure_fallback_and_real_ranges(self):
         with tempfile.TemporaryDirectory() as directory:
             run, records = self.run_scenario(directory, 'success', 0)

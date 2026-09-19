@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plan and run paired discovery trials with fake Codex responses only. No account access."""
+"""Plan paired discovery trials. No account access without explicit ChatGPT readiness or execution."""
 import argparse
 import json
 import os
@@ -35,7 +35,7 @@ def implementation_hash():
     return result.hexdigest()
 
 
-def trial_worker(run, trial, args, catalog, cg):
+def trial_worker(run, trial, args, catalog, cg, *, live=None):
     record = store.read(run / (trial['trial_id'] + '.json'))
     record['state'] = 'attempted'
     store.save(run, trial['trial_id'] + '.json', record)
@@ -47,7 +47,7 @@ def trial_worker(run, trial, args, catalog, cg):
     try:
         before = verify_source(source, trial['source'], CORPUS, budget)
         record['source_before'] = before
-        audit = TrialAudit(run / (trial['trial_id'] + '.jsonl'), budget)
+        audit = TrialAudit(run / (trial['trial_id'] + '.jsonl'), budget, simulation=live is None)
         with tempfile.TemporaryDirectory(prefix='grepglint-paired-') as directory:
             root = Path(directory)
             config = root / 'config'
@@ -62,8 +62,10 @@ def trial_worker(run, trial, args, catalog, cg):
                 forbidden[name] = str(path)
             configuration = trial['configuration']
             definitions = tools(configuration, catalog)
-            script = FakeCodex(configuration, audit, args.fake_scenario)
-            result = local_session(args.codex, args.grepglint, source, config, catalog, configuration,
+            from _paired_proof import CorpusProbe
+            script = (CorpusProbe(configuration, audit, source) if getattr(args, 'prove', False)
+                      else FakeCodex(configuration, audit, args.fake_scenario))
+            result = live.session(trial, audit, budget, record) if live else local_session(args.codex, args.grepglint, source, config, catalog, configuration,
                 audit, budget, script=script, base=BASE, prompt=trial['question'],
                 tools=definitions, forbidden=forbidden, handler_file_limit=LIMITS['cache_bytes'])
             record['session'] = result
@@ -90,7 +92,8 @@ def trial_worker(run, trial, args, catalog, cg):
                 record['state'] = 'failed'
                 record['errors'].append('source_postcheck_failed')
         if audit:
-            audit.close()
+            if not audit.output.closed:
+                audit.close()
             if audit.final_messages and record['answer']['raw'] is None:
                 record['answer'] = answer(next(iter(audit.final_messages.values())), source)
             if audit.final_status == 'oversized':
@@ -138,17 +141,25 @@ def worker(args):
             catalog = json_value(data)
         finally:
             child.close()
-        for trial in planned['trials']:
-            result = trial_worker(run, trial, args, catalog, cg)
-            if result['state'] != 'completed':
-                status['errors'] = result['errors']
-                break
+        if args.live_action:
+            if args.provider != 'chatgpt':
+                raise ProbeError('explicit_chatgpt_selection_required')
+            from _paired_live import worker as live_worker
+            status = live_worker(args, catalog, cg)
         else:
-            status['status'] = 'completed'
+            for trial in planned['trials']:
+                result = trial_worker(run, trial, args, catalog, cg)
+                if result['state'] != 'completed':
+                    status['errors'] = result['errors']
+                    break
+            else:
+                status['status'] = 'completed'
     except ProbeCancelled:
-        status['errors'] = ['cancelled']
+        status = store.read(run / 'run.json')
+        status.update(status='incomplete', errors=['cancelled'])
     except (ProbeError, OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
-        status['errors'] = [str(error) if isinstance(error, ProbeError) else 'worker_failure']
+        status = store.read(run / 'run.json')
+        status.update(status='incomplete', errors=[str(error) if isinstance(error, ProbeError) else 'worker_failure'])
     finally:
         store.save(run, 'run.json', status)
     print(json.dumps({'status': status['status']}), flush=True)
@@ -172,6 +183,12 @@ def launch(args, run):
         command = [sys.executable, str(Path(__file__).resolve()), '--worker', str(run),
                    '--snapshots', str(args.snapshots), '--codex', str(args.codex),
                    '--grepglint', str(args.grepglint), '--fake-scenario', args.fake_scenario]
+        if args.prove:
+            command += ['--prove']
+        if args.live_action:
+            command += ['--provider', 'chatgpt', '--live-action', args.live_action, '--proof', str(args.proof), '--auth', str(args.auth)]
+            if args.confirm:
+                command += ['--confirm', args.confirm]
         requested = True
         child = Child(service_command(unit, command, seconds=seconds), run, os.environ.copy(), Budget(seconds + 5))
         json_value(child.line())
@@ -202,11 +219,12 @@ def launch(args, run):
             status['status'] = 'incomplete'
         for trial in store.read(run / 'plan.json')['trials']:
             record = store.read(run / (trial['trial_id'] + '.json'))
+            status['inference_performed'] |= record['inference_performed']
             if record['state'] == 'attempted':
                 record.update(state='failed', errors=errors or ['worker_interrupted'])
                 store.save(run, trial['trial_id'] + '.json', record)
         store.save(run, 'run.json', status)
-        if stopped:
+        if stopped and status['status'] != 'ready':
             store.seal(run)
     return status
 
@@ -219,8 +237,8 @@ def export(run):
         return value if isinstance(value, str) and re.fullmatch('[A-Za-z0-9_-]{1,100}', value) else None
     def sha(value, length=64):
         return value if isinstance(value, str) and re.fullmatch('[0-9a-f]{' + str(length) + '}', value) else None
-    result = {'schema_version': 1, 'contract': CONTRACT, 'simulation': True,
-              'inference_performed': False, 'run_id': safe_id(run.name),
+    result = {'schema_version': planned['schema_version'], 'contract': CONTRACT, 'simulation': planned['simulation'],
+              'inference_performed': status['inference_performed'], 'run_id': safe_id(run.name),
               'status': store.validate_run(run)['status'],
               'seed': planned['seed'] if type(planned['seed']) is int else None,
               'manifest_sha256': sha(planned['manifest_sha256']), 'trials': []}
@@ -238,11 +256,14 @@ def export(run):
         item['calls'] = record['audit'].get('calls') if type(record['audit'].get('calls')) is int else None
         usage = record['usage']
         counters = usage.get('counters') or {}
-        item['usage'] = {'simulation': True, 'quota': None, 'counters': {key: counters.get(key)
+        item['usage'] = {'simulation': record['simulation'], 'quota': None, 'counters': {key: counters.get(key)
             if type(counters.get(key)) is int and counters[key] >= 0 else None
             for key in ('inputTokens', 'cachedInputTokens', 'outputTokens', 'reasoningOutputTokens', 'totalTokens')}}
         allowed = ('trial_wall_seconds', 'captured_bytes', 'source_verification_seconds',
                    'source_preparation_seconds', 'memory_peak_bytes', 'tool_seconds')
+        if not record['simulation']:
+            from _paired_live import public_quota
+            item['usage']['quota'] = public_quota(record.get('quota_observations', []))
         item['measurements'] = {key: value for key, value in record['measurements'].items()
                                 if key in allowed and type(value) in (int, float) and value >= 0}
         result['trials'].append(item)
@@ -254,10 +275,18 @@ def main(argv=None):
     selection = parser.add_mutually_exclusive_group()
     selection.add_argument('--task', action='append', default=[])
     selection.add_argument('--all', action='store_true')
-    parser.add_argument('--repetitions', type=int, default=1)
-    parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--repetitions', type=int)
+    parser.add_argument('--seed', type=int)
     parser.add_argument('--dry-run', action='store_true')
     parser.add_argument('--fake', action='store_true')
+    parser.add_argument('--prove', action='store_true', help='Run selected corpus capability probes offline.')
+    parser.add_argument('--provider', choices=['chatgpt'])
+    parser.add_argument('--readiness', type=Path, metavar='PROOF_RUN')
+    parser.add_argument('--execute', type=Path, metavar='RUN')
+    parser.add_argument('--confirm')
+    parser.add_argument('--auth', type=Path, default=Path.home() / '.codex/auth.json')
+    parser.add_argument('--proof', type=Path, help=argparse.SUPPRESS)
+    parser.add_argument('--live-action', choices=['readiness', 'execute'], help=argparse.SUPPRESS)
     parser.add_argument('--fake-scenario', choices=['success', 'non-use', 'malformed', 'missing', 'oversized', 'transport-loss', 'adversarial'], default='success')
     parser.add_argument('--snapshots', type=Path)
     parser.add_argument('--codex', type=Path, default=Path(shutil.which('codex') or 'codex'))
@@ -281,7 +310,7 @@ def main(argv=None):
                 if len(data) > 1024 * 1024:
                     raise ProbeError('trial_metadata_limit_exceeded')
                 value = json_value(data)
-                print(json.dumps({'state': validate_record(value), 'simulation': True}))
+                print(json.dumps({'state': validate_record(value), 'simulation': value['simulation']}))
                 return 0
             if args.validate:
                 result = store.validate_run(args.validate)
@@ -291,14 +320,33 @@ def main(argv=None):
                 return 0 if result['status'] == 'completed' else 3
             if args.cleanup:
                 with exclusive_probe(), store.execution_lock():
+                    status = store.read(args.cleanup / 'run.json')
+                    if status.get('status') == 'ready' and status.get('cleanup', {}).get('service_stopped') is True:
+                        from _paired_attempts import Attempts
+                        ledger = Attempts()
+                        try:
+                            ledger.append({'action': 'cancelled', 'run_id': args.cleanup.name})
+                            store.seal(args.cleanup)
+                        finally:
+                            ledger.close()
                     store.cleanup(args.cleanup)
                 print('Removed owned paired run. Smoke attempt accounting is unchanged.')
                 return 0
+            if args.readiness or args.execute:
+                from _paired_cli import selected_live
+                return selected_live(args)
+            if args.confirm or args.provider or args.live_action:
+                raise ProbeError('select_explicit_readiness_or_execution')
             if not args.task and not args.all:
                 parser.print_help()
                 return 0
-            planned = plan(CORPUS, args.task, args.all, args.repetitions, args.seed)
+            planned = plan(CORPUS, args.task, args.all, args.repetitions if args.repetitions is not None else 1, args.seed if args.seed is not None else 0)
             planned['implementation_sha256'] = implementation_hash()
+            planned['execution'] = 'proof' if args.prove else 'simulation'
+            planned['aggregate_limits'] = {
+                'wall_seconds': planned['total_trials'] * (LIMITS['trial_seconds'] + LIMITS['cleanup_seconds']) + 30,
+                'tool_calls': planned['total_trials'] * LIMITS['tool_calls'],
+                'events_output_bytes': planned['total_trials'] * LIMITS['events_output_bytes']}
             planned['grepglint_sha256'] = file_hash(args.grepglint.resolve()) if args.grepglint.is_file() else None
             if args.snapshots:
                 args.snapshots = args.snapshots.resolve()
@@ -310,7 +358,7 @@ def main(argv=None):
                         planned['prepared_sources'][source['id']] = verify_source(args.snapshots / source['id'], source, CORPUS, budget)
             else:
                 planned['prepared_sources'] = 'not_checked; prepare pinned source separately and pass --snapshots before execution'
-            if args.dry_run or not args.fake:
+            if args.dry_run or not (args.fake or args.prove):
                 print(json.dumps(planned, indent=2))
                 return 0
             if not args.snapshots:

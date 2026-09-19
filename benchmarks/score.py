@@ -96,6 +96,7 @@ def trial_result(record, task, corpus, judgment):
         correctness=correctness(decision, task, eligible), judgment=decision,
         cited=cited, retrieved=returned,
         measurements=record['measurements'], usage=record['usage'],
+        quota_observations=__import__('_paired_live').public_quota(record.get('quota_observations', [])),
         measurement_validation='audited' if record['state'] == 'completed' else 'partial_unverified',
         tool_calls=len(tools), returned_bytes=sum(t.get('returned_bytes', 0) for t in tools),
         grepglint_calls=sum(t.get('name') == 'grepglint_search' for t in tools),
