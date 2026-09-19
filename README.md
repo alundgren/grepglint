@@ -244,8 +244,9 @@ isolation using the pinned client and a local stub without model inference.
 The [stock-client verification](docs/benchmark-verification.md) adds Linux
 source restrictions, a streaming call audit and a separately confirmed,
 two-attempt ChatGPT smoke command. The approved real turns remain in issue #39.
-The [paired runner](docs/benchmark-paired.md) plans corpus trials and saves
-durable simulated inputs without account access. Separate ChatGPT readiness
+The [paired runner](docs/benchmark-paired.md) compares native Codex exploration
+with the same environment plus Grepglint. Offline proofs and simulated trials
+need no account access. Separate ChatGPT readiness
 and execution commands require one approval for an exact selected run.
 
 Grepglint code is MIT licensed. Retained benchmark evidence keeps its upstream

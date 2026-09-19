@@ -19,6 +19,10 @@ def encoded(value):
 
 
 class Audit:
+    argument_limit = ARGUMENT_BYTES
+    response_limit = RESPONSE_BYTES
+    frame_limit = FRAME_LIMIT
+
     def __init__(self, path, budget, call_limit=CALL_LIMIT):
         self.output = os.fdopen(os.open(path, os.O_WRONLY | os.O_APPEND | os.O_NOFOLLOW), 'ab', buffering=0)
         self.path = path
@@ -38,7 +42,7 @@ class Audit:
         with self.lock:
             data = encoded({'sequence': self.sequence, 'elapsed_seconds': time.monotonic() - self.started,
                             'session': session, 'kind': kind, 'value': value}) + b'\n'
-            if len(data) > FRAME_LIMIT:
+            if len(data) > self.frame_limit:
                 raise ProbeError('audit_frame_limit_exceeded')
             if shutil.disk_usage(self.path.parent).free - len(data) < FREE_RESERVE:
                 raise ProbeError('corpus_disk_reserve_unavailable')
@@ -51,7 +55,7 @@ class Audit:
     def call(self, session, call_id, name, arguments, kind):
         if not isinstance(call_id, str) or not call_id or not isinstance(name, str):
             raise ProbeError('incompatible_call_fields')
-        if len(encoded(arguments)) > ARGUMENT_BYTES:
+        if len(encoded(arguments)) > self.argument_limit:
             raise ProbeError('tool_argument_limit_exceeded')
         key = (session, call_id)
         value = {'name': name, 'arguments': arguments, 'kind': kind}
@@ -81,7 +85,7 @@ class Audit:
                 elif kind in ('function_call_output', 'custom_tool_call_output'):
                     if 'call_id' not in item or 'output' not in item:
                         raise ProbeError('incompatible_raw_result')
-                    if len(encoded(item['output'])) > RESPONSE_BYTES:
+                    if len(encoded(item['output'])) > self.response_limit:
                         raise ProbeError('tool_response_limit_exceeded')
                     key = (session, item['call_id'])
                     if key in self.raw_results and self.raw_results[key] != item:
@@ -130,7 +134,7 @@ class Audit:
                  'name': params['tool'], 'arguments': params['arguments'],
                  'result': result, 'response': response, 'elapsed_seconds': elapsed,
                  'outer_cell_id': None, 'outer_cell_association': 'unavailable'}
-        if len(encoded(response['result'])) > RESPONSE_BYTES:
+        if len(encoded(response['result'])) > self.response_limit:
             raise ProbeError('tool_response_limit_exceeded')
         self.record('handler.completed', value, session)
         with self.lock:

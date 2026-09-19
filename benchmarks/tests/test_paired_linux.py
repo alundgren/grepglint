@@ -29,6 +29,7 @@ class PairedLinux(unittest.TestCase):
         status = json.loads(result.stdout)
         run = Path(status['run'])
         store.owned(run, sealed=True)
+        self.assertTrue(store.read(run / 'run.json')['cleanup']['temporary_files_removed'])
         return run, [store.read(run / name) for name in ('t0001.json', 't0002.json')]
 
     def test_selected_capability_proof_uses_real_client_without_account(self):
@@ -43,6 +44,12 @@ class PairedLinux(unittest.TestCase):
             proof = require_proof(run, Path(__import__('shutil').which('codex')).resolve(),
                                   ROOT / 'target/release/grepglint', implementation_hash())
             self.assertEqual(set(proof['sessions']), {'t0001', 't0002'})
+            from _score_input import Corpus, records
+            scored = records([run], Corpus(ROOT / 'benchmarks'))
+            self.assertEqual(len(scored), 2)
+            self.assertEqual(scored[0]['_effective_instructions'], scored[1]['_effective_instructions'])
+            for record in scored:
+                self.assertTrue(all(record['session']['negative_checks'].values()))
             for trial in ('t0001', 't0002'):
                 raw = (run / (trial + '.jsonl')).read_text()
                 self.assertNotIn('account/read', raw)
@@ -60,21 +67,16 @@ class PairedLinux(unittest.TestCase):
             for record in records:
                 self.assertTrue(record['simulation'])
                 self.assertEqual(record['source_before']['sha256'], record['source_after']['sha256'])
-                self.assertTrue(any(t['returned_ranges'] for t in record['tools']))
+                self.assertTrue(any(t['name'] == 'exec_command' for t in record['tools']))
+                self.assertTrue(all(t['returned_ranges'] == [] for t in record['tools'] if t['name'] == 'exec_command'))
                 self.assertEqual(record['answer']['status'], 'valid')
                 self.assertTrue(all(record['session']['isolation_checks'].values()))
 
-    def test_optional_nonuse_and_adversarial_search_schema(self):
-        for scenario in ('non-use', 'adversarial'):
-            with self.subTest(scenario=scenario), tempfile.TemporaryDirectory() as directory:
-                _, records = self.run_scenario(directory, scenario, 0)
-                for record in records:
-                    if scenario == 'non-use':
-                        self.assertTrue(record['grepglint']['non_use'])
-                    else:
-                        denied = [t for t in record['tools'] if t['call_id'].startswith('denied_')]
-                        self.assertEqual(len(denied), 5)
-                        self.assertTrue(all(not t['success'] for t in denied))
+    def test_optional_nonuse(self):
+        with tempfile.TemporaryDirectory() as directory:
+            _, records = self.run_scenario(directory, 'non-use', 0)
+            for record in records:
+                self.assertTrue(record['grepglint']['non_use'])
 
     def test_invalid_answer_and_transport_loss_stop_remaining_trial(self):
         for scenario in ('malformed', 'missing', 'oversized', 'transport-loss'):
@@ -108,9 +110,23 @@ class PairedLinux(unittest.TestCase):
                 records = [store.read(run / name) for name in ('t0001.json', 't0002.json')]
                 self.assertEqual([r['state'] for r in records], ['failed', 'not-started'])
                 self.assertTrue(store.read(run / 'run.json')['cleanup']['service_stopped'])
+                self.assertTrue(store.read(run / 'run.json')['cleanup']['temporary_files_removed'])
             finally:
                 if process.poll() is None:
                     process.kill()
                     process.wait()
                 process.stdout.close()
                 process.stderr.close()
+
+    def test_abrupt_worker_exit_removes_temporary_files(self):
+        from _codex_isolation import service_command
+        import secrets
+        unit = 'grepglint-paired-' + secrets.token_hex(12)
+        temporary = Path('/run/user') / str(os.getuid()) / unit
+        program = ("import os; from pathlib import Path; p=Path(os.environ['RUNTIME_DIRECTORY']); "
+                   "(p/'probe').write_text('owned probe'); print(p.exists(), flush=True); os.kill(os.getpid(),9)")
+        command = service_command(unit, [sys.executable, '-c', program], seconds=15, runtime=unit)
+        result = subprocess.run(command, capture_output=True, timeout=20)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout.strip(), b'True', result.stderr.decode())
+        self.assertFalse(temporary.exists())

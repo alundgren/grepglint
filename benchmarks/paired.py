@@ -8,14 +8,13 @@ import secrets
 import shutil
 import subprocess
 import sys
-import tempfile
 import time
 
 from _codex_audit import encoded
 from _codex_capture import Budget, Child, ProbeError, json_value
 from _codex_isolation import (UnsupportedHost, cgroup_limits, check_user_manager, file_hash,
                               prerequisites, service_command)
-from _codex_session import local_session
+from _paired_session import local_session
 from codex_preflight import (cancellation_signals, exclusive_probe, ProbeCancelled,
                              write_receipt, digest, MODEL, EFFORT)
 from _paired_contract import (BASE, CONTRACT, LIMITS, MAX_TRIALS, plan, tools, answer,
@@ -39,7 +38,7 @@ def trial_worker(run, trial, args, catalog, cg, *, live=None):
     record = store.read(run / (trial['trial_id'] + '.json'))
     record['state'] = 'attempted'
     store.save(run, trial['trial_id'] + '.json', record)
-    budget = Budget(LIMITS['trial_seconds'])
+    budget = Budget(LIMITS['trial_seconds'], total=LIMITS['events_output_bytes'])
     audit = None
     started = time.monotonic()
     before = None
@@ -47,36 +46,24 @@ def trial_worker(run, trial, args, catalog, cg, *, live=None):
     try:
         before = verify_source(source, trial['source'], CORPUS, budget)
         record['source_before'] = before
-        audit = TrialAudit(run / (trial['trial_id'] + '.jsonl'), budget, simulation=live is None)
-        with tempfile.TemporaryDirectory(prefix='grepglint-paired-') as directory:
-            root = Path(directory)
-            config = root / 'config'
-            config.mkdir(mode=0o700)
-            (config / 'base.md').write_text(BASE)
-            outside = root / 'outside'
-            outside.mkdir(mode=0o700)
-            forbidden = {}
-            for name in ('source', 'oracle', 'credentials', 'history', 'controller'):
-                path = outside / name
-                path.write_text('PRIVATE_' + name.upper())
-                forbidden[name] = str(path)
-            configuration = trial['configuration']
-            definitions = tools(configuration, catalog)
-            from _paired_proof import CorpusProbe
-            script = (CorpusProbe(configuration, audit, source) if getattr(args, 'prove', False)
-                      else FakeCodex(configuration, audit, args.fake_scenario))
-            result = live.session(trial, audit, budget, record) if live else local_session(args.codex, args.grepglint, source, config, catalog, configuration,
-                audit, budget, script=script, base=BASE, prompt=trial['question'],
-                tools=definitions, forbidden=forbidden, handler_file_limit=LIMITS['cache_bytes'])
-            record['session'] = result
-            record['reported_model'] = result['reported_model']
-            record['reported_effort'] = result['reported_effort']
-            record['catalog_sha256'] = digest(encoded(definitions))
-            record['configuration_sha256'] = result['configuration_sha256']
-            record['answer'] = answer(next(iter(audit.final_messages.values()), None), source)
-            if record['answer']['status'] != 'valid':
-                raise ProbeError('invalid_final_answer')
-            record['state'] = 'completed'
+        audit = TrialAudit(run / (trial['trial_id'] + '.jsonl'), budget, simulation=live is None, native=True)
+        configuration = trial['configuration']
+        definitions = tools(configuration, catalog)
+        from _paired_proof import CorpusProbe
+        script = (CorpusProbe(configuration, audit, source) if getattr(args, 'prove', False) or args.fake_scenario == 'adversarial'
+                  else FakeCodex(configuration, audit, args.fake_scenario))
+        result = live.session(trial, audit, budget, record) if live else local_session(
+            args.codex, args.grepglint, source, catalog, configuration, audit, budget,
+            script, trial['question'], before['sha256'])
+        record['session'] = result
+        record['reported_model'] = result['reported_model']
+        record['reported_effort'] = result['reported_effort']
+        record['catalog_sha256'] = digest(encoded(definitions))
+        record['configuration_sha256'] = result['configuration_sha256']
+        record['answer'] = answer(next(iter(audit.final_messages.values()), None), source)
+        if record['answer']['status'] != 'valid':
+            raise ProbeError('invalid_final_answer')
+        record['state'] = 'completed'
     except ProbeCancelled:
         record.update(state='failed', errors=['cancelled'])
     except (ProbeError, OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
@@ -119,7 +106,9 @@ def worker(args):
     run = args.worker
     status = store.read(run / 'run.json')
     try:
-        cg, limits = cgroup_limits()
+        if os.environ.get('RUNTIME_DIRECTORY') != status.get('runtime_directory'):
+            raise ProbeError('native_temporary_directory_unavailable')
+        cg, limits = cgroup_limits(memory=LIMITS['aggregate_memory_bytes'])
         prerequisites(args.codex, run)
         if file_hash(args.grepglint) != store.read(run / 'plan.json')['grepglint_sha256']:
             raise ProbeError('build_identity_changed')
@@ -170,8 +159,10 @@ def launch(args, run):
     count = len(store.read(run / 'plan.json')['trials'])
     seconds = count * (LIMITS['trial_seconds'] + LIMITS['cleanup_seconds']) + 30
     unit = 'grepglint-paired-' + secrets.token_hex(12)
+    temporary = Path('/run/user') / str(os.getuid()) / unit
     status = store.read(run / 'run.json')
     status['runtime_unit'] = unit
+    status['runtime_directory'] = str(temporary)
     store.save(run, 'run.json', status)
     child = None
     requested = False
@@ -190,7 +181,7 @@ def launch(args, run):
             if args.confirm:
                 command += ['--confirm', args.confirm]
         requested = True
-        child = Child(service_command(unit, command, seconds=seconds), run, os.environ.copy(), Budget(seconds + 5))
+        child = Child(service_command(unit, command, seconds=seconds, memory=LIMITS['aggregate_memory_bytes'], runtime=unit), run, os.environ.copy(), Budget(seconds + 5))
         json_value(child.line())
     except ProbeCancelled:
         errors = ['cancelled']
@@ -212,9 +203,11 @@ def launch(args, run):
                 stopped = True
         status = store.read(run / 'run.json')
         status['errors'].extend(errors)
-        status['cleanup'] = {'service_stopped': stopped}
+        status['cleanup'] = {'service_stopped': stopped, 'temporary_files_removed': not temporary.exists()}
         if not stopped:
             status['errors'].append('service_cleanup_failed')
+        if temporary.exists():
+            status['errors'].append('native_temporary_cleanup_failed')
         if status['errors'] or not status.get('worker_started'):
             status['status'] = 'incomplete'
         for trial in store.read(run / 'plan.json')['trials']:

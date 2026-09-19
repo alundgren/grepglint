@@ -14,7 +14,7 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from _codex_capture import Budget, ProbeError
+from _codex_capture import Budget, ProbeError, Child
 from _codex_smoke import ChatGPTProvider, weekly_quota
 from _codex_session import Handlers
 from _paired_attempts import Attempts
@@ -261,21 +261,31 @@ class Adapter(unittest.TestCase):
             args = SimpleNamespace(worker=run_path, snapshots=snapshots, codex=root / 'codex',
                 grepglint=root / 'grepglint', auth=root / 'auth', proof=root / 'proof',
                 live_action='readiness', confirm=None, fake_scenario='success', prove=False)
+            args.auth.write_text('{}')
+            args.auth.chmod(0o600)
             proofs = {'plan_sha256': plan_hash(planned), 'receipt_sha256': 'c' * 64,
                       'provider_evidence': 'https://github.com/alundgren/grepglint/issues/39#issuecomment-5732530859', 'checks': {key: True for key in (
-                'runtime_registrations','normalized_configuration','prompt_and_catalog','direct_skill_handlers','nested_aliases')}}
+                'native_tools','native_isolation','prompt_and_catalog')}}
             catalog = {'tools':[{'name':'search','use_when':'search','returns':'results','follow_up':'read','side_effects':'index'}]}
             from _codex_audit import encoded
             from codex_preflight import digest
             proofs['sessions'] = {t['trial_id']: {'catalog_sha256': digest(encoded(contract.tools(t['configuration'], catalog))), 'prompt_sha256': t['prompt_sha256']} for t in planned['trials']}
+            def native_client(cmd, cwd, env, budget, **kwargs):
+                copied = Path(env['CODEX_HOME']) / 'auth.json'
+                self.assertFalse(copied.is_symlink())
+                self.assertEqual(copied.stat().st_mode & 0o777, 0o600)
+                self.assertEqual(copied.read_bytes(), args.auth.read_bytes())
+                copied.write_text('{"temporary_refresh":true}')
+                self.assertEqual(args.auth.read_text(), '{}')
+                return Child([sys.executable, str(server), str(log), scenario], cwd, env, budget, **kwargs)
             with patch('paired.CORPUS', corpus), patch('paired.implementation_hash', return_value='a' * 64), patch('paired.verify_source', verify), \
                  patch('_paired_live.require_proof', return_value=proofs), \
                  patch.object(Run, 'check_identities'), \
                  patch('_paired_live.Attempts', side_effect=lambda: Attempts(ledger_path)), \
-                 patch('_codex_smoke.prerequisites'), \
+                 patch('_paired_session.prerequisites'), \
                  patch('_codex_smoke.children_in_current_cgroup', return_value=True), \
                  patch('_codex_smoke.Handlers', OutputLimitHandlers if scenario == 'tool-limit' else DummyHandlers), \
-                 patch('_codex_smoke.authenticated_client_command', return_value=[sys.executable, str(server), str(log), scenario]):
+                 patch('_paired_session.Child', side_effect=native_client):
                 ready = live.worker(args, catalog, cg)
                 self.assertEqual(ready['status'], 'ready')
                 self.assertNotIn('turn/start', log.read_text())

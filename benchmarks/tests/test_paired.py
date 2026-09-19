@@ -78,7 +78,8 @@ class Planning(unittest.TestCase):
         treatment = contract.tools('grepglint', catalog)
         self.assertEqual(control, treatment[:-1])
         self.assertIn('REAL', treatment[-1]['description'])
-        self.assertIn('regex', control[0]['inputSchema']['properties'])
+        self.assertEqual(control, [])
+        self.assertEqual(treatment[-1]['name'], 'grepglint_search')
 
 
 class SourceAndAnswer(unittest.TestCase):

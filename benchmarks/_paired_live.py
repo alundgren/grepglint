@@ -3,8 +3,9 @@ import time
 
 from _codex_audit import encoded
 from _codex_capture import Budget, ProbeError
-from _codex_smoke import (ChatGPTProvider, account_check, weekly_quota, quota_confirmation,
-                          live_configuration, provider_check, FRESH_SECONDS)
+from _codex_smoke import (account_check, weekly_quota, quota_confirmation,
+                          provider_check, FRESH_SECONDS)
+from _paired_session import NativeProvider as ChatGPTProvider, live_configuration
 from _paired_attempts import Attempts
 from _paired_contract import BASE, LIMITS, tools
 from _paired_proof import plan_hash, require_proof
