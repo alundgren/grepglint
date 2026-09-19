@@ -8,6 +8,7 @@ from _codex_audit import encoded
 from _codex_capture import FRAME_LIMIT, ProbeError, json_value
 from _codex_isolation import FREE_RESERVE, MEMORY_BYTES, TASKS, CLIENT_SHA256
 from _codex_session import definitions
+from _paired_skill import skill_hash, skill_text
 from codex_preflight import MODEL, EFFORT, digest
 from validate import validate, load
 
@@ -31,6 +32,28 @@ BASE = ('Answer the question by inspecting the repository in the current working
         'No human assistance is available. Return a final JSON object with explanation, a string, '
         'and evidence, an array of objects with path, start and end. Cite existing '
         'repository-relative regular files and positive inclusive line ranges.')
+GUIDANCE_MODES = ('description-only', 'prefer-search-v1', 'skill-v1')
+EXPLORATION_GUIDANCE = (
+    'For exploratory implementation questions, prefer starting with grepglint_search when you do not '
+    'already know the relevant file. Turn the question into a short group of related words or '
+    'identifiers, for example migration dependency graph. Read promising result ranges to verify '
+    'them. Use direct reads for known files and rg for exact strings, regex, or all occurrences. '
+    'Skip Grepglint when those tools already provide a focused route; its use is optional. '
+    'Results are lexical suggestions, not exhaustive references or guaranteed answers. '
+    'The first search builds a bounded local index and may take several seconds. '
+    'If indexing fails, continue with rg and file reads; repeating the same query will not fix '
+    'a capacity failure. Repository files remain unchanged and search uses no network.')
+
+
+def trial_instructions(trial):
+    guidance = trial.get('guidance', 'description-only')
+    if guidance not in GUIDANCE_MODES:
+        raise ProbeError('unsupported_exploration_guidance')
+    if guidance == 'prefer-search-v1' and trial['configuration'] == 'grepglint':
+        return BASE + '\n\n' + EXPLORATION_GUIDANCE
+    return BASE
+
+
 CAPTURE_BYTES = 128 * 1024 ** 2
 NATIVE_FRAME_BYTES = 8 * 1024 ** 2
 LIMITS = {'trial_seconds': 1800, 'cleanup_seconds': 8, 'tool_calls': 1000,
@@ -64,7 +87,9 @@ def reservation(count):
     return RUN_OVERHEAD + count * (CAPTURE_BYTES + METADATA_BYTES)
 
 
-def plan(root, selected, all_tasks=False, repetitions=1, seed=0):
+def plan(root, selected, all_tasks=False, repetitions=1, seed=0, guidance='description-only'):
+    if guidance not in GUIDANCE_MODES:
+        raise ProbeError('unsupported_exploration_guidance')
     if type(repetitions) is not int or not 1 <= repetitions <= MAX_REPETITIONS:
         raise ProbeError('repetitions_must_be_1_to_10')
     if type(seed) is not int or not 0 <= seed < 2 ** 64:
@@ -94,14 +119,18 @@ def plan(root, selected, all_tasks=False, repetitions=1, seed=0):
                 source = sources[task['source']]
                 trials.append({'trial_id': f't{len(trials) + 1:04d}', 'pair_id': pair,
                     'task_id': name, 'partition': task['split'], 'repetition': repetition,
-                    'order': len(trials), 'configuration': configuration,
-                    'question': task['question'], 'prompt_sha256': digest(BASE + '\n' + task['question']),
+                    'order': len(trials), 'configuration': configuration, 'guidance': guidance,
+                    'question': task['question'], 'prompt_sha256': digest(trial_instructions(
+                        {'configuration': configuration, 'guidance': guidance}) + '\n' + task['question']),
                     'task_sha256': digest(encoded(task)),
                     'source': {key: source[key] for key in ('id', 'commit', 'tree', 'upstream_commit', 'upstream_tree')}})
     result = {'schema_version': 1, 'contract': CONTRACT, 'simulation': True,
               'inference_performed': False, 'seed': seed, 'trials': trials,
               'tool_environment': TOOL_ENVIRONMENT,
               'total_trials': len(trials), 'answer_instructions': BASE,
+              'guidance': guidance,
+              'exploration_instructions': EXPLORATION_GUIDANCE if guidance == 'prefer-search-v1' else '',
+              'skill': {'sha256': skill_hash(), 'contents': skill_text()} if guidance == 'skill-v1' else None,
               'manifest_sha256': digest((root / 'manifest.json').read_bytes()),
               'sources_sha256': digest((root / 'sources.json').read_bytes()),
               'requested_model': MODEL, 'requested_effort': EFFORT,
@@ -219,6 +248,9 @@ def validate_record(record):
         raise ProbeError('invalid_trial_record')
     if record['configuration'] not in ('control', 'grepglint') or record['partition'] not in ('development', 'held_out'):
         raise ProbeError('invalid_trial_identity')
+    trial_instructions(record)
+    if record.get('guidance', 'description-only') != 'description-only' and record.get('tool_environment') != TOOL_ENVIRONMENT:
+        raise ProbeError('exploration_guidance_requires_native_tools')
     for key in ('run_id', 'trial_id', 'pair_id', 'task_id'):
         if not isinstance(record[key], str) or not re.fullmatch('[A-Za-z0-9_-]{1,100}', record[key]):
             raise ProbeError('invalid_trial_identity')

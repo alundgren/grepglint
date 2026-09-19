@@ -30,7 +30,29 @@ worst-case artifact reservation. No binary, credentials or downloaded source
 is needed for planning. Without `--snapshots`, prepared source is explicitly
 `not_checked`. Pass `--snapshots` to verify selected prepared source offline.
 Nothing fetches implicitly. Both members use the same question, answer
-instructions, source and budgets; treatment adds only `grepglint_search`.
+instructions, source and budgets by default; treatment adds only `grepglint_search`.
+`--guidance prefer-search-v1` selects a separate experiment that also appends a
+fixed, optional exploration paragraph to the treatment developer instructions.
+The baseline instructions stay unchanged. The plan prints the paragraph and
+records `guidance` in every trial, with distinct prompt and configuration hashes.
+Omitting the flag selects `description-only`. Readiness and execution inherit
+the proof selection and reject guidance overrides.
+
+`--guidance skill-v1` selects a third experiment. Treatment receives the real
+[grepglint-explore skill](../benchmarks/skills/grepglint-explore/SKILL.md) in its
+isolated Codex skill directory, with implicit discovery enabled. The question
+and common developer instructions stay unchanged; there is no explicit skill
+invocation or persistent exploration paragraph. Baseline has no skill.
+The plan retains the complete skill text and its SHA-256. The client advertises
+only the skill metadata initially, and the model may read the body as needed.
+The skill keeps Grepglint use optional.
+
+The selected proof verifies the exact normalized skill catalog, full file reads,
+read-only access and denial of sibling private files. Only that catalog and its
+specific read permission may differ in paired request comparisons. Personal and
+bundled skills, hooks and repository instruction loading remain excluded. The
+skill directory is removed with the owned runtime directory after each trial.
+
 
 ## Prepare and run
 
@@ -66,6 +88,9 @@ its description taken from the built binary. Grepglint use is optional.
 The runner omits the old `environments: []` override, enables native shell
 execution, and retains Codex's built-in model instructions. Common task and
 answer instructions are developer instructions, identical in both trials.
+The explicit `prefer-search-v1` experiment additionally supplies the documented
+exploration paragraph only to the Grepglint trial. No repository instruction
+files or hooks are installed.
 The model can choose `rg`, `find`, `sed`, Python, pipelines, command output
 limits and process polling. A large listing receives Codex's own truncated
 output and the turn continues. The runner neither forces pagination nor tells
@@ -129,6 +154,9 @@ The Django calibration task stays `ccx-crossorg-217`. Its default `SQLITE_FULL`
 error is retained in the raw structured result with subsequent fallback call
 IDs in trial metadata. The runner never raises daemon limits or substitutes a
 different task. A recoverable search error alone does not fail a trial.
+
+The [optional retrieval wording](agent-wording.md) records the current guidance,
+its evidence limits and constraints for a later comparison.
 
 ## Selected ChatGPT runs
 

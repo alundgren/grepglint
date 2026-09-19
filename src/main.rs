@@ -213,11 +213,11 @@ fn run(cli: &Cli) -> Result<()> {
                         "tools":[{
                             "name":"search",
                             "command":"grepglint search --json <query>",
-                        "use_when":"You know the concept but not the exact identifier or location in the current Git checkout. Regular clones and linked worktrees both work.",
-                            "inputs":{"query":"Words or identifiers; no regex or FTS operators.","limit":"Optional --limit, 1 to 20, default 5."},
-                            "returns":"Ranked file paths, line ranges, symbols, short excerpts, content identities, and freshness counts.",
-                            "follow_up":"Use rg for exact strings or identifiers, then read the relevant code.",
-                            "side_effects":"Starts a local daemon if needed and updates a bounded, disposable machine-local cache. Does not edit the repository or use the network."
+                        "use_when":"Find likely implementation regions in the current Git checkout when you have related words or identifiers but no focused file, or when broad text search returns too many matches. Use a compact group of relevant terms, for example migration dependency graph or request middleware exception. Regular clones and linked worktrees both work.",
+                            "inputs":{"query":"Related words or identifiers; no regex or FTS operators. For example: migration dependency graph.","limit":"Optional --limit, 1 to 20, default 5."},
+                            "returns":"Ranked file paths, line ranges, symbols, short excerpts, content identities, and freshness counts. Results are lexical suggestions, not exhaustive references or guaranteed answers.",
+                            "follow_up":"Read the relevant regions to verify them. Use rg for exact strings, regex, or all occurrences; directly read a file when its location is already known. If indexing fails, use rg and file reads; repeating the same query will not fix a capacity failure.",
+                            "side_effects":"The first search builds a bounded local index and may take several seconds. Starts a local daemon if needed and updates a bounded, disposable machine-local cache. Does not edit the repository or use the network."
                         }, {
                             "name":"output bounce", "command":"producer | grepglint output bounce",
                             "use_when":"Keep large UTF-8 stdout out of the initial response and retrieve all of it later.",
@@ -244,7 +244,7 @@ fn run(cli: &Cli) -> Result<()> {
                 );
             } else {
                 println!(
-                    "search  Find likely code regions when you know the concept but not its identifier or location.\n        grepglint search --json \"refresh token validation\"\n\nUse rg for exact matches, then read the relevant code.\noutput bounce  Retain large stdin with a bounded preview.\noutput search  Find relevant sections; use paging to inspect original bytes.\noutput page    Retrieve exact retained text with --json.\noutput purge   Erase owned output contents.\nRun grepglint tools --json for the machine-readable tool catalog."
+                    "search  Find likely implementation regions from related words or identifiers when no file is known or broad text search returns too many matches.\n        grepglint search --json \"refresh token validation\"\n\nResults are lexical suggestions. Read the relevant code to verify them. Use rg for exact strings, regex, or all occurrences; read known files directly.\noutput bounce  Retain large stdin with a bounded preview.\noutput search  Find relevant sections; use paging to inspect original bytes.\noutput page    Retrieve exact retained text with --json.\noutput purge   Erase owned output contents.\nRun grepglint tools --json for the machine-readable tool catalog."
                 );
             }
         }

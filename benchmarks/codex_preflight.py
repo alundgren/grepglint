@@ -110,7 +110,9 @@ def dynamic_tools(treatment, contaminated=False):
     ]
     if treatment == 'grepglint':
         definitions.append(('grepglint_search', 'Search indexed code inside the same prepared source root.',
-                            {'query': {'type': 'string'}}))
+                            {'query': {'type': 'string', 'description':
+                                'Related words or identifiers; no regex or FTS operators. '
+                                'For example: migration dependency graph.'}}))
     if contaminated:
         definitions.append(('outside_source_read', 'Deliberately forbidden fixture tool.',
                             {'path': {'type': 'string'}}))

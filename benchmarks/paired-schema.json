@@ -374,6 +374,14 @@
         "native-codex-v1",
         "controlled-handlers-v1"
       ]
+    },
+    "guidance": {
+      "enum": [
+        "description-only",
+        "prefer-search-v1",
+        "skill-v1"
+      ],
+      "description": "Experiment selection; absent in historical records means description-only. Persistent guidance or an isolated skill is supplied only to the Grepglint configuration."
     }
   },
   "allOf": [

@@ -248,6 +248,9 @@ def validate_run(run):
             continue
         record = read(path)
         states.append(validate_record(record))
+        if not (record.get('guidance', 'description-only') == trial.get('guidance', 'description-only')
+                == plan.get('guidance', 'description-only')):
+            raise ProbeError('trial_plan_guidance_mismatch')
         if not record['simulation'] and record['inference_performed']:
             from _paired_proof import plan_hash
             authorization = read(run / 'run.json').get('authorization', {})

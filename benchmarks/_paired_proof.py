@@ -8,7 +8,8 @@ from _codex_session import function, javascript, output_text
 from _paired_session import configuration
 from _codex_isolation import CLIENT_SHA256, JAVASCRIPT_HOST_SHA256, file_hash
 from codex_preflight import digest
-from _paired_contract import BASE, LIMITS, tools
+from _paired_contract import BASE, LIMITS, tools, trial_instructions, EXPLORATION_GUIDANCE, GUIDANCE_MODES
+from _paired_skill import SKILL_RELATIVE, SKILL_CATALOG_SHA256, skill_enabled, skill_hash, skill_text
 
 PROVIDER_EVIDENCE = 'https://github.com/alundgren/grepglint/issues/39#issuecomment-5732530859'
 
@@ -82,6 +83,13 @@ print(json.dumps(checks))
                     {'label': 'Yes', 'description': 'A hint.'}, {'label': 'No', 'description': 'No hint.'}]}]})]
         elif step == 8:
             items = [function('background_command', 'functions.exec_command', {'cmd': 'sleep 30', 'yield_time_ms': 1})]
+        elif step == 9 and getattr(self, 'skill', False):
+            items = [function('skill_read', 'functions.exec_command', {
+                'cmd': 'cat ' + shlex.quote(str(self.temporary / SKILL_RELATIVE))})]
+        elif step == 10 and getattr(self, 'skill', False):
+            program = "import pathlib\np=pathlib.Path(" + repr(str(self.temporary / SKILL_RELATIVE)) + ")\ntry:\n p.write_text('changed')\nexcept OSError:\n print('skill-read-only')"
+            program += "\ntry:\n pathlib.Path(" + repr(str(self.temporary / 'codex/private-skill-probe.txt')) + ").read_text()\nexcept OSError:\n print('skill-sibling-private')"
+            items = [function('skill_write', 'functions.exec_command', {'cmd': 'python3 -c ' + shlex.quote(program)})]
         else:
             return [{'type': 'message', 'id': 'proof_final', 'role': 'assistant', 'phase': 'final_answer',
                      'content': [{'type': 'output_text', 'text': json.dumps({
@@ -108,6 +116,10 @@ print(json.dumps(checks))
             'empty_skills': all('unsupported call' in output_text(audit, session, name)
                                 for name in ('orchestrator_skills', 'executor_skills')),
             'deterministic_input': NO_ASSISTANCE in output_text(audit, session, 'input_request')}
+        if getattr(self, 'skill', False):
+            checks['skill_read'] = skill_text().strip() in output_text(audit, session, 'skill_read')
+            checks['skill_read_only'] = 'skill-read-only' in output_text(audit, session, 'skill_write')
+            checks['skill_private_sibling'] = 'skill-sibling-private' in output_text(audit, session, 'skill_write')
         if not all(checks.values()):
             raise ProbeError('native_probe_failed_' + next(k for k,v in checks.items() if not v))
         return checks
@@ -131,6 +143,14 @@ def require_proof(run, binary, grepglint, implementation):
     import _paired_store as store
     store.owned(run, sealed=True)
     planned = store.read(run / 'plan.json')
+    guidance = planned.get('guidance', 'description-only')
+    if (guidance not in GUIDANCE_MODES
+            or planned.get('exploration_instructions', '') != (
+                EXPLORATION_GUIDANCE if guidance == 'prefer-search-v1' else '')):
+        raise ProbeError('matching_exploration_guidance_required')
+    expected_skill = {'sha256': skill_hash(), 'contents': skill_text()} if guidance == 'skill-v1' else None
+    if planned.get('skill') != expected_skill:
+        raise ProbeError('matching_selected_skill_required')
     if (planned.get('execution') != 'proof' or planned['implementation_sha256'] != implementation
             or planned['limits'] != LIMITS or planned['answer_instructions'] != BASE
             or planned['client_sha256'] != CLIENT_SHA256 or file_hash(binary) != CLIENT_SHA256
@@ -148,15 +168,22 @@ def require_proof(run, binary, grepglint, implementation):
                 'empty_skills', 'deterministic_input'}
     sessions = {}
     for trial in planned['trials']:
+        if trial.get('guidance', 'description-only') != guidance:
+            raise ProbeError('selected_trial_guidance_mismatch')
         record = store.read(run / (trial['trial_id'] + '.json'))
         session = record['session']
         checks = session.get('negative_checks', {})
         if (not all(checks.get(key) is True for key in required)
-                or session['configuration_sha256'] != digest(encoded(configuration('<loopback>')))
+                or session['configuration_sha256'] != digest(encoded(configuration(base=trial_instructions(trial), skill=skill_enabled(trial))))
                 or not session.get('observed', {}).get('runtime_registry')
                 or session['observed'].get('errors') or not all(session['isolation_checks'].values())
                 or record['source_before']['sha256'] != planned['prepared_sources'][trial['source']['id']]['sha256']):
             raise ProbeError('selected_capability_proof_incomplete')
+        if skill_enabled(trial):
+            if (session.get('skill', {}).get('catalog_sha256') != SKILL_CATALOG_SHA256
+                    or session['skill'].get('contents_sha256') != skill_hash()
+                    or not all(checks.get(key) is True for key in ('skill_read', 'skill_read_only', 'skill_private_sibling'))):
+                raise ProbeError('selected_skill_proof_incomplete')
         sessions[trial['trial_id']] = {key: record[key] for key in ('catalog_sha256', 'prompt_sha256')}
     return {'plan_sha256': plan_hash(planned),
             'receipt_sha256': store.hash_file(run / 'ownership.json', 1024 * 1024),

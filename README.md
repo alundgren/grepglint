@@ -1,7 +1,18 @@
 # Grepglint
 
-Local code discovery for coding agents. Search for a concept, get a few likely
-code regions, then use `rg` and file reads to inspect them.
+Local code discovery for coding agents. Find likely implementation regions from
+related words or identifiers when you have no focused file, or when broad text
+search returns too many matches. Tool use is optional. Use compact queries such
+as `migration dependency graph` or `request middleware exception`, without
+regex or FTS operators.
+
+Results are lexical suggestions, not exhaustive references or guaranteed
+answers. Read the relevant regions to verify them. Use `rg` for exact strings,
+regex, or all occurrences; directly read a file when its location is known.
+The first search builds a bounded local index and may take several seconds.
+If indexing fails, use `rg` and file reads. Repeating the same query will not
+fix a capacity failure. Repository files remain unchanged and search uses no
+network.
 
 ```sh
 grepglint search "refresh token validation"

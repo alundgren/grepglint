@@ -32,12 +32,45 @@ class PairedLinux(unittest.TestCase):
         self.assertTrue(store.read(run / 'run.json')['cleanup']['temporary_files_removed'])
         return run, [store.read(run / name) for name in ('t0001.json', 't0002.json')]
 
+    def test_native_declaration_retains_catalog_guidance(self):
+        from _paired_contract import tools
+        result = subprocess.run([str(ROOT / 'target/release/grepglint'), 'tools', '--json'],
+                                capture_output=True, check=True)
+        catalog = json.loads(result.stdout)
+        self.assertEqual(tools('control', catalog), [])
+        declared, = tools('grepglint', catalog)
+        description = declared['description']
+        for phrase in ('related words or identifiers', 'too many matches',
+                       'migration dependency graph', 'request middleware exception',
+                       'lexical suggestions', 'not exhaustive references or guaranteed answers',
+                       'Read the relevant regions', 'all occurrences',
+                       'directly read a file', 'may take several seconds',
+                       'If indexing fails, use rg and file reads',
+                       'repeating the same query will not fix a capacity failure',
+                       'Does not edit the repository or use the network'):
+            self.assertIn(phrase, description)
+        schema = declared['inputSchema']
+        self.assertEqual(set(schema['properties']), {'query'})
+        self.assertEqual(schema['properties']['query']['description'],
+                         catalog['tools'][0]['inputs']['query'])
+
     def test_selected_capability_proof_uses_real_client_without_account(self):
+        self.check_selected_proof('description-only')
+
+    def test_guided_capability_proof_preserves_pair_checks(self):
+        self.check_selected_proof('prefer-search-v1')
+
+    def test_skill_capability_proof_checks_discovery_read_and_isolation(self):
+        self.check_selected_proof('skill-v1')
+
+    def check_selected_proof(self, guidance):
         from _paired_proof import require_proof
+        from _paired_contract import trial_instructions
         from paired import implementation_hash
         with tempfile.TemporaryDirectory() as directory:
             command = self.command(Path(directory))
             command[command.index('--fake')] = '--prove'
+            command += ['--guidance', guidance]
             result = subprocess.run(command, capture_output=True, timeout=65)
             self.assertEqual(result.returncode, 0, result.stdout.decode() + result.stderr.decode())
             run = Path(json.loads(result.stdout)['run'])
@@ -50,6 +83,14 @@ class PairedLinux(unittest.TestCase):
             self.assertEqual(scored[0]['_effective_instructions'], scored[1]['_effective_instructions'])
             for record in scored:
                 self.assertTrue(all(record['session']['negative_checks'].values()))
+                self.assertEqual(record['session']['normalized_configuration']['developer_instructions'], trial_instructions(record))
+                if guidance == 'skill-v1' and record['configuration'] == 'grepglint':
+                    from _paired_skill import SKILL_CATALOG_SHA256, skill_hash
+                    self.assertTrue(record['session']['skill_full_read_observed'])
+                    self.assertEqual(record['session']['skill']['catalog_sha256'], SKILL_CATALOG_SHA256)
+                    self.assertEqual(record['session']['skill']['contents_sha256'], skill_hash())
+                else:
+                    self.assertNotIn('skill', record['session'])
             for trial in ('t0001', 't0002'):
                 raw = (run / (trial + '.jsonl')).read_text()
                 self.assertNotIn('account/read', raw)
@@ -76,6 +117,17 @@ class PairedLinux(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             _, records = self.run_scenario(directory, 'non-use', 0)
             for record in records:
+                self.assertTrue(record['grepglint']['non_use'])
+
+    def test_guidance_allows_nonuse(self):
+        with tempfile.TemporaryDirectory() as directory:
+            command = self.command(Path(directory), 'non-use') + ['--guidance', 'prefer-search-v1']
+            result = subprocess.run(command, capture_output=True, timeout=65)
+            self.assertEqual(result.returncode, 0, result.stdout.decode() + result.stderr.decode())
+            run = Path(json.loads(result.stdout)['run'])
+            for name in ('t0001.json', 't0002.json'):
+                record = store.read(run / name)
+                self.assertEqual(record['state'], 'completed')
                 self.assertTrue(record['grepglint']['non_use'])
 
     def test_invalid_answer_and_transport_loss_stop_remaining_trial(self):
