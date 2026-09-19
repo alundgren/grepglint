@@ -217,9 +217,11 @@ unsafe file objects, unknown fields and unknown record versions cause a refusal
 that preserves the files. Healthy repair reports no changes. Upgrading to the
 same healthy release leaves both files and the real daemon instance unchanged.
 
-Cache checks open an existing database read-only and require its recorded
-SQLite format version to match the binary. An incompatible cache is refused
-before replacement or migration. No real-cache schema migration or personal
+Cache checks open an existing database read-only and accept the current format
+or a version-1 or version-2 database with the exact recognized schema. The first search
+rebuilds that legacy cache under the daemon writer lock without retaining a
+backup. Unknown versions or unrecognized legacy schemas are refused before replacement. No real-cache
+schema migration or personal
 repository search occurs during setup. Existing cache ownership is unchanged.
 The fixture uses a different cache while the real-cache exclusion stays held.
 

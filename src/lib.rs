@@ -1,5 +1,7 @@
 #![cfg(unix)]
 
+mod body;
+
 pub mod chunks;
 pub mod daemon;
 pub mod files;

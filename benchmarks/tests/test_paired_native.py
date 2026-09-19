@@ -110,7 +110,19 @@ class NativeAudit(unittest.TestCase):
                 'source', 'oracle', 'credentials', 'history', 'controller', 'auth', 'source_read_only', 'network')})}
         audit = SimpleNamespace(raw_results={('control', key): {'output': value} for key, value in outputs.items()},
             native_items={('control', 'isolation'): {'completion': {'aggregatedOutput': None}},
-                ('control', 'nested'): {'completion': {'aggregatedOutput': '42\n'}},
+                ('control', 'nested'): {
+                    'start': {'commandActions': [{'command': "python3 -c 'print(6 * 7)'"}]},
+                    'completion': {'status': 'completed', 'exitCode': 0, 'aggregatedOutput': None}},
                 ('control', 'background_command'): {'completion': {'aggregatedOutput': None}}})
         checks = CorpusProbe('control', audit, Path('.')).check(audit, 'control')
         self.assertTrue(all(checks.values()))
+        nested = audit.native_items[('control', 'nested')]
+        for changes in ({'exitCode': 1}, {'exitCode': None}, {'status': 'inProgress'}):
+            original = nested['completion'].copy()
+            nested['completion'].update(changes)
+            with self.subTest(changes=changes), self.assertRaisesRegex(ProbeError, 'native_nested_execution'):
+                CorpusProbe('control', audit, Path('.')).check(audit, 'control')
+            nested['completion'] = original
+        nested['start']['commandActions'] = [{'command': 'echo 42'}]
+        with self.assertRaisesRegex(ProbeError, 'native_nested_execution'):
+            CorpusProbe('control', audit, Path('.')).check(audit, 'control')

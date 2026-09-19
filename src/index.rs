@@ -13,7 +13,7 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
-pub(crate) const SCHEMA_VERSION: i64 = 1;
+pub(crate) const SCHEMA_VERSION: i64 = 3;
 const WEEK: i64 = 7 * 24 * 60 * 60;
 
 fn now() -> i64 {
@@ -25,15 +25,64 @@ fn now() -> i64 {
 
 pub struct Index {
     db: Connection,
+    bodies: crate::body::Storage,
     directory: PathBuf,
     max_bytes: u64,
     last_maintenance: Option<Instant>,
 }
 
+pub(crate) fn is_legacy_cache(db: &Connection) -> Result<bool> {
+    fn schema(db: &Connection) -> Result<Vec<(String, String, Option<String>)>> {
+        let mut statement =
+            db.prepare("SELECT type,name,sql FROM sqlite_schema ORDER BY type,name")?;
+        Ok(statement
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
+            .collect::<rusqlite::Result<_>>()?)
+    }
+    let expected = Connection::open_in_memory()?;
+    let version: i64 = db.query_row("PRAGMA user_version", [], |r| r.get(0))?;
+    let legacy = match version {
+        1 => include_str!("schema-v1.sql"),
+        2 => include_str!("schema-v2.sql"),
+        _ => return Ok(false),
+    };
+    expected.execute_batch(legacy)?;
+    Ok(schema(db)? == schema(&expected)?)
+}
+
 impl Index {
     pub fn open(directory: &Path, max_bytes: u64) -> Result<Self> {
-        let db = Connection::open(directory.join("index.sqlite"))?;
+        let bodies = crate::body::Storage::new()?;
+        let path = directory.join("index.sqlite");
+        let mut db = Connection::open(&path)?;
         db.busy_timeout(Duration::from_millis(500))?;
+        let mut version: i64 = db.query_row("PRAGMA user_version", [], |r| r.get(0))?;
+        if matches!(version, 1 | 2) {
+            ensure!(
+                is_legacy_cache(&db)?,
+                "Unrecognized legacy cache; preserved without changes. Use rg."
+            );
+            ensure!(
+                std::fs::symlink_metadata(&path)?.is_file(),
+                "Legacy cache is not a regular file; preserved without changes."
+            );
+            ensure!(
+                fs2::available_space(directory)? >= max_bytes * 2 + 64 * 1024 * 1024,
+                "Not enough free disk space to rebuild the cache; use rg."
+            );
+            // The daemon holds its writer lock. Discard only the recognized cache,
+            // so rebuilding never needs both database copies on disk.
+            db.execute_batch("PRAGMA journal_mode=DELETE;")?;
+            db.close().map_err(|(_, error)| error)?;
+            std::fs::remove_file(&path)?;
+            db = Connection::open(&path)?;
+            db.busy_timeout(Duration::from_millis(500))?;
+            version = 0;
+        }
+        ensure!(
+            version == 0 || version == SCHEMA_VERSION,
+            "Unsupported cache version {version}; this binary expects {SCHEMA_VERSION}. No migration performed; use a fresh GREPGLINT_CACHE_DIR or the previous binary. Use rg meanwhile."
+        );
         db.execute_batch("PRAGMA foreign_keys=ON; PRAGMA journal_mode=DELETE; PRAGMA auto_vacuum=INCREMENTAL;
             PRAGMA temp_store=MEMORY; PRAGMA cache_size=-8192; PRAGMA mmap_size=0; PRAGMA hard_heap_limit=67108864;")?;
         let page_size: i64 = db.query_row("PRAGMA page_size", [], |r| r.get(0))?;
@@ -43,11 +92,6 @@ impl Index {
             "Existing cache exceeds GREPGLINT_CACHE_MB; keep the previous limit or remove the cache while the daemon is stopped."
         );
         db.pragma_update(None, "max_page_count", max_bytes as i64 / page_size)?;
-        let version: i64 = db.query_row("PRAGMA user_version", [], |r| r.get(0))?;
-        ensure!(
-            version == 0 || version == SCHEMA_VERSION,
-            "Unsupported cache version {version}; this binary expects {SCHEMA_VERSION}."
-        );
         if version == 0 {
             ensure!(
                 fs2::available_space(directory)? >= max_bytes * 2 + 64 * 1024 * 1024,
@@ -58,6 +102,7 @@ impl Index {
         }
         Ok(Self {
             db,
+            bodies,
             directory: directory.to_owned(),
             max_bytes,
             last_maintenance: None,
@@ -352,14 +397,17 @@ impl Index {
         )?;
         let id = self.db.last_insert_rowid();
         for chunk in chunks.unwrap_or_default() {
+            let (body, codec) = self.bodies.encode(&chunk.content)?;
             self.db.execute(
-                "INSERT INTO chunks(content_id,start_line,end_line,symbol,body) VALUES(?,?,?,?,?)",
+                "INSERT INTO chunks(content_id,start_line,end_line,symbol,body,body_codec,body_bytes) VALUES(?,?,?,?,?,?,?)",
                 params![
                     id,
                     chunk.start as i64,
                     chunk.end as i64,
                     chunk.symbol,
-                    chunk.content
+                    body,
+                    codec,
+                    chunk.content.len() as i64
                 ],
             )?;
             let rowid = self.db.last_insert_rowid();
@@ -499,7 +547,7 @@ impl Index {
             UNION ALL
             SELECT a.path_id,c.id,m.weight FROM active a JOIN path_matches m ON m.id=a.path_id JOIN chunks c ON c.content_id=a.content_id),
           ranked AS (SELECT path_id,id,sum(weight) score FROM candidates GROUP BY path_id,id ORDER BY score DESC,path_id,id LIMIT ?3)
-          SELECT p.path,c.start_line,c.end_line,c.symbol,c.body,b.identity,r.score FROM ranked r
+          SELECT p.path,c.start_line,c.end_line,c.symbol,c.body,c.body_codec,c.body_bytes,b.identity,r.score FROM ranked r
           JOIN chunks c ON c.id=r.id JOIN contents b ON b.id=c.content_id JOIN paths p ON p.id=r.path_id ORDER BY r.score DESC,p.path,c.start_line");
         let mut stmt = self.db.prepare(&sql)?;
         let rows = stmt.query_map(params![worktree, expression, limit as i64], |r| {
@@ -508,9 +556,17 @@ impl Index {
                 r.get::<_, u32>(1)? as usize,
                 r.get::<_, u32>(2)? as usize,
                 r.get::<_, Option<String>>(3)?,
-                r.get::<_, String>(4)?,
-                r.get::<_, String>(5)?,
-                r.get::<_, f64>(6)?,
+                crate::body::decode(r.get_ref(4)?.as_blob()?, r.get(5)?, r.get(6)?).map_err(
+                    |error| {
+                        rusqlite::Error::FromSqlConversionFailure(
+                            4,
+                            rusqlite::types::Type::Blob,
+                            error.into(),
+                        )
+                    },
+                )?,
+                r.get::<_, String>(7)?,
+                r.get::<_, f64>(8)?,
             ))
         })?;
         let mut results = Vec::new();

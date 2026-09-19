@@ -108,7 +108,7 @@ around Codex was incompatible with native nested sandbox startup on this host.
 No host setting is changed to bypass that failure.
 
 The Grepglint callback keeps its existing separate read-only source mount,
-private 384 MiB cache, network namespace, Landlock and seccomp restrictions.
+private 896 MiB cache, network namespace, Landlock and seccomp restrictions.
 Both trials initialize that worker for equal setup costs; the baseline cannot
 call it. Every trial receives a new client home, thread and cache. Scratch
 writes and child processes count against the service's memory ceiling. Native
@@ -255,9 +255,9 @@ Machine protection is separate:
 | Events/output | 128 MiB shared streaming capture per trial |
 | Answer | 64 KiB raw UTF-8 text, at most 100 citations |
 | Metadata | 1 MiB per trial; 5 MiB run/ownership/publication overhead |
-| Temporary storage | Client home/scratch on tmpfs under the aggregate memory cap; 384 MiB handler cache |
+| Temporary storage | Client home/scratch on tmpfs under the aggregate memory cap; 896 MiB handler cache |
 | Retention | Eight runs, 24 GiB aggregate reservation, no expiry or eviction |
-| Free disk | 1 GiB plus 320 MiB beyond the selected reservation |
+| Free disk | 1 GiB plus 576 MiB beyond the selected reservation |
 
 The 8 MiB frame allowance accommodates the native 1 MiB output buffer even
 with JSON escaping and metadata. The 128 MiB capture budget includes duplicate

@@ -136,7 +136,7 @@ def receipt_template():
             'handler_queue': QUEUE_LIMIT, 'handler_concurrency': 1, 'clients': 1,
             'aggregate_memory_bytes': MEMORY_BYTES, 'aggregate_swap_bytes': 0,
             'aggregate_cpu_cores': 1, 'processes_and_threads': TASKS,
-            'cache_tmpfs_bytes': 384 * 1024 ** 2, 'client_tmpfs_bytes': 64 * 1024 ** 2,
+            'cache_tmpfs_bytes': 896 * 1024 ** 2, 'client_tmpfs_bytes': 64 * 1024 ** 2,
             'free_disk_reserve_bytes': FREE_RESERVE, 'retention_seconds': 3600, 'retained_runs': 4}}
 
 

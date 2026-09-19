@@ -97,8 +97,12 @@ print(json.dumps(checks))
             'native_truncation_continues': 'truncated' in output_text(audit, session, 'large_output'),
             'native_isolation': json_value(isolation) == {key: True for key in (
                 'source', 'oracle', 'credentials', 'history', 'controller', 'auth', 'source_read_only', 'network')},
-            'native_nested_execution': any(k[0] == session and (v.get('completion', {}).get('aggregatedOutput') or '').strip() == '42'
-                                           for k, v in audit.native_items.items()),
+            'native_nested_execution': any(k[0] == session
+                and v.get('completion', {}).get('status') == 'completed'
+                and v.get('completion', {}).get('exitCode') == 0
+                and any(action.get('command') == "python3 -c 'print(6 * 7)'"
+                        for action in v.get('start', {}).get('commandActions', []))
+                for k, v in audit.native_items.items()),
             'native_yield_and_wait': 'native-yield-complete' in output_text(audit, session, 'waited_command'),
             'native_background_cleanup': 'completion' in audit.native_items.get((session, 'background_command'), {}),
             'empty_skills': all('unsupported call' in output_text(audit, session, name)

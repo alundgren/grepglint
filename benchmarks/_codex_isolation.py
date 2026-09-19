@@ -15,7 +15,7 @@ from _codex_capture import ProbeError
 MEMORY_BYTES = 1024 * 1024 * 1024
 CPU_QUOTA = '100000 100000'
 TASKS = 128
-FREE_RESERVE = 1024 ** 3 + 320 * 1024 ** 2
+FREE_RESERVE = 1024 ** 3 + 576 * 1024 ** 2
 CLIENT_SHA256 = '3188814c35471432d4123203e0eb38e5bddc60226e3d7ddf0e59e649ea140022'
 JAVASCRIPT_HOST_SHA256 = '0c57be435e73b70d9106c850d751cd259a7f04da958a453d7ef59090d82b70f1'
 
@@ -157,12 +157,13 @@ def diagnostic_command(binary, fixture, arguments, environment):
 
 
 def handler_command(source, grepglint, module, forbidden):
+    # Keep the 576 MiB write reserve available beside a full 256 MiB database.
     command = bubblewrap() + ['--ro-bind', str(source), '/source',
         '--ro-bind', str(grepglint), '/opt/grepglint',
         '--ro-bind', str(Path(shutil.which('rg')).resolve()), '/opt/rg',
         '--ro-bind', str(module), '/opt/handler.py',
         '--ro-bind', '/usr/bin/true', '/source-execution-probe',
-        '--size', str(384 * 1024 ** 2), '--tmpfs', '/cache', '--dir', '/cache/tmp']
+        '--size', str(896 * 1024 ** 2), '--tmpfs', '/cache', '--dir', '/cache/tmp']
     for name in ('_codex_isolation.py', '_codex_capture.py'):
         command += ['--ro-bind', str(module.parent / name), '/opt/' + name]
     for key, value in {'HOME': '/cache', 'TMPDIR': '/cache/tmp',

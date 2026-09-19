@@ -163,8 +163,8 @@ before committing. If they changed, it rolls back and asks for a query retry.
 
 | Resource | Default policy |
 | --- | --- |
-| Database | 128 MiB hard page limit; rollback journal can temporarily use another 128 MiB |
-| Disk reserve | Before cache writes, require room for twice the database limit plus 64 MiB |
+| Database | 256 MiB hard page limit; rollback journal can temporarily use another 256 MiB |
+| Disk reserve | Before cache writes, require room for twice the database limit plus 64 MiB, 576 MiB by default |
 | Memory | SQLite heap limited to 64 MiB; daemon address space limited to 512 MiB on Linux |
 | Work | One request at a time; 30-second indexing/search budget; lower scheduling priority |
 | Input | 16 KiB request; 250 ms receive deadline; 16 MiB per Git command output |
@@ -183,6 +183,19 @@ For experiments, `GREPGLINT_CACHE_DIR`, `GREPGLINT_CACHE_MB`, and
 startup settings. These limits bound resource use, but do not make a cold
 index free of CPU or disk activity. A repository that exceeds the limits needs
 `rg`; Grepglint will not return an incomplete refreshed view.
+
+Newly indexed source chunks use Zstandard level 1 compression automatically.
+Chunks shorter than 256 bytes or without a size reduction remain raw. FTS
+postings stay uncompressed, and only chunks selected for search results are
+decompressed.
+
+Cache format 3 adds per-chunk encoding and length fields to the deduplicated
+FTS storage. On first use, the daemon recognizes version-1 and version-2 caches,
+discards the old database under its writer lock, and rebuilds from the current
+checkout. It keeps no backup copy. Unknown versions and unrecognized legacy
+schemas are preserved and refused. Managed upgrades accept recognized legacy
+caches; verification itself does not modify them. Older binaries cannot reuse
+format 3.
 
 ## Agent instructions and validation
 

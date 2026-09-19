@@ -94,7 +94,8 @@ pub fn cache(record: &Record) -> Result<()> {
         db.busy_timeout(Duration::from_millis(500))?;
         let version: i64 = db.query_row("PRAGMA user_version", [], |row| row.get(0))?;
         ensure!(
-            version == crate::index::SCHEMA_VERSION,
+            version == crate::index::SCHEMA_VERSION
+                || (matches!(version, 1 | 2) && crate::index::is_legacy_cache(&db)?),
             "Incompatible cache format {version}; no migration performed. Preserve the cache and use the previous release or rg"
         );
     }

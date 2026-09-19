@@ -19,7 +19,7 @@ import time
 GIB = 1024 ** 3
 SOURCE_LIMIT = GIB
 TOTAL_LIMIT = 8 * GIB
-FREE_RESERVE = GIB + 320 * 1024 ** 2
+FREE_RESERVE = GIB + 576 * 1024 ** 2
 FETCH_TIMEOUT = 300
 INDEX_TIMEOUT = 45
 
@@ -59,7 +59,7 @@ def budget(root, additional=0):
     if disk_bytes(root) + additional > TOTAL_LIMIT:
         raise PreparationError('Preparation would exceed 8 GiB; remove an owned snapshot first')
     if shutil.disk_usage(root).free - additional < FREE_RESERVE:
-        raise PreparationError('Preparation needs 1 GiB free beyond the 320 MiB Grepglint reserve')
+        raise PreparationError('Preparation needs 1 GiB free beyond the 576 MiB Grepglint reserve')
 
 
 def command(args, cwd, timeout=30, limit=16 * 1024 ** 2, env=None, output=None, budget_root=None):

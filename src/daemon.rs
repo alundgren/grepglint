@@ -53,7 +53,7 @@ impl Config {
             "Cache path is too long for a Unix socket; set GREPGLINT_CACHE_DIR to a shorter absolute path."
         );
         let mb: u64 = std::env::var("GREPGLINT_CACHE_MB")
-            .unwrap_or_else(|_| "128".into())
+            .unwrap_or_else(|_| "256".into())
             .parse()
             .context("GREPGLINT_CACHE_MB must be an integer")?;
         ensure!(

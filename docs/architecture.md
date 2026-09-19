@@ -14,7 +14,7 @@ finalization. Empty coordination locks remain on stable inodes; the trusted
 bootstrap can finish deleting a final ownership record after the native copy
 has already been removed. Upgrade retains both
 old and candidate identities in a durable record until both installed copies
-are verified; cache-format checks are read-only and refuse migration. The trusted checkout's Python bootstrap
+are verified; cache-format checks are read-only and accept recognized caches for rebuilding on first use. The trusted checkout's Python bootstrap
 verifies release provenance before invoking downloaded native setup code;
 maintenance never becomes a background service or an exploration tool.
 
@@ -25,6 +25,28 @@ contents and chunks, paths, base mappings, and overlay mappings. Code FTS rows
 belong to immutable content chunks, while path FTS rows belong to repository
 paths. A second worktree adds mappings without copying either FTS index.
 The same blob used with different parser versions has separate parsed entries.
+
+The FTS tables use SQLite's contentless-delete mode. They keep postings and
+column lengths for BM25, but do not retain a second copy of expanded source or
+path text. Excerpts come from `chunks`, and result paths come from `paths`.
+Ordinary delete triggers remove FTS rows; SQLite reclaims deletion markers
+during FTS merges. No separate merge worker or unbounded optimize pass runs.
+Deleted-row statistics can affect scores until those merges complete, so
+scores need not exactly match a cache using ordinary FTS content tables.
+Cache format 3 rebuilds recognized version-1 and version-2 databases under the daemon writer
+lock. It verifies the complete legacy schema before removing the database, then
+creates a fresh index without retaining a backup. Unknown versions and unrecognized legacy schemas
+are refused before changing their database settings. Installer verification
+accepts recognized legacy formats without modifying them; the first search
+performs the rebuild. A failure after removal can retry from an empty cache.
+
+`body::Storage` compresses chunk bodies with Zstandard level 1.
+Each body records its codec and original byte length. Bodies shorter than 256
+bytes or without a size reduction remain raw. FTS receives the original text;
+only returned, ranked chunks are decoded. Raw and compressed bodies remain
+readable in the same cache.
+The decoder checks the 512 KiB chunk limit, frame length, checksum, UTF-8 and
+exact decoded length, rejecting corrupt data instead of returning partial text.
 
 A base mapping associates a worktree path with a committed content entry.
 An overlay associates the path with local content or a deletion marker.

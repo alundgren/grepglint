@@ -25,12 +25,10 @@ CREATE TABLE IF NOT EXISTS chunks (
     start_line INTEGER NOT NULL,
     end_line INTEGER NOT NULL,
     symbol TEXT,
-    body BLOB NOT NULL,
-    body_codec INTEGER NOT NULL,
-    body_bytes INTEGER NOT NULL
+    body TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS chunks_content ON chunks(content_id);
-CREATE VIRTUAL TABLE IF NOT EXISTS chunk_fts USING fts5(symbol,body,content='',contentless_delete=1,tokenize='unicode61 tokenchars ''_''');
+CREATE VIRTUAL TABLE IF NOT EXISTS chunk_fts USING fts5(symbol,body,tokenize='unicode61 tokenchars ''_''');
 CREATE TRIGGER IF NOT EXISTS chunks_deleted AFTER DELETE ON chunks BEGIN
     DELETE FROM chunk_fts WHERE rowid=old.id;
 END;
@@ -40,7 +38,7 @@ CREATE TABLE IF NOT EXISTS paths (
     path TEXT NOT NULL,
     UNIQUE(repo_id,path)
 );
-CREATE VIRTUAL TABLE IF NOT EXISTS path_fts USING fts5(path,content='',contentless_delete=1,tokenize='unicode61 tokenchars ''_''');
+CREATE VIRTUAL TABLE IF NOT EXISTS path_fts USING fts5(path,tokenize='unicode61 tokenchars ''_''');
 CREATE TRIGGER IF NOT EXISTS paths_deleted AFTER DELETE ON paths BEGIN
     DELETE FROM path_fts WHERE rowid=old.id;
 END;
