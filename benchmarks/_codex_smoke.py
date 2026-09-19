@@ -427,12 +427,18 @@ class ChatGPTProvider:
 
     def _receive(self, request_id=None, method=None, session=None):
         while True:
-            event = json_value(self.client.line())
+            try:
+                event = json_value(self.client.line())
+            except ProbeError as error:
+                # A handler terminates the client to unblock protocol reads.
+                if session and str(error) == 'client_exited' and self.handlers and self.handlers.error:
+                    raise ProbeError(self.handlers.error) from error
+                raise
             if not isinstance(event, dict):
                 raise ProbeError('invalid_rpc_event')
             if self.audit and session:
                 self.audit.receive(event, session)
-            if self.handlers and self.handlers.error:
+            if session and self.handlers and self.handlers.error:
                 raise ProbeError(self.handlers.error)
             if event.get('method') == 'item/tool/call':
                 if not self.handlers:
