@@ -81,3 +81,9 @@ The [offline paired runner](benchmark-paired.md#scorer-input-version-1) writes
 versioned trial JSON and streamed call JSONL. It retains simulated provenance,
 raw answers, actual returned ranges and incomplete pairs. Simulation must never
 be accepted as live measurement. Factual grading remains separate from the runner.
+
+## Offline report command
+
+[Offline discovery scoring](benchmark-reporting.md) documents the implemented
+`benchmarks/score.py prepare` and `report` commands, blind human judgments,
+versioned alternative evidence, quota observations, privacy and bounded inputs.
