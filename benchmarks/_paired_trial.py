@@ -4,19 +4,29 @@ import time
 from _codex_audit import Audit
 from _codex_capture import ProbeError, json_value
 from _codex_session import function
-from _paired_contract import ANSWER_BYTES, returned_ranges
+from _paired_contract import ANSWER_BYTES, returned_ranges, LIMITS, NATIVE_FRAME_BYTES, TOOL_ENVIRONMENT
 
 
 class TrialAudit(Audit):
-    def __init__(self, path, budget, *, simulation=True):
+    def __init__(self, path, budget, *, simulation=True, native=False):
         self.simulation = simulation
-        super().__init__(path, budget)
+        self.native = native
+        super().__init__(path, budget, call_limit=LIMITS['tool_calls'] if native else 100)
+        if native:
+            self.argument_limit = LIMITS['argument_bytes']
+            self.response_limit = LIMITS['response_bytes']
+            self.frame_limit = NATIVE_FRAME_BYTES
+        self.native_items = {}
         self.optional_usage = {}
         self.final_messages = {}
         self.final_status = 'missing'
         self.tools = []
 
     def receive(self, event, session):
+        with self.lock:
+            self._receive(event, session)
+
+    def _receive(self, event, session):
         method = event.get('method')
         params = event.get('params', {})
         if method == 'rawResponse/completed':
@@ -43,6 +53,32 @@ class TrialAudit(Audit):
                 self.record('provider.usage_absent', {'response_id': response}, session)
                 event = {**event, 'params': {**params, 'usage': {}}}
         super().receive(event, session)
+        if self.native and method in ('item/started', 'item/completed'):
+            item = params.get('item', {})
+            names = {'commandExecution': 'exec_command', 'fileChange': 'apply_patch',
+                     'imageView': 'view_image'}
+            name = names.get(item.get('type'))
+            if name:
+                key = (session, item['id'])
+                state = self.native_items.setdefault(key, {})
+                field = 'start' if method == 'item/started' else 'completion'
+                if field in state:
+                    if state[field] != item:
+                        raise ProbeError('conflicting_native_event')
+                    return
+                state[field] = item
+                if key not in self.calls:
+                    self.call(session, item['id'], 'functions.' + name, {}, 'native')
+                if field == 'completion':
+                    output = item.get('aggregatedOutput')
+                    self.tools.append({'call_id': item['id'], 'name': name,
+                        'elapsed_seconds': (item.get('durationMs') or 0) / 1000,
+                        'success': item.get('status', 'completed') == 'completed' and item.get('exitCode') in (None, 0),
+                        'returned_bytes': len(output.encode()) if output is not None else None, 'returned_ranges': [],
+                        'range_status': 'unavailable_native_output',
+                        'bytes_method': 'app-server command output; model-visible truncation is retained in raw results',
+                        'error': None, 'exit_code': item.get('exitCode'), 'disk_peak': None,
+                        'result_record': self.sequence - 1})
         if method == 'rawResponseItem/completed':
             item = params.get('item', {})
             if item.get('type') == 'message' and item.get('role') == 'assistant' and item.get('phase') in (None, 'final_answer'):
@@ -64,6 +100,10 @@ class TrialAudit(Audit):
                 self.final_status = 'captured'
 
     def handler(self, request, response, result, elapsed, session):
+        with self.lock:
+            self._handler(request, response, result, elapsed, session)
+
+    def _handler(self, request, response, result, elapsed, session):
         super().handler(request, response, result, elapsed, session)
         params = request['params']
         value = result.get('result', {})
@@ -87,10 +127,15 @@ class TrialAudit(Audit):
                 'inclusions': 'cached input is included in input; reasoning is included in output; never added again',
                 'quota': None, 'quota_completeness': 'not_applicable_simulation' if self.simulation else 'recorded_separately'}
 
+    def verify(self, session, expected, response_count=None):
+        if any(set(state) != {'start', 'completion'} for (name, _), state in self.native_items.items() if name == session):
+            raise ProbeError('incomplete_native_audit')
+        return super().verify(session, expected, response_count)
+
     def observations(self):
         grep = [t for t in self.tools if t['name'] == 'grepglint_search']
         first_error = next((i for i, t in enumerate(self.tools) if t['name'] == 'grepglint_search' and not t['success']), None)
-        fallback = [t['call_id'] for t in self.tools[(first_error + 1):] if t['name'] in ('text_search', 'read_file', 'file_list')] if first_error is not None else []
+        fallback = [t['call_id'] for t in self.tools[(first_error + 1):] if t['name'] in ('text_search', 'read_file', 'file_list', 'exec_command', 'write_stdin')] if first_error is not None else []
         peaks = {'cache_bytes': 0, 'database_bytes': 0, 'journal_bytes': 0}
         for tool in self.tools:
             for key, value in (tool.get('disk_peak') or {}).items():
@@ -108,7 +153,6 @@ class FakeCodex:
         self.configuration, self.audit, self.scenario = configuration, audit, scenario
         self.step = 0
         self.expected = []
-        self.path = None
 
     def __call__(self, request):
         if self.scenario == 'transport-loss':
@@ -119,26 +163,11 @@ class FakeCodex:
             items = [function('cold_search', 'functions.grepglint_search', {'query': 'benchmark'})]
         elif step <= 1:
             self.step = 2
-            items = [function('list', 'functions.file_list', {'glob': '*README*', 'path': '.'})]
+            items = [function('list', 'functions.exec_command', {'cmd': 'rg --files'})]
         elif step == 2:
-            state = self.audit.dynamic.get((self.configuration, 'list'), {})
-            output = state.get('handler', {}).get('result', {}).get('result', {}).get('content', '')
-            paths = output.splitlines()
-            self.path = paths[0].removeprefix('./') if paths else None
-            if self.path:
-                items = [function('read', 'functions.read_file', {'path': self.path, 'start': 1, 'end': 8})]
-            else:
-                return self.final()
-        elif step == 3 and self.scenario == 'adversarial':
-            items = [function('denied_' + str(i), 'functions.text_search', arguments)
-                     for i, arguments in enumerate([
-                         {'query': 'x', 'regex': True, 'path': '/etc/passwd'},
-                         {'query': 'x', 'path': '../oracle'},
-                         {'query': 'x', 'path': '.git/config'},
-                         {'query': 'x', 'args': ['--follow']},
-                         {'query': '[', 'regex': True, 'path': self.path or '.'}])]
-        elif step == 3 and self.path:
-            items = [function('search', 'functions.text_search', {'query': '(?i)copyright', 'regex': True, 'path': self.path})]
+            items = [function('read', 'functions.exec_command', {'cmd': "for p in *README*; do sed -n '1,8p' \"$p\"; done"})]
+        elif step == 3:
+            items = [function('search', 'functions.exec_command', {'cmd': "rg -n -i copyright -g '*README*' ."})]
         else:
             return self.final()
         self.expected.extend(i['call_id'] for i in items)
@@ -147,10 +176,6 @@ class FakeCodex:
     def final(self):
         import json
         evidence = []
-        state = self.audit.dynamic.get((self.configuration, 'read'), {})
-        value = state.get('handler', {}).get('result', {})
-        if value.get('ok'):
-            evidence = [{k: value['result'][k] for k in ('path', 'start', 'end')}]
         text = json.dumps({'explanation': 'SIMULATED answer for offline workflow testing. No factual claim about the task was generated.', 'evidence': evidence})
         if self.scenario == 'malformed':
             text = 'SIMULATED malformed final answer'
@@ -165,11 +190,17 @@ class FakeCodex:
 
 class ReplayAudit(TrialAudit):
     """Replay the same required call checks without opening a writable artifact."""
-    def __init__(self, budget):
+    def __init__(self, budget, native=False):
         import hashlib
         import threading
         self.budget = budget
-        self.call_limit = 100
+        self.native = native
+        self.native_items = {}
+        self.call_limit = LIMITS['tool_calls'] if native else 100
+        if native:
+            self.argument_limit = LIMITS['argument_bytes']
+            self.response_limit = LIMITS['response_bytes']
+            self.frame_limit = NATIVE_FRAME_BYTES
         self.started = time.monotonic()
         self.lock = threading.RLock()
         self.sequence = 0
@@ -186,16 +217,15 @@ class ReplayAudit(TrialAudit):
 
 def validate_audit(path, record, budget):
     import hashlib
-    from _paired_contract import METADATA_BYTES
-    replay = ReplayAudit(budget)
+    replay = ReplayAudit(budget, native=record.get('tool_environment') == TOOL_ENVIRONMENT)
     replay.simulation = record['simulation']
     sha = hashlib.sha256()
     sequence = 0
     partial = False
     with path.open('rb') as stream:
-        while line := stream.readline(METADATA_BYTES + 1):
+        while line := stream.readline(replay.frame_limit + 1):
             budget.add(len(line))
-            if len(line) > METADATA_BYTES:
+            if len(line) > replay.frame_limit:
                 raise ProbeError('audit_frame_limit_exceeded')
             sha.update(line)
             if not line.endswith(b'\n'):

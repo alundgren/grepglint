@@ -62,17 +62,18 @@ def check_user_manager():
         raise UnsupportedHost('systemd_user_manager_unavailable') from error
 
 
-def service_command(unit, command, seconds=60, memory=MEMORY_BYTES):
+def service_command(unit, command, seconds=60, memory=MEMORY_BYTES, runtime=None):
+    temporary = ['-p', 'RuntimeDirectory=' + runtime, '-p', 'RuntimeDirectoryMode=0700'] if runtime else []
     return ['systemd-run', '--user', '--quiet', '--pipe', '--wait', '--collect',
             '--unit', unit, '-p', f'MemoryMax={memory}', '-p', 'MemorySwapMax=0',
             '-p', 'CPUQuota=100%', '-p', 'CPUQuotaPeriodSec=100ms',
             '-p', f'TasksMax={TASKS}', '-p', f'RuntimeMaxSec={seconds}',
             '-p', 'TimeoutStopSec=2', '-p', 'KillMode=control-group',
             '-p', 'OOMPolicy=continue',
-            '-p', 'LimitCORE=0', '-p', 'UMask=0077', '--', *command]
+            '-p', 'LimitCORE=0', '-p', 'UMask=0077', *temporary, '--', *command]
 
 
-def cgroup_limits():
+def cgroup_limits(memory=MEMORY_BYTES):
     try:
         line = Path('/proc/self/cgroup').read_text().strip()
     except OSError as error:
@@ -85,7 +86,7 @@ def cgroup_limits():
                   for name in ('memory.max', 'memory.swap.max', 'cpu.max', 'pids.max')}
     except OSError as error:
         raise UnsupportedHost('cgroup_controllers_unavailable') from error
-    if values != {'memory.max': str(MEMORY_BYTES), 'memory.swap.max': '0',
+    if values != {'memory.max': str(memory), 'memory.swap.max': '0',
                   'cpu.max': CPU_QUOTA, 'pids.max': str(TASKS)}:
         raise UnsupportedHost('aggregate_resource_limits_not_enforced')
     return root, values

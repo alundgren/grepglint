@@ -62,8 +62,9 @@ def child_limits(file_limit=TOTAL_LIMIT):
 
 
 class Child:
-    def __init__(self, args, cwd, env, budget, file_limit=TOTAL_LIMIT):
+    def __init__(self, args, cwd, env, budget, file_limit=TOTAL_LIMIT, frame_limit=FRAME_LIMIT):
         self.budget = budget
+        self.frame_limit = frame_limit
         self.buffer = bytearray()
         self.stderr_hash = hashlib.sha256()
         self.counts = {'stdout': 0, 'stderr': 0}
@@ -91,7 +92,7 @@ class Child:
 
     def send(self, value):
         data = json.dumps(value, separators=(',', ':')).encode() + b'\n'
-        if len(data) > FRAME_LIMIT:
+        if len(data) > self.frame_limit:
             raise ProbeError('rpc_frame_limit_exceeded')
         with selectors.DefaultSelector() as writer:
             writer.register(self.proc.stdin, selectors.EVENT_WRITE)
@@ -107,12 +108,12 @@ class Child:
         while True:
             newline = self.buffer.find(b'\n')
             if newline >= 0:
-                if newline + 1 > FRAME_LIMIT:
+                if newline + 1 > self.frame_limit:
                     raise ProbeError('rpc_frame_limit_exceeded')
                 line = bytes(self.buffer[:newline])
                 del self.buffer[:newline + 1]
                 return line
-            if len(self.buffer) > FRAME_LIMIT:
+            if len(self.buffer) > self.frame_limit:
                 raise ProbeError('rpc_frame_limit_exceeded')
             if not self.selector.get_map():
                 raise ProbeError('client_exited')
@@ -158,8 +159,9 @@ class Child:
 
 class ResponsesStub:
     """Accept exactly one bounded request, then return fixed SSE without tool calls."""
-    def __init__(self, budget, responder=None, observe=None):
+    def __init__(self, budget, responder=None, observe=None, frame_limit=FRAME_LIMIT):
         self.budget = budget
+        self.frame_limit = frame_limit
         self.responder = responder
         self.observe = observe
         self.exchanges = 0
@@ -228,7 +230,7 @@ class ResponsesStub:
                 if 'transfer-encoding' in fields or fields.get('content-encoding', 'identity') != 'identity':
                     raise ProbeError('unsupported_http_encoding')
                 length = int(fields['content-length'])
-                if length < 0 or length + len(headers) + 4 > FRAME_LIMIT:
+                if length < 0 or length + len(headers) + 4 > self.frame_limit:
                     raise ProbeError('http_frame_limit_exceeded')
                 while len(body) < length:
                     conn.settimeout(min(2, self.budget.remaining()))
@@ -263,7 +265,7 @@ class ResponsesStub:
                     {'type': 'response.completed', 'response': response},
                 ]
                 payload = ''.join(f'event: {e["type"]}\ndata: {json.dumps(e)}\n\n' for e in events).encode()
-                if len(payload) > FRAME_LIMIT:
+                if len(payload) > self.frame_limit:
                     raise ProbeError('responses_event_limit_exceeded')
                 if self.responder:
                     self.budget.add(len(payload))

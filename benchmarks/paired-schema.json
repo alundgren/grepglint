@@ -364,6 +364,12 @@
           "error"
         ]
       }
+    },
+    "tool_environment": {
+      "enum": [
+        "native-codex-v1",
+        "controlled-handlers-v1"
+      ]
     }
   },
   "allOf": [
@@ -442,7 +448,7 @@
           },
           "tools": {
             "type": "array",
-            "maxItems": 100
+            "maxItems": 1000
           },
           "answer": {
             "properties": {
@@ -523,7 +529,7 @@
               "calls": {
                 "type": "integer",
                 "minimum": 0,
-                "maximum": 100
+                "maximum": 1000
               },
               "path": {
                 "type": "string",

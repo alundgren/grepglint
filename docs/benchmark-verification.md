@@ -1,5 +1,11 @@
 # Stock Codex local verification
 
+This page describes the historical restricted-handler smoke verifier. It remains
+useful for its diagnostic and transport tests. It is not the ordinary Codex
+baseline used by current [paired trials](benchmark-paired.md). Those trials
+require a fresh native capability proof and permit shell and repository code
+execution under Codex's filesystem sandbox.
+
 `codex_preflight.py verify` runs stock Codex against scripted local Responses
 events. It exercises source handlers, hidden direct handlers, nested JavaScript
 calls and cancellation without model inference or account credentials. A pass

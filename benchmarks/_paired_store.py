@@ -11,8 +11,9 @@ import stat
 import time
 
 from _codex_audit import encoded
-from _codex_capture import Budget, ProbeError, json_value, TOTAL_LIMIT
+from _codex_capture import Budget, ProbeError, json_value
 from _paired_trial import validate_audit
+from _paired_contract import CAPTURE_BYTES as TOTAL_LIMIT
 from _codex_isolation import FREE_RESERVE
 from codex_preflight import private_directory
 from _paired_contract import MAX_RUNS, STORE_BYTES, METADATA_BYTES, MAX_TRIALS, reservation, validate_record, initial_record, CONTRACT, LIMITS

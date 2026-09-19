@@ -78,13 +78,17 @@ def trial_result(record, task, corpus, judgment):
     files = corpus.files[task['source']]
     cited = coverage(citations, task['evidence_groups'], files)
     tools = record.get('tools', [])
-    require(isinstance(tools, list) and len(tools) <= 100, 'invalid_saved_tools')
+    from _paired_contract import LIMITS, TOOL_ENVIRONMENT
+    require(isinstance(tools, list) and len(tools) <= LIMITS['tool_calls'], 'invalid_saved_tools')
     retrieved = []
     for tool in tools:
         require(isinstance(tool, dict) and isinstance(tool.get('returned_ranges'), list), 'invalid_saved_tool_ranges')
         retrieved.extend(tool['returned_ranges'])
         require(len(retrieved) <= 10000, 'too_many_returned_ranges')
     returned = coverage(retrieved, task['evidence_groups'], files)
+    if record.get('tool_environment') == TOOL_ENVIRONMENT:
+        returned = {key: None for key in returned}
+        returned['status'] = 'unavailable_native_shell_ranges'
     eligible = (record['state'] == 'completed' and record['answer']['status'] == 'valid'
                 and cited['invalid_ranges'] == 0 and cited['valid_files'] > 0)
     decision = judgment if judgment is not None else judgment_template(task)
@@ -93,12 +97,14 @@ def trial_result(record, task, corpus, judgment):
         simulation=record['simulation'], excluded_from_live_comparison=record['simulation'],
         run_status=record['_run_status'], run_errors=record['_run_errors'], run_cleanup=record['_run_cleanup'],
         answer_status=record['answer']['status'], errors=record.get('errors', []),
+        tool_environment=record.get('tool_environment', 'controlled-handlers-v1'),
         correctness=correctness(decision, task, eligible), judgment=decision,
         cited=cited, retrieved=returned,
         measurements=record['measurements'], usage=record['usage'],
         quota_observations=__import__('_paired_live').public_quota(record.get('quota_observations', [])),
         measurement_validation='audited' if record['state'] == 'completed' else 'partial_unverified',
-        tool_calls=len(tools), returned_bytes=sum(t.get('returned_bytes', 0) for t in tools),
+        tool_calls=record.get('audit', {}).get('calls', len(tools)),
+        returned_bytes=sum(t['returned_bytes'] for t in tools) if all(t.get('returned_bytes') is not None for t in tools) else None,
         grepglint_calls=sum(t.get('name') == 'grepglint_search' for t in tools),
         grepglint=record.get('grepglint'),
         cold_index_reference=corpus.inventories[task['source']]['summary'],
@@ -182,7 +188,7 @@ def shareable(value):
     result['trials'] = []
     for row in value['trials']:
         item = {k: row[k] for k in ('run_id', 'trial_id', 'pair_id', 'task_id', 'partition', 'configuration', 'repetition', 'order', 'state',
-            'group', 'language', 'source_bytes', 'simulation', 'excluded_from_live_comparison', 'answer_status', 'correctness', 'tool_calls', 'returned_bytes', 'grepglint_calls')}
+            'group', 'language', 'source_bytes', 'simulation', 'excluded_from_live_comparison', 'answer_status', 'correctness', 'tool_calls', 'returned_bytes', 'grepglint_calls', 'tool_environment')}
         for name in ('retrieved', 'cited'):
             item[name] = {k: v for k, v in row[name].items() if k != 'ranges'}
         item['measurements'] = {k: v for k, v in row['measurements'].items() if k in ('trial_wall_seconds', 'captured_bytes', 'source_verification_seconds', 'source_preparation_seconds', 'memory_peak_bytes', 'tool_seconds') and (v is None or type(v) in (int, float))}
@@ -213,7 +219,7 @@ def markdown(value):
         lines.append('| ' + ' | '.join([row['run_id'] + '/' + row['trial_id'], row['task_id'], row['partition'], row['configuration'],
             row['state'] + ' / ' + row['answer_status'], row['correctness'], number(row['retrieved']['region_recall']), number(row['cited']['region_recall']),
             ' / '.join(number(counters.get(k)) for k in TOKENS[:4]), number(row['measurements'].get('trial_wall_seconds')),
-            f"{row['tool_calls']} / {row['returned_bytes']} / {row['grepglint_calls']}"]) + ' |')
+            f"{row['tool_calls']} / {number(row['returned_bytes'])} / {row['grepglint_calls']}"]) + ' |')
     lines += ['', '## Resource observations', '',
         '| Trial | Indexing seconds | Non-use | Index errors / fallback calls | Memory bytes | Cache / database / journal bytes |',
         '| --- | --- | --- | --- | --- | --- |']

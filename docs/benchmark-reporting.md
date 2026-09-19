@@ -58,7 +58,12 @@ or rubrics require a new review form.
 
 ## Metrics and incomplete work
 
-Both retrieved and cited evidence get independent file precision, group-based
+Historical handler trials supply retrieved ranges. Native Codex trials mark
+retrieved coverage unavailable because arbitrary shell output cannot be mapped
+reliably to source ranges. This applies to both configurations, including one
+that used only Grepglint. Their cited evidence remains fully scorable.
+
+Where ranges are available, retrieved and cited evidence get file precision, group-based
 file recall, per-group unioned line overlap, region recall, distinct file counts
 and merged line counts. Invalid paths count against file precision. Mandatory
 alternatives are interchangeable, and optional groups never add missing
@@ -96,8 +101,12 @@ reported separately and never added again. Missing fields remain unknown. Source
 preparation and verification, first-search indexing, tool time and trial wall time
 are separate. The runner's first-search indexing measurement includes search time.
 Memory is the cgroup aggregate high-water mark, including cache pages, and disk
-peaks are sampled lower bounds. No per-tool tokens or subscription prices are
-inferred from bytes, time or percentages.
+peaks are sampled lower bounds. Native command byte counts come from app-server
+output and can exceed the text seen by the model after client truncation.
+An omitted command output makes the trial byte total unknown. Tool time sums
+the reported command durations and callback timings; some native events omit
+durations. These values cannot measure token savings. No per-tool tokens or
+subscription prices are inferred from bytes, time or percentages.
 
 Development and held-out counts are separate, with configuration, question group,
 language and exact repository source-byte size breakdowns. Pairs retain task,
@@ -179,9 +188,9 @@ review form or private key as if they were exports.
 
 Each external JSON input and aggregate trial metadata are capped at 32 MiB;
 runner metadata remains capped at 1 MiB per file. At most eight runs and 160
-combined trials are accepted. Audits are streamed with 1 MiB frames and 16 MiB
+combined trials are accepted. Audits are streamed with 8 MiB frames and 128 MiB
 per trial, with the runner validator's deadline. Evidence processing accepts at
-most 10,000 ranges per trial and 100 tool calls. Corrections accept at most 100
+most 10,000 ranges per trial and 1,000 tool calls. Corrections accept at most 100
 amendments and 100 alternative additions per amendment. Combined generated
 output is capped at 32 MiB. These limits bound work; they are not measurements
 of live model performance.

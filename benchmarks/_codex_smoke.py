@@ -476,6 +476,18 @@ class ChatGPTProvider:
     def evidence(self, proofs, probe):
         return stock_provider_evidence(proofs, probe)
 
+    def thread_parameters(self):
+        return {'cwd': '/work', 'environments': []}
+
+    def turn_parameters(self):
+        return {'environments': []}
+
+    def allowed_tools(self, treatment, catalog):
+        return {'functions.' + item['name'] for item in definitions(treatment, catalog)} | AUXILIARY
+
+    def finish_turn(self, started, treatment):
+        pass
+
     def _start_thread(self, treatment, audit):
         catalog = self.trial['catalog'] if self.trial else json_value(subprocess.check_output(
             [str(self.grepglint), 'tools', '--json'], cwd=self.source, timeout=3))
@@ -484,8 +496,8 @@ class ChatGPTProvider:
         self.handlers.start(self.client)
         if not children_in_current_cgroup((self.client, self.handlers.child)):
             raise ProbeError('child_outside_resource_group')
-        started = self._send('thread/start', {'model': MODEL, 'modelProvider': PROVIDER_ID,
-            'cwd': '/work', 'ephemeral': True, 'environments': [], 'experimentalRawEvents': True,
+        started = self._send('thread/start', {'model': MODEL, 'modelProvider': self.config['model_provider'],
+            **self.thread_parameters(), 'ephemeral': True, 'experimentalRawEvents': True,
             'dynamicTools': self.trial['tools'] if self.trial else definitions(treatment, catalog)}, treatment if audit else None)
         if started.get('model') != MODEL or started.get('reasoningEffort') != EFFORT:
             raise ProbeError('reported_model_or_effort_mismatch')
@@ -515,7 +527,7 @@ class ChatGPTProvider:
         # The durable reservation intentionally survives any uncertain write.
         message = {'id': request_id, 'method': 'turn/start', 'params': {
             'threadId': started['thread']['id'], 'model': MODEL, 'effort': EFFORT,
-            'environments': [], 'input': [{'type': 'text', 'text': self.prompt}]}}
+            **self.turn_parameters(), 'input': [{'type': 'text', 'text': self.prompt}]}}
         self.audit.record('rpc.sent', message, treatment)
         self.client.send(message)
         self._receive(request_id=request_id, session=treatment)
@@ -523,10 +535,10 @@ class ChatGPTProvider:
         self.budget.deadline = aggregate_deadline
         if completed.get('turn', {}).get('status') != 'completed':
             raise ProbeError('turn_not_completed')
+        self.finish_turn(started, treatment)
         if not self.trial and source_hash(self.source) != self.source_before:
             raise ProbeError('source_changed')
-        allowed = ({'functions.' + item['name'] for item in definitions(treatment, catalog)}
-                   | AUXILIARY)
+        allowed = self.allowed_tools(treatment, catalog)
         observed = {call['name'] for (name, _), call in self.audit.calls.items()
                     if name == treatment}
         if observed - allowed:

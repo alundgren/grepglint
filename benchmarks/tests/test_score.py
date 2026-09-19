@@ -26,6 +26,10 @@ TASK = 'ccx-crossorg-217'
 
 def completed_run(root, corpus, repetitions=1, seal=True):
     plan = contract.plan(CORPUS, [TASK], repetitions=repetitions)
+    plan.pop('tool_environment')
+    plan['answer_instructions'] = contract.LEGACY_BASE
+    for trial in plan['trials']:
+        trial['prompt_sha256'] = __import__('hashlib').sha256((contract.LEGACY_BASE + '\n' + trial['question']).encode()).hexdigest()
     plan.update(implementation_sha256='a' * 64, grepglint_sha256='b' * 64)
     run = store.create(root, plan)
     fixture = json.loads((CORPUS / 'schema-fixtures/successful.json').read_text())
@@ -41,8 +45,8 @@ def completed_run(root, corpus, repetitions=1, seal=True):
         mode = record['configuration']
         dynamic = dynamic_tools(mode)
         req = request(dynamic)
-        req.update(instructions=contract.BASE, input=[{'role': 'user', 'content': task['question']}])
-        observed = inspect_policy(req, mode, contract.BASE, task['question'])
+        req.update(instructions=contract.LEGACY_BASE, input=[{'role': 'user', 'content': task['question']}])
+        observed = inspect_policy(req, mode, contract.LEGACY_BASE, task['question'])
         record['catalog_sha256'] = digest(dynamic)
         record['configuration_sha256'] = digest(configuration('<loopback>'))
         record['session'] = {**observed, 'normalized_configuration': configuration('<loopback>'), 'configuration_sha256': record['configuration_sha256']}
@@ -94,6 +98,20 @@ class Scoring(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.corpus = Corpus(CORPUS)
+
+    def test_native_missing_output_stays_unknown_in_report(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = completed_run(Path(tmp) / 'runs', self.corpus)
+            items = records([run], self.corpus)
+            tasks, oracle = self.corpus.rubric(None)
+            for item in items:
+                item['tool_environment'] = contract.TOOL_ENVIRONMENT
+                item['tools'] = [{'returned_ranges': [], 'returned_bytes': None}]
+            result = score.report(items, tasks, oracle, self.corpus, {})
+            for row in result['trials']:
+                self.assertIsNone(row['returned_bytes'])
+                self.assertIsNone(row['retrieved']['region_recall'])
+            self.assertIn('unknown', score.markdown(result))
 
     def test_blind_grade_offline_reproduce_and_usage_dedup(self):
         with tempfile.TemporaryDirectory() as tmp:

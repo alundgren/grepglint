@@ -6,8 +6,9 @@ from pathlib import Path
 import stat
 
 from _codex_audit import encoded
-from _codex_capture import ProbeError, json_value, FRAME_LIMIT, TOTAL_LIMIT
-from _paired_contract import BASE, CONTRACT, MAX_TRIALS, initial_record
+from _codex_capture import ProbeError, json_value
+from _paired_contract import (BASE, LEGACY_BASE, TOOL_ENVIRONMENT, CONTRACT, MAX_TRIALS, initial_record,
+                              NATIVE_FRAME_BYTES as FRAME_LIMIT, CAPTURE_BYTES as TOTAL_LIMIT)
 import _paired_store as store
 from _score_metrics import require, valid_range
 from validate import load, validate, read_bytes
@@ -92,6 +93,9 @@ def request_instructions(value):
 
 def effective_identity(path, record, task):
     from _codex_session import inspect_policy
+    if record.get('tool_environment') == TOOL_ENVIRONMENT:
+        from _paired_session import inspect_policy
+    base = BASE if record.get('tool_environment') == TOOL_ENVIRONMENT else LEGACY_BASE
     session = record.get('session')
     require(isinstance(session, dict), 'missing_effective_session_identity')
     require(digest(session.get('normalized_configuration')) == record['configuration_sha256'], 'effective_configuration_hash_mismatch')
@@ -104,7 +108,7 @@ def effective_identity(path, record, task):
             require(len(line) <= FRAME_LIMIT and consumed <= TOTAL_LIMIT, 'audit_input_limit_exceeded')
             event = json_value(line)
             if event.get('kind') == 'responses.request':
-                current = inspect_policy(event['value'], record['configuration'], BASE, task['question'])
+                current = inspect_policy(event['value'], record['configuration'], base, task['question'])
                 if inspected is None:
                     inspected = current
                     first_tools = digest(request_tools(event['value']))
@@ -126,6 +130,8 @@ def effective_identity(path, record, task):
 
 def live_identity(path, record, task, plan, status):
     from _codex_smoke import live_configuration
+    if record.get('tool_environment') == TOOL_ENVIRONMENT:
+        from _paired_session import live_configuration
     from _paired_proof import plan_hash
     authorization = status.get('authorization', {})
     binding = authorization.get('binding', {})
@@ -186,8 +192,9 @@ def records(runs, corpus):
             require(record['source'] == {k: source[k] for k in ('id', 'commit', 'tree', 'upstream_commit', 'upstream_tree')}, 'record_source_revision_mismatch')
             require(record['partition'] == task['split'], 'record_partition_mismatch')
             hashes = {'manifest_sha256': corpus.manifest_hash, 'sources_sha256': corpus.sources_hash,
-                      'task_sha256': digest(task), 'prompt_sha256': hashlib.sha256((BASE + '\n' + task['question']).encode()).hexdigest()}
+                      'task_sha256': digest(task), 'prompt_sha256': hashlib.sha256(((BASE if record.get('tool_environment') == TOOL_ENVIRONMENT else LEGACY_BASE) + '\n' + task['question']).encode()).hexdigest()}
             require(all(record.get(k) == v for k, v in hashes.items()), 'record_task_or_prompt_mismatch')
+            require(record.get('tool_environment', 'controlled-handlers-v1') == plan.get('tool_environment', 'controlled-handlers-v1'), 'tool_environment_mismatch')
             for field in ('implementation_sha256', 'client_sha256', 'grepglint_sha256', 'requested_model', 'requested_effort'):
                 require(record.get(field) == plan.get(field), 'record_run_identity_mismatch')
             if record['state'] == 'completed':
