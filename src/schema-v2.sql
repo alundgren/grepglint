@@ -25,9 +25,7 @@ CREATE TABLE IF NOT EXISTS chunks (
     start_line INTEGER NOT NULL,
     end_line INTEGER NOT NULL,
     symbol TEXT,
-    body BLOB NOT NULL,
-    body_codec INTEGER NOT NULL,
-    body_bytes INTEGER NOT NULL
+    body TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS chunks_content ON chunks(content_id);
 CREATE VIRTUAL TABLE IF NOT EXISTS chunk_fts USING fts5(symbol,body,content='',contentless_delete=1,tokenize='unicode61 tokenchars ''_''');

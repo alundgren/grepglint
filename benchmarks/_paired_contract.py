@@ -42,7 +42,7 @@ LIMITS = {'trial_seconds': 1800, 'cleanup_seconds': 8, 'tool_calls': 1000,
           'aggregate_artifact_bytes': STORE_BYTES, 'aggregate_cpu_cores': 1,
           'aggregate_memory_bytes': 2 * MEMORY_BYTES, 'aggregate_swap_bytes': 0,
           'aggregate_tasks': TASKS, 'queued_callbacks': 8, 'handler_concurrency': 1,
-          'trial_concurrency': 1, 'cache_bytes': 384 * 1024 ** 2,
+          'trial_concurrency': 1, 'cache_bytes': 896 * 1024 ** 2,
           'client_temporary_bytes': 2 * MEMORY_BYTES, 'free_reserve_bytes': FREE_RESERVE}
 
 
@@ -228,7 +228,7 @@ def validate_record(record):
             raise ProbeError('invalid_trial_number')
     if not isinstance(record['source'], dict):
         raise ProbeError('invalid_source_identity')
-    if not isinstance(record['source'].get('id'), str) or not re.fullmatch('[A-Za-z0-9_-]{1,100}', record['source']['id']):
+    if not isinstance(record['source'].get('id'), str) or not re.fullmatch('[A-Za-z0-9_-][A-Za-z0-9_.-]{0,99}', record['source']['id']):
         raise ProbeError('invalid_source_identity')
     for key in ('commit', 'tree', 'upstream_commit', 'upstream_tree'):
         if not isinstance(record['source'].get(key), str) or not re.fullmatch('[0-9a-f]{40}', record['source'][key]):

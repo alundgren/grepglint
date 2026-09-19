@@ -23,6 +23,7 @@ tree-sitter-typescript = "0.23.2"
 wait-timeout = "0.2"
 
 tempfile = "3"
+zstd = { version = "0.13.3", default-features = false }
 
 [dev-dependencies]
 

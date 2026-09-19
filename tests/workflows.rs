@@ -134,6 +134,8 @@ impl Drop for Fixture {
 
 #[test]
 fn a_full_cache_rolls_back_and_the_next_small_query_recovers() {
+    use sha2::{Digest, Sha256};
+
     let fixture = Fixture::new();
     fs::create_dir(&fixture.cache).unwrap();
     let maximum = 512 * 1024;
@@ -146,8 +148,9 @@ fn a_full_cache_rolls_back_and_the_next_small_query_recovers() {
     };
     let first = index.search(&request).unwrap();
     assert!(!first.results.is_empty());
-    let large: String = (0..8000)
-        .map(|i| format!("cacheoverflow{i:08x} extra{i:08x} field{i:08x}\n"))
+    // Distinct hashes keep the fixture large after body compression.
+    let large: String = (0u32..6000)
+        .map(|i| format!("{:x} overflow{i:08x}\n", Sha256::digest(i.to_le_bytes())))
         .collect();
     assert!(large.len() < grepglint::chunks::MAX_FILE_BYTES);
     fs::write(fixture.root.join("src/overflow.txt"), large).unwrap();

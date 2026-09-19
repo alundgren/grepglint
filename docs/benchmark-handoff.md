@@ -20,7 +20,7 @@ directory/lockfile exclusions. Skip-reason counts describe refresh work, not
 a complete inventory of excluded files.
 
 Important limits are 20,000 paths, 512 KiB per source file, 12,000 lines per
-file, 4,000 bytes per line, a 128 MiB default cache, and a 30-second work budget.
+file, 4,000 bytes per line, a 256 MiB default cache, and a 30-second work budget.
 Inspect the code and README for the exact accounting before selecting large
 repositories. C#, Python, Go, and other non-JS/TS languages do not receive
 syntax-derived symbol metadata. Score source ranges/files consistently across

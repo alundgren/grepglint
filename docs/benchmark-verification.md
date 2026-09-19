@@ -72,7 +72,7 @@ credentials, has zero retries, and never forwards a request. Web, apps, plugins,
 MCP servers, memory, hooks and unrelated execution features are disabled.
 
 Handlers run in another mount, PID and network namespace. They can read a
-prepared fixture tree mounted read-only and write a fresh 384 MiB cache in
+prepared fixture tree mounted read-only and write a fresh 896 MiB cache in
 memory. System runtime files and the handler implementation are read-only.
 Reference answers, credentials, controller artifacts and external source
 sentinels are not mounted. Landlock denies executing files in the source tree.
@@ -138,7 +138,7 @@ that association is recorded as unavailable. No token allocation per tool is mad
 | Memory | 1 GiB aggregate cgroup ceiling, zero swap, including cache pages and all owned children |
 | CPU | One aggregate CPU, 100,000 microseconds per 100,000-microsecond period |
 | Threads and processes | 128 aggregate tasks |
-| Disk reserve | 1 GiB free beyond the existing 320 MiB corpus reserve, checked before audit and receipt writes |
+| Disk reserve | 1 GiB free beyond the existing 576 MiB corpus reserve, checked before audit and receipt writes |
 | Retention | Four owned runs, one-hour expiry checked on the next invocation; at most 16 MiB audit plus 1 MiB receipt per run |
 
 A sacrificial allocation of 1,100 MiB must be killed by the memory ceiling.

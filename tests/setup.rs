@@ -836,6 +836,23 @@ fn repair_missing_owned_files_offline_and_preserve_modified_files() {
 }
 
 #[test]
+fn recognized_legacy_cache_allows_upgrade_without_verification_writes() {
+    let f = Fixture::new();
+    success(f.install());
+    let database = f.root.join("cache/index.sqlite");
+    let db = rusqlite::Connection::open(&database).unwrap();
+    db.execute_batch(include_str!("../src/schema-v1.sql"))
+        .unwrap();
+    db.pragma_update(None, "user_version", 1).unwrap();
+    drop(db);
+    fs::set_permissions(&database, fs::Permissions::from_mode(0o600)).unwrap();
+    let bytes = fs::read(&database).unwrap();
+    f.candidate();
+    success(f.upgrade().output().unwrap());
+    assert_eq!(fs::read(database).unwrap(), bytes);
+}
+
+#[test]
 fn incompatible_cache_refused_before_upgrade_changes() {
     let f = Fixture::new();
     success(f.install());

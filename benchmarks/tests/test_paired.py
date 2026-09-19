@@ -62,6 +62,21 @@ class Planning(unittest.TestCase):
         self.assertIn('ccx-crossorg-217', {t['task_id'] for t in first['trials']})
         self.assertEqual(sum(t['partition'] == 'development' for t in first['trials']), 16)
 
+    def test_all_planned_source_ids_validate_in_trial_records(self):
+        planned = contract.plan(CORPUS, [], True)
+        planned.update(implementation_sha256='a' * 64, grepglint_sha256='b' * 64)
+        for trial in planned['trials']:
+            with self.subTest(task=trial['task_id'], configuration=trial['configuration']):
+                record = contract.initial_record(Path('run-all'), planned, trial)
+                contract.validate_record(record)
+
+    def test_source_ids_reject_paths_and_oversized_values(self):
+        record = json.loads((CORPUS / 'schema-fixtures/successful.json').read_text())
+        for source_id in ('', '.', '..', '../numpy', '/numpy', 'numpy/source', 'numpy\\source', 'a' * 101):
+            with self.subTest(source_id=source_id), self.assertRaisesRegex(ProbeError, 'invalid_source_identity'):
+                record['source']['id'] = source_id
+                contract.validate_record(record)
+
     def test_reject_bad_selection_and_oversized_plans(self):
         for args in [([], False, 1), (['unknown'], False, 1), (['ccx-crossorg-217'] * 2, False, 1),
                      (['ccx-crossorg-217'], False, 0), ([], True, 3), ([], True, 11)]:

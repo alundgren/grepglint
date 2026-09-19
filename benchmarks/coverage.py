@@ -114,7 +114,7 @@ def measure_locked(source, snapshots, output, binary):
               'query': 'corpus coverage', 'index_timeout_seconds': INDEX_TIMEOUT}
     if (root / '.grepglintignore').exists():
         raise PreparationError('Snapshot has custom exclusions; static default inventory cannot classify it')
-    budget(snapshots, 320 * 1024 ** 2)
+    budget(snapshots, 576 * 1024 ** 2)
     start = time.monotonic()
     with private_cache(snapshots) as cache:
         env = {**os.environ, 'GREPGLINT_CACHE_DIR': str(cache), 'GREPGLINT_IDLE_SECONDS': '1'}
